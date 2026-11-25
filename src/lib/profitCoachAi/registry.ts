@@ -236,7 +236,7 @@ Optional (only if asked): expand one overview into a longer content series (one 
 
 Prefer 400–800 words; go ~2,000+ only for true guides/case studies. Scannable formatting. Offer SEO title/description and a short feed promo post.
 
-For the live artifact editor + copy-for-LinkedIn, point them to Get Clients → Newsletter.`,
+For the live artifact editor + copy-for-LinkedIn, point them to Get Calls → Newsletter.`,
     knowledgeRefs: [
       {
         type: "playbook",

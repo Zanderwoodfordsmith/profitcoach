@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     (typeof body.section === "string" ? handoffForSection(body.section) : null) ??
     handoffById(typeof body.variant === "string" ? body.variant : "connection");
   if (!handoff) {
-    return NextResponse.json({ error: "That section does not go to Get Clients." }, { status: 400 });
+    return NextResponse.json({ error: "That section does not go to Get Calls." }, { status: 400 });
   }
 
   try {

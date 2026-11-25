@@ -43,7 +43,7 @@ export default function AdminCampaignDetailPage() {
       gapClass="gap-3"
       header={
         <StickyPageHeader
-          title="Get Clients"
+          title="Get Calls"
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />
       }

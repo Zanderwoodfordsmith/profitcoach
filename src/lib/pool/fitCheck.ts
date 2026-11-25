@@ -116,10 +116,42 @@ async function profileWords(urls: (string | null)[]): Promise<Map<string, { head
   return out;
 }
 
-/** The coach's list box as Ava's brief, or null when it's empty (nothing to judge against). */
+/** Most of the coach's own calls Ava reads as examples. */
+const EXAMPLES_MAX = 40;
+
+/**
+ * The coach's own calls (Check fit, job 285) as examples for Ava, newest
+ * first, one per person. Empty when they haven't sorted anyone themselves.
+ */
+async function coachExamples(coachId: string): Promise<string> {
+  const { data } = await supabaseAdmin
+    .from("coach_lead_list_items")
+    .select("identity_key, id, job_title, company, industry, fit, fit_why, tags")
+    .eq("coach_id", coachId)
+    .eq("fit_by", "person")
+    .not("fit", "is", null)
+    .order("fit_at", { ascending: false })
+    .limit(EXAMPLES_MAX * 3);
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  for (const r of data ?? []) {
+    const key = (r.identity_key as string | null) ?? (r.id as string);
+    if (seen.has(key) || lines.length >= EXAMPLES_MAX) continue;
+    seen.add(key);
+    const vip = Array.isArray(r.tags) && r.tags.some((t) => String(t).toLowerCase() === "vip");
+    const label = vip ? "GOOD (VIP)" : String(r.fit).toUpperCase();
+    const why = r.fit_why && r.fit_why !== "VIP" ? ` | their reason: ${r.fit_why}` : "";
+    lines.push(`- ${label} | ${r.job_title || "?"} at ${r.company || "?"}${r.industry ? ` (${r.industry})` : ""}${why}`);
+  }
+  if (!lines.length) return "";
+  return `\n\nHow the coach sorted people themselves. Follow their lead: when these clash with the rules below, the coach is right. Rate people like these the same way.\n${lines.join("\n")}`;
+}
+
+/** The coach's list box as Ava's brief, plus their own calls; null when the box is empty (nothing to judge against). */
 async function coachBrief(coachId: string): Promise<string | null> {
   const row = await withOpenDrafts(coachId, await ensurePracticeKnowledge(coachId));
-  return hasListBox(row) ? listBrief(row) : null;
+  if (!hasListBox(row)) return null;
+  return listBrief(row) + (await coachExamples(coachId).catch(() => ""));
 }
 
 /** Ava labels these people (one row per person) and writes it to every list they're on. */
@@ -239,4 +271,29 @@ export async function labelNewPeopleFit(limit = 100): Promise<number> {
     }
   }
   return labelled;
+}
+
+/** Most people one re-sort covers. */
+export const RERATE_MAX = 600;
+
+/**
+ * After the coach sorts people in Check fit (job 285): Ava re-sorts everyone
+ * else on that list with their calls as examples. Never touches a person's own call.
+ */
+export async function rerateListFit(coachId: string, listId: string): Promise<number> {
+  const brief = await coachBrief(coachId);
+  if (!brief) return 0;
+  const page = await fetchAllSupabasePages<PersonRow>((from, to) =>
+    supabaseAdmin
+      .from("coach_lead_list_items")
+      .select(PERSON_SELECT)
+      .eq("coach_id", coachId)
+      .eq("list_id", listId)
+      .or("fit_by.is.null,fit_by.eq.ava")
+      .order("id", { ascending: true })
+      .range(from, to)
+  );
+  if (page.error) throw new Error(page.error.message || "Could not load the list.");
+  const rows = onePerPerson(page.data).slice(0, RERATE_MAX);
+  return labelRows(coachId, brief, rows);
 }

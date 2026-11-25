@@ -9,10 +9,8 @@ import {
   BadgeCheck,
   Ban,
   Check,
-  ChevronLeft,
   ChevronRight,
   ChevronDown,
-  ExternalLink,
   ListMinus,
   ListPlus,
   Loader2,
@@ -61,6 +59,7 @@ import {
 } from "@/hooks/usePersistedColumnSettings";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { LeadHoverCard, leadCardLoader } from "@/components/leads/LeadHoverCard";
+import { FitCheck } from "@/components/leads/FitCheck";
 import { fitOption } from "@/lib/pool/fit";
 import { formatShortDate } from "@/lib/formatShortDate";
 import {
@@ -127,7 +126,12 @@ import {
   POOL_SORT_VERSION,
   type PoolTableViewSettings,
 } from "@/lib/pool/poolTableViews";
-import { paginationItems } from "@/lib/communityPagination";
+import {
+  DEFAULT_TABLE_PAGE_SIZE,
+  TablePaginationFooter,
+  readStoredTablePageSize,
+  storeTablePageSize,
+} from "@/components/table/TablePaginationFooter";
 import { buttonClass } from "@/components/ui/Button";
 import { isMagnetPlaybookId } from "@/lib/leadMagnets/catalog";
 import type { CsvExportScope } from "@/components/table/TableCsvExportButton";
@@ -286,23 +290,6 @@ function PoolCampaignPickerList({
 }
 
 const POOL_PAGE_SIZE_STORAGE_KEY = "pool-table-page-size-v1";
-const POOL_PAGE_SIZE_OPTIONS = [20, 50, 100, 250, 500, 1000] as const;
-const POOL_PAGE_SIZE_MIN = 1;
-const POOL_PAGE_SIZE_MAX = 1000;
-const DEFAULT_POOL_PAGE_SIZE = 50;
-
-function isPresetPoolPageSize(
-  n: number
-): n is (typeof POOL_PAGE_SIZE_OPTIONS)[number] {
-  return (POOL_PAGE_SIZE_OPTIONS as readonly number[]).includes(n);
-}
-
-function clampPoolPageSize(n: number): number {
-  return Math.min(
-    POOL_PAGE_SIZE_MAX,
-    Math.max(POOL_PAGE_SIZE_MIN, Math.floor(n))
-  );
-}
 const TABLE_SECTION_PADDING = "px-5 sm:px-6";
 const TABLE_CHECKBOX_COL_WIDTH = 28;
 const TABLE_NAME_COL_WIDTH = 280;
@@ -342,24 +329,6 @@ function getPoolColumnWidth(key: PoolColumnKey): number {
     default:
       return 140;
   }
-}
-
-function readStoredPoolPageSize(): number {
-  if (typeof window === "undefined") return DEFAULT_POOL_PAGE_SIZE;
-  try {
-    const raw = window.localStorage.getItem(POOL_PAGE_SIZE_STORAGE_KEY);
-    const n = Number(raw);
-    if (
-      Number.isInteger(n) &&
-      n >= POOL_PAGE_SIZE_MIN &&
-      n <= POOL_PAGE_SIZE_MAX
-    ) {
-      return n;
-    }
-  } catch {
-    // ignore
-  }
-  return DEFAULT_POOL_PAGE_SIZE;
 }
 
 function downloadCsv(filename: string, rows: string[][]) {
@@ -494,11 +463,7 @@ export function CampaignPoolHub({
   const [collapsedGroupKeys, setCollapsedGroupKeys] = useState<Set<string>>(
     () => new Set()
   );
-  const [pageSize, setPageSize] = useState(DEFAULT_POOL_PAGE_SIZE);
-  const [customPageSize, setCustomPageSize] = useState(false);
-  const [customPageSizeDraft, setCustomPageSizeDraft] = useState("");
-  const customPageSizeInputRef = useRef<HTMLInputElement | null>(null);
-  const customPageSizeShouldFocusRef = useRef(false);
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
   const [draggingColumnKey, setDraggingColumnKey] = useState<PoolColumnKey | null>(
     null
   );
@@ -516,11 +481,20 @@ export function CampaignPoolHub({
 
   const listId =
     activeViewId === "pool" ? poolListId : activeViewId;
-  const activeImportSearch =
-    importLists.find((list) => list.id === activeViewId)?.sales_nav_url ?? null;
 
   const getAuthHeaders = useCallback(async () => getCoachAuthHeaders(), []);
   const loadLeadCard = useMemo(() => leadCardLoader(getAuthHeaders), [getAuthHeaders]);
+  /** Check fit (job 285): one person at a time over what the table shows. */
+  const [fitCheckOpen, setFitCheckOpen] = useState(false);
+  const patchPoolRow = useCallback(
+    (rowId: string, patch: Partial<PoolPerson>) => {
+      const apply = (row: PoolPerson) => (row.id === rowId ? { ...row, ...patch } : row);
+      setPeople((prev) => prev.map(apply));
+      const cached = peopleCacheRef.current.get(activeViewId);
+      if (cached) peopleCacheRef.current.set(activeViewId, cached.map(apply));
+    },
+    [activeViewId]
+  );
 
   const applyViewSettings = useCallback((settings: PoolTableViewSettings) => {
     const next = normalizePoolTableViewSettings(settings);
@@ -1071,19 +1045,6 @@ export function CampaignPoolHub({
     return () => window.clearTimeout(timer);
   }, [impersonatingCoachId, pagedPeople]);
 
-  const pageNumbers = useMemo(
-    () => paginationItems(page, totalPages),
-    [page, totalPages]
-  );
-
-  const paginationRangeLabel =
-    paginationLength === 0
-      ? "0 people"
-      : `${(page - 1) * pageSize + 1}-${Math.min(
-          page * pageSize,
-          paginationLength
-        )} of ${paginationLength}`;
-
   const pageIds = useMemo(
     () => pagedPeople.map((row) => row.id),
     [pagedPeople]
@@ -1259,27 +1220,11 @@ export function CampaignPoolHub({
   }, [campaignMenu]);
 
   useEffect(() => {
-    const stored = readStoredPoolPageSize();
-    setPageSize(stored);
-    if (!isPresetPoolPageSize(stored)) {
-      setCustomPageSize(true);
-      setCustomPageSizeDraft(String(stored));
-    }
+    setPageSize(readStoredTablePageSize(POOL_PAGE_SIZE_STORAGE_KEY));
   }, []);
 
   useEffect(() => {
-    if (!customPageSize || !customPageSizeShouldFocusRef.current) return;
-    customPageSizeShouldFocusRef.current = false;
-    customPageSizeInputRef.current?.focus();
-    customPageSizeInputRef.current?.select();
-  }, [customPageSize]);
-
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(POOL_PAGE_SIZE_STORAGE_KEY, String(pageSize));
-    } catch {
-      // ignore
-    }
+    storeTablePageSize(POOL_PAGE_SIZE_STORAGE_KEY, pageSize);
   }, [pageSize]);
 
   useEffect(() => {
@@ -1290,37 +1235,6 @@ export function CampaignPoolHub({
     if (page > totalPages) setPage(totalPages);
   }, [page, totalPages]);
 
-  function applyPageSize(next: number) {
-    const clamped = clampPoolPageSize(next);
-    if (clamped === pageSize) return;
-    setPageSize(clamped);
-    setPage(1);
-  }
-
-  function handlePageSizeSelect(value: string) {
-    if (value === "custom") {
-      customPageSizeShouldFocusRef.current = true;
-      setCustomPageSizeDraft(String(pageSize));
-      setCustomPageSize(true);
-      return;
-    }
-    const next = Number(value);
-    if (!isPresetPoolPageSize(next)) return;
-    setCustomPageSize(false);
-    applyPageSize(next);
-  }
-
-  function commitCustomPageSize() {
-    const parsed = Number(customPageSizeDraft);
-    if (!Number.isFinite(parsed) || customPageSizeDraft.trim() === "") {
-      setCustomPageSizeDraft(String(pageSize));
-      return;
-    }
-    const next = clampPoolPageSize(parsed);
-    setCustomPageSizeDraft(String(next));
-    if (next === parsed && isPresetPoolPageSize(next)) setCustomPageSize(false);
-    applyPageSize(next);
-  }
 
   function toggleId(id: string) {
     setSelectedIds((prev) =>
@@ -2172,6 +2086,7 @@ export function CampaignPoolHub({
                 person={{
                   name: displayName,
                   linkedinUrl: row.linkedin_url,
+                  website: row.website,
                   role: row.job_title,
                   company: row.company,
                   location: row.location,
@@ -2442,6 +2357,19 @@ export function CampaignPoolHub({
 
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4">
+      {fitCheckOpen && listId ? (
+        <FitCheck
+          rows={filtered}
+          listId={listId}
+          headers={getAuthHeaders}
+          loadCard={loadLeadCard}
+          onCalled={patchPoolRow}
+          onClose={(resorted) => {
+            setFitCheckOpen(false);
+            if (resorted) setNotice("Ava is re-sorting the rest of this list the way you did. Fit updates in a few minutes.");
+          }}
+        />
+      ) : null}
       <div ref={toolbarRef} className="shrink-0">
         <ProspectsPipelineToolbar
           search={query}
@@ -3016,17 +2944,19 @@ export function CampaignPoolHub({
                   ) : null}
                 </div>
               ) : null}
-              {activeImportSearch ? (
-                <a
-                  href={activeImportSearch}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Open the Sales Navigator search this list came from"
+              {selectedCount === 0 && listId ? (
+                <button
+                  type="button"
+                  disabled={loading || filtered.length === 0}
+                  onClick={() => {
+                    setMatchMenuOpen(false);
+                    setFitCheckOpen(true);
+                  }}
                   className={buttonClass("second", "normal", "shrink-0")}
+                  title="One person at a time: swipe or use the arrow keys"
                 >
-                  Sales Navigator
-                  <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                </a>
+                  Check fit
+                </button>
               ) : null}
               <button
                 type="button"
@@ -3213,6 +3143,11 @@ export function CampaignPoolHub({
                           onDuplicate={() => {
                             void duplicateImportList(list.id);
                           }}
+                          link={
+                            list.sales_nav_url
+                              ? { href: list.sales_nav_url, label: "Sales Navigator" }
+                              : null
+                          }
                         />
                       </div>
                       {importing && targetCount > 0 ? (
@@ -3536,100 +3471,19 @@ export function CampaignPoolHub({
       </div>
 
       {!loading && displayPeople.length > 0 ? (
-        <nav
-          className={`flex shrink-0 flex-col gap-3 border-t border-slate-100 bg-white py-3 sm:flex-row sm:items-center sm:justify-between ${TABLE_SECTION_PADDING}`}
-          aria-label="Pool pagination"
-        >
-          <div className="inline-flex items-center gap-2 text-sm text-slate-500">
-            <span>Show</span>
-            <select
-              value={customPageSize ? "custom" : pageSize}
-              onChange={(e) => handlePageSizeSelect(e.target.value)}
-              className={fieldClass("select", "small", "w-auto!")}
-              aria-label="People per page"
-            >
-              {POOL_PAGE_SIZE_OPTIONS.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-              <option value="custom">Custom</option>
-            </select>
-            {customPageSize ? (
-              <input
-                ref={customPageSizeInputRef}
-                type="number"
-                inputMode="numeric"
-                min={POOL_PAGE_SIZE_MIN}
-                max={POOL_PAGE_SIZE_MAX}
-                value={customPageSizeDraft}
-                onChange={(e) => setCustomPageSizeDraft(e.target.value)}
-                onBlur={commitCustomPageSize}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    e.currentTarget.blur();
-                  }
-                }}
-                className={fieldClass("input", "small", "w-[4.5rem]! tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none")}
-                aria-label="Custom people per page"
-              />
-            ) : null}
-            <span>per page</span>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <p className="tabular-nums text-sm text-slate-500">
-              {paginationRangeLabel}
-            </p>
-            {totalPages > 1 ? (
-              <div className="flex flex-wrap items-center gap-1">
-                <button
-                  type="button"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="h-4 w-4" aria-hidden />
-                </button>
-                {pageNumbers.map((item, idx) =>
-                  item === "ellipsis" ? (
-                    <span
-                      key={`e-${idx}`}
-                      className="px-1.5 text-sm text-slate-400"
-                      aria-hidden
-                    >
-                      ...
-                    </span>
-                  ) : (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setPage(item)}
-                      className={`flex h-8 min-w-8 items-center justify-center rounded-full px-2 text-sm font-medium ${
-                        item === page
-                          ? "bg-sky-100 text-sky-800"
-                          : "text-slate-600 hover:bg-slate-100"
-                      }`}
-                      aria-current={item === page ? "page" : undefined}
-                    >
-                      {item}
-                    </button>
-                  )
-                )}
-                <button
-                  type="button"
-                  disabled={page >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                  aria-label="Next page"
-                >
-                  <ChevronRight className="h-4 w-4" aria-hidden />
-                </button>
-              </div>
-            ) : null}
-          </div>
-        </nav>
+        <TablePaginationFooter
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          pageSize={pageSize}
+          onPageSizeChange={(next) => {
+            setPageSize(next);
+            setPage(1);
+          }}
+          totalCount={paginationLength}
+          ariaLabel="Pool pagination"
+          className={TABLE_SECTION_PADDING}
+        />
       ) : null}
       </div>
       </div>

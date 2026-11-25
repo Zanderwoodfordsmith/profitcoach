@@ -228,14 +228,14 @@ export default function AdminLayout({
               edgeToEdgeInbox
                 ? "h-dvh overflow-hidden px-0 pb-0 max-md:pb-[calc(3.5rem+env(safe-area-inset-bottom))]"
                 : prospectsListPage || campaignsListPage
-                ? "h-dvh overflow-hidden px-4 md:px-[60px] pb-3 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+                ? "h-dvh overflow-hidden px-4 md:px-8 pb-3 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
                 : playbooksReader
                 ? "min-h-screen px-0 pb-10"
                 : fullBleedPage
                 ? "h-dvh overflow-hidden px-0 pb-0 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
                 : coachesListPage
                 ? "min-h-screen px-4 md:px-6 pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
-                : "min-h-screen px-4 md:px-[60px] pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+                : "min-h-screen px-4 md:px-8 pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
             }`}
           >
             <div

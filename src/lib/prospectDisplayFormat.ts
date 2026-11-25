@@ -46,13 +46,64 @@ export function personNameWithoutNote(
   return (text ?? "").replace(/\s*\(.*$/, "").replace(/\s+/g, " ").trim();
 }
 
+/** Lowercase name particles kept as typed after the first word (Bas van Dijk). */
+const NAME_PARTICLES = new Set([
+  "van", "von", "de", "der", "den", "du", "da", "di", "le", "la", "del", "della", "bin", "al",
+]);
+
+/** Common letters after a name, kept in capitals. Mixed case (CEng, MIMechE) is kept anyway. */
+const POST_NOMINALS = new Set([
+  "OBE", "MBE", "CBE", "KBE", "DBE", "KC", "QC", "DL", "JP", "MP",
+  "MBA", "BA", "MA", "BSC", "MSC", "PHD", "LLB", "LLM", "BENG", "MENG",
+  "FCA", "ACA", "ACCA", "FCCA", "CIMA", "ACMA", "FCMA", "CTA", "ATT", "MAAT", "FMAAT", "AAT",
+  "TEP", "CFP", "DIPPFS", "CII",
+  "MIET", "FIET", "MICE", "FICE", "MCIOB", "FCIOB", "ICIOB", "MRICS", "FRICS",
+  "MCIPS", "FCIPS", "MCMI", "FCMI", "MIOD", "FIOD", "CMGR", "MCIPD", "FCIPD", "CIPD",
+  "MCIM", "FCIM", "MCIBSE", "FCIBSE", "FIMECHE", "MIMECHE", "FRENG", "FRSA", "RIBA",
+  "MSOE", "MIIRSM", "CMIOSH", "IOSH", "NEBOSH", "PMP", "PGCE", "QTS",
+]);
+
+/** "o'brien" → "O'Brien", "bradley-smith" → "Bradley-Smith". */
+function capitalizeNameParts(word: string): string {
+  return word
+    .toLocaleLowerCase()
+    .replace(/(^|[-'’])(\p{L})/gu, (_m, sep: string, ch: string) => sep + ch.toLocaleUpperCase());
+}
+
+/**
+ * Fix only names typed all lower or ALL CAPS. Mixed case is kept as typed,
+ * so McGill, MacDonald, AdeNiran and letters like CEng stay right.
+ */
+function formatPersonWord(word: string, index: number, wholeNameShouting: boolean): string {
+  const lower = word.toLocaleLowerCase();
+  const upper = word.toLocaleUpperCase();
+  if (lower === upper) return word; // no letters
+  if (index > 0 && NAME_PARTICLES.has(lower) && word === lower) return word;
+  if (word === lower) return capitalizeNameParts(word);
+  if (word !== upper) return word;
+  // ALL CAPS: a shouted name (SHAH → Shah), unless it's letters after the name
+  // (MIET, MBA, OBE), an initial (J) or has dots (LL.B).
+  if (!wholeNameShouting && index > 0) {
+    const letters = word.replace(/[^\p{L}]/gu, "");
+    if (letters.length <= 1 || word.includes(".") || POST_NOMINALS.has(letters)) {
+      return word;
+    }
+  }
+  return capitalizeNameParts(word);
+}
+
 /** Display / save format for person names (first, last, full). */
 export function formatProspectPersonName(
   text: string | null | undefined
 ): string {
-  const withoutNote = personNameWithoutNote(text);
+  const withoutNote = stripDecorativeChars(personNameWithoutNote(text));
   if (!withoutNote) return "";
-  return formatWords(withoutNote);
+  const wholeNameShouting = withoutNote === withoutNote.toLocaleUpperCase();
+  return withoutNote
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word, i) => formatPersonWord(word, i, wholeNameShouting))
+    .join(" ");
 }
 
 /** Display / save format for title, business, and similar labels. */

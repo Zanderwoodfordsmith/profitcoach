@@ -6,7 +6,26 @@ import { AlertTriangle, Check, Copy, Info, Lightbulb, Pencil } from "lucide-reac
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { fieldClass } from "@/components/ui/Field";
+import { parseInline } from "@/lib/practiceKnowledge/inline";
 import type { BlueprintBlock } from "@/lib/practiceKnowledge/types";
+
+/** A block's text with its bold, italic, struck and linked words shown as such. */
+function Inline({ text }: { text: string }) {
+  const spans = parseInline(text);
+  if (spans.length === 1 && !spans[0]!.bold && !spans[0]!.italic && !spans[0]!.strike && !spans[0]!.href) return <>{text}</>;
+  return (
+    <>
+      {spans.map((span, i) => {
+        let node: React.ReactNode = span.text;
+        if (span.strike) node = <s>{node}</s>;
+        if (span.italic) node = <em>{node}</em>;
+        if (span.bold) node = <strong className="font-semibold">{node}</strong>;
+        if (span.href) node = <a href={span.href} target="_blank" rel="noreferrer">{node}</a>;
+        return <span key={i}>{node}</span>;
+      })}
+    </>
+  );
+}
 
 /** A question-and-answer table (Objection, Answer) reads as a list of questions, each with its answer under it. */
 export function isFaqTable(block: Extract<BlueprintBlock, { type: "table" }>): boolean {
@@ -196,13 +215,17 @@ export function Blocks({
           case "paragraph":
             return (
               <p key={key} className="max-w-[68ch] whitespace-pre-line text-read">
-                {block.text}
+                <Inline text={block.text} />
               </p>
             );
           case "heading":
-            return (
+            return block.level === 3 ? (
+              <h5 key={key} className="!mt-7 text-read font-semibold text-[var(--bp-ink)]">
+                <Inline text={block.text} />
+              </h5>
+            ) : (
               <h4 key={key} className="!mt-9 text-subhead font-semibold text-[var(--bp-ink)]">
-                {block.text}
+                <Inline text={block.text} />
               </h4>
             );
           case "bullets":
@@ -211,7 +234,7 @@ export function Blocks({
                 {block.items.map((item, j) => (
                   <li key={j} className="grid grid-cols-[0.875rem_1fr] gap-2.5 text-read">
                     <span aria-hidden className="ml-1.5 mt-[0.62em] h-1.5 w-1.5 rounded-full bg-[var(--bp-sky)]" />
-                    <span>{item}</span>
+                    <span><Inline text={item} /></span>
                   </li>
                 ))}
               </ul>
@@ -222,7 +245,7 @@ export function Blocks({
                 {block.items.map((item, j) => (
                   <li key={j} className="grid grid-cols-[1.75rem_1fr] gap-2 text-read">
                     <span className="bp-num pt-px text-sm font-semibold text-[var(--bp-blue)]">{j + 1}.</span>
-                    <span>{item}</span>
+                    <span><Inline text={item} /></span>
                   </li>
                 ))}
               </ol>
@@ -239,7 +262,7 @@ export function Blocks({
                   <path d="M0 24V14.2C0 6.4 4.3 1.6 12.2 0l1.4 3C9 4.6 7 7.4 6.8 11.2H13V24H0Zm19 0V14.2C19 6.4 23.3 1.6 31.2 0l1.4 3C28 4.6 26 7.4 25.8 11.2H32V24H19Z" />
                 </svg>
                 <p className="bp-display whitespace-pre-line text-subhead italic leading-[1.55] text-[var(--bp-ink)]">
-                  {block.text}
+                  <Inline text={block.text} />
                 </p>
                 {block.cite ? (
                   <footer className="mt-2 text-sm font-medium text-[var(--bp-muted)]">{block.cite}</footer>
@@ -366,6 +389,13 @@ export function Blocks({
             );
           case "timeline":
             return <Timeline key={key} block={block} />;
+          case "image":
+            return (
+              <a key={key} href={block.href} target={block.href ? "_blank" : undefined} rel={block.href ? "noreferrer" : undefined} className="block max-w-[68ch]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={block.url} alt={block.alt ?? ""} loading="lazy" className="w-full rounded-lg" />
+              </a>
+            );
           default:
             return null;
         }

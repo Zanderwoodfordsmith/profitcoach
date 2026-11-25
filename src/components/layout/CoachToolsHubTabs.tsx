@@ -6,8 +6,10 @@ import { Suspense, useEffect, useState, type ReactNode } from "react";
 import {
   coachClientsTabActive,
   coachClientsTabItems,
-  getClientsTabItems,
+  getCallsTabItems,
   isGetClientsContentPath,
+  isWinClientsPath,
+  winClientsTabItems,
   isGetClientsToolkitPath,
   navLinkActive,
   type CoachClientsTabItem,
@@ -109,17 +111,37 @@ function CoachClientsTabsNav({
   );
 }
 
-function GetClientsTabsNav({
-  pathname,
-  showAdminPreview,
-  markPending,
-}: {
+/** Lead Lists and Lead Magnets are `?tab=` on Campaigns, so these tabs need the query. */
+function SplitTabsSearch(props: {
   pathname: string;
   showAdminPreview: boolean;
   markPending: (href: string) => void;
 }) {
+  const params = useSearchParams();
+  return <GetClientsTabsNav {...props} campaignsTab={params.get("tab")} />;
+}
+
+function GetClientsTabsNav({
+  pathname,
+  showAdminPreview,
+  markPending,
+  campaignsTab = null,
+}: {
+  pathname: string;
+  showAdminPreview: boolean;
+  markPending: (href: string) => void;
+  campaignsTab?: string | null;
+}) {
   const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
-  const items = getClientsTabItems(prefix).filter((item: ToolsHubTabItem) => {
+  const win = isWinClientsPath(pathname);
+  const tabItems = win ? winClientsTabItems(prefix) : getCallsTabItems(prefix);
+  const onCampaigns = navLinkActive(pathname, `${prefix}/campaigns`);
+  const onPool = onCampaigns && (campaignsTab === "pool" || campaignsTab === "lists");
+  const onMagnets =
+    navLinkActive(pathname, `${prefix}/campaigns/magnets`) ||
+    (onCampaigns && campaignsTab === "magnets");
+  const simulatorHref = `${prefix}/script/simulator`;
+  const items = tabItems.filter((item: ToolsHubTabItem) => {
     if (item.adminPreview && !showAdminPreview) return false;
     return true;
   });
@@ -127,7 +149,7 @@ function GetClientsTabsNav({
   const toolkitHref = `${prefix}/share`;
   return (
     <PageHeaderUnderlineTabs
-      ariaLabel="Get Clients tools"
+      ariaLabel={win ? "Win Clients tools" : "Get Calls tools"}
       items={items.map((item) => {
         const iconOnly = Boolean(item.iconOnly);
         const preview = Boolean(item.adminPreview && showAdminPreview);
@@ -154,7 +176,16 @@ function GetClientsTabsNav({
             ? isGetClientsContentPath(pathname)
             : item.href === toolkitHref
               ? isGetClientsToolkitPath(pathname)
-              : navLinkActive(pathname, item.href);
+              : item.href === `${prefix}/campaigns?tab=pool`
+                  ? onPool
+                  : item.href === `${prefix}/campaigns?tab=magnets`
+                    ? onMagnets
+                  : item.href === `${prefix}/campaigns`
+                    ? onCampaigns && !onPool && !onMagnets
+                    : item.href === `${prefix}/script`
+                      ? navLinkActive(pathname, item.href) &&
+                        !navLinkActive(pathname, simulatorHref)
+                      : navLinkActive(pathname, item.href);
         return {
           kind: "link" as const,
           href: item.href,
@@ -211,12 +242,15 @@ export function CoachToolsHubTabs(props: Props) {
     pathname.startsWith("/admin") && !impersonatingCoachId;
 
   if (props.hub === "get-clients") {
+    const navProps = {
+      pathname,
+      showAdminPreview: fallbackShowAdminPreview,
+      markPending,
+    };
     return (
-      <GetClientsTabsNav
-        pathname={pathname}
-        showAdminPreview={fallbackShowAdminPreview}
-        markPending={markPending}
-      />
+      <Suspense fallback={<GetClientsTabsNav {...navProps} />}>
+        <SplitTabsSearch {...navProps} />
+      </Suspense>
     );
   }
 

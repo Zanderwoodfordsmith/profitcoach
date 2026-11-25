@@ -2,14 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getStoredImpersonatingCoachId } from "@/lib/coachAuthHeaders";
 import {
   CalendarDays,
   FolderOpen,
   ListTodo,
   Loader2,
-  Newspaper,
   PenLine,
   RefreshCw,
   Settings2,
@@ -65,17 +64,11 @@ const LinkedInInsightsTab = dynamic(() =>
     default: m.LinkedInInsightsTab,
   }))
 );
-const NewsletterIssuesTab = dynamic(() =>
-  import("./linkedin/NewsletterIssuesTab").then((m) => ({
-    default: m.NewsletterIssuesTab,
-  }))
-);
 
 type TabId =
   | "compose"
   | "queue"
   | "calendar"
-  | "newsletter"
   | "library"
   | "insights"
   | "settings";
@@ -84,7 +77,6 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof PenLine }> = [
   { id: "compose", label: "Compose", icon: PenLine },
   { id: "queue", label: "Queue", icon: ListTodo },
   { id: "calendar", label: "Calendar", icon: CalendarDays },
-  { id: "newsletter", label: "Newsletter", icon: Newspaper },
   { id: "library", label: "Library", icon: FolderOpen },
   { id: "insights", label: "Insights", icon: BarChart3 },
   { id: "settings", label: "Settings", icon: Settings2 },
@@ -93,6 +85,7 @@ const TABS: Array<{ id: TabId; label: string; icon: typeof PenLine }> = [
 export function LinkedInSchedulerPanel() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
+  const router = useRouter();
   const linkedinStatus = searchParams.get("linkedin");
   const { impersonatingCoachId } = useImpersonation();
   const statusKey = hubQueryKey("content:status", impersonatingCoachId);
@@ -167,7 +160,8 @@ export function LinkedInSchedulerPanel() {
     }
   }, [getToken, pathname]);
   const history = useLinkedInHistory(getHistoryHeaders);
-  const [openIssueId, setOpenIssueId] = useState<string | null>(null);
+  // The newsletter has its own Get Clients tab now (25 Nov 2026).
+  const newslettersHref = pathname?.startsWith("/admin") ? "/admin/newsletters" : "/coach/newsletters";
 
   async function handleImportHistory() {
     const error = await history.runImport();
@@ -241,11 +235,14 @@ export function LinkedInSchedulerPanel() {
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
+    if (tabParam === "newsletter") {
+      router.replace(newslettersHref);
+      return;
+    }
     if (
       tabParam === "compose" ||
       tabParam === "queue" ||
       tabParam === "calendar" ||
-      tabParam === "newsletter" ||
       tabParam === "library" ||
       tabParam === "insights" ||
       tabParam === "settings"
@@ -283,7 +280,7 @@ export function LinkedInSchedulerPanel() {
     } catch {
       // ignore bad seed payloads
     }
-  }, [searchParams]);
+  }, [searchParams, router, newslettersHref]);
 
   async function handleConnect() {
     if (connecting) return;
@@ -564,24 +561,9 @@ export function LinkedInSchedulerPanel() {
             history={history.data?.posts}
             issues={history.data?.issues}
             onSelectPost={() => setTab("queue")}
-            onOpenIssue={(id) => {
-              setOpenIssueId(id);
-              setTab("newsletter");
-            }}
+            onOpenIssue={(id) => router.push(`${newslettersHref}?issue=${encodeURIComponent(id)}`)}
           />
           )
-        ) : null}
-        {shownTab === "newsletter" ? (
-          <NewsletterIssuesTab
-            history={history.data}
-            loading={history.loading}
-            importing={history.importing}
-            onImport={() => void handleImportHistory()}
-            getHeaders={getHistoryHeaders}
-            openIssueId={openIssueId}
-            onOpenIssue={setOpenIssueId}
-            blueprintHref={pathname?.startsWith("/admin") ? null : "/coach/blueprint/content"}
-          />
         ) : null}
         {shownTab === "library" ? (
           !scheduledReady ? (

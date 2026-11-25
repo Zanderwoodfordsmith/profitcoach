@@ -1292,7 +1292,7 @@ export function LeadFinderClient() {
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-white">
       <StickyPageHeader
-        title="Get Clients"
+        title="Get Calls"
         description="Search and reveal leads from the database or Sales Navigator."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />

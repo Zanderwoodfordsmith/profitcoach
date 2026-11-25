@@ -4,7 +4,7 @@ import { useDashboardChrome } from "@/contexts/DashboardChromeContext";
 import { DashboardChromeActions } from "./DashboardChromeActions";
 
 const DEFAULT_BLEED =
-  "-mx-4 px-4 md:-mx-[60px] md:px-[60px]";
+  "-mx-4 px-4 md:-mx-8 md:px-8";
 
 /**
  * Sticky chrome-only strip for routes that do not mount a StickyPageHeader.

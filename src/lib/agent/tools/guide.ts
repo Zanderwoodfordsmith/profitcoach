@@ -8,12 +8,13 @@ import { AgentToolError, coachOf, isUuid, str } from "./util";
 
 const PAGES: Record<string, { path: string; label: string }> = {
   campaigns: { path: "/campaigns", label: "Open Campaigns" },
-  pool: { path: "/campaigns?tab=pool", label: "Open the Pool" },
-  magnets: { path: "/campaigns?tab=magnets", label: "Open Lead magnets" },
+  pool: { path: "/campaigns?tab=pool", label: "Open Lead Lists" },
+  magnets: { path: "/campaigns?tab=magnets", label: "Open Lead Magnets" },
   conversations: { path: "/conversations", label: "Open Conversations" },
   calls: { path: "/calls", label: "Open Calls" },
-  prospects: { path: "/prospects", label: "Open Prospects" },
+  prospects: { path: "/prospects", label: "Open Pipeline" },
   content: { path: "/linkedin", label: "Open Content" },
+  "call-practice": { path: "/script/simulator", label: "Open Call Practice" },
   links: { path: "/share", label: "Open Links" },
   "first-campaign": { path: "/first-campaign", label: "Open First Campaign" },
   blueprint: { path: "/practice", label: "Open the Practice Blueprint" },

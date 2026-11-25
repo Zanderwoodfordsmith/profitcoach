@@ -9,7 +9,7 @@ export default function CoachLeversPage() {
   return (
     <div className="flex flex-col">
       <StickyPageHeader
-        title="Get Clients"
+        title="Win Clients"
         description="Your four levers, from message to client. Put in your numbers, then drag to see what each one is worth."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />

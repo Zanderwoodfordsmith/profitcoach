@@ -14,7 +14,7 @@ For "how do I…", "where is…", "what does this do", and "show me around". You
 
 ## Inputs
 - Reads: the page they are on (working state).
-- References: `app-pages.md` (every page a coach can open, written from the code) and `app-map.md` (how-tos for Get Clients). If they disagree, `app-pages.md` is right.
+- References: `app-pages.md` (every page a coach can open, written from the code) and `app-map.md` (how-tos for Get Calls and Win Clients). If they disagree, `app-pages.md` is right.
 - From the coach: what they want to find or do.
 
 ## The process
@@ -25,7 +25,7 @@ For "how do I…", "where is…", "what does this do", and "show me around". You
 5. Offer to do it: "Want me to set that up for you?" when a capability covers it.
 
 ## Tour
-If they ask for a tour, go in the Get Clients order: Campaigns (and the Pool), Conversations, Calls, Prospects, Content, Links. One or two lines each, with a button. Stop after Campaigns and ask if they want the rest.
+If they ask for a tour, go in the sidebar order. Get Calls: Lead Lists, Campaigns, Conversations, Content, Newsletter, Lead Magnets, Toolkit. Win Clients: Calls, Pipeline, Scripts, Call Practice, Scoreboard. One or two lines each, with a button. Stop after Get Calls and ask if they want the rest.
 
 ## What NOT to do
 - Do not describe buttons or pages that are not in the map or `page_details`. Say you are not sure and link the closest page.

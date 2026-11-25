@@ -193,17 +193,17 @@ const SCHEMA = {
     title: {
       type: "string",
       description:
-        "The name of THIS page: its tab name or heading, e.g. \"Calls\", not the section it sits in (\"Get Clients\"). For a page about one item, say what it is, e.g. \"One campaign\".",
+        "The name of THIS page: its tab name or heading, e.g. \"Calls\", not the section it sits in (\"Win Clients\"). For a page about one item, say what it is, e.g. \"One campaign\".",
     },
     where: {
       type: "string",
-      description: "How a coach gets there, using the sidebar and tab names, e.g. \"Get Clients → Campaigns\".",
+      description: "How a coach gets there, using the sidebar and tab names, e.g. \"Get Calls → Campaigns\".",
     },
     summary: { type: "string", description: "One plain sentence: what the coach does here." },
     tabs: {
       type: "array",
       description:
-        "Tabs inside this page, in screen order. Leave out the shared row of section tabs (e.g. the Get Clients tabs Campaigns, Conversations, Calls…), which link to other pages. path = the link that opens that tab, if the code shows one (e.g. /coach/campaigns?tab=pool), else null.",
+        "Tabs inside this page, in screen order. Leave out the shared row of section tabs (e.g. the Get Calls tabs Lead Lists, Campaigns, Conversations… or the Win Clients tabs Calls, Pipeline, Scripts…), which link to other pages. path = the link that opens that tab, if the code shows one (e.g. /coach/campaigns?tab=pool), else null.",
       items: {
         type: "object",
         additionalProperties: false,

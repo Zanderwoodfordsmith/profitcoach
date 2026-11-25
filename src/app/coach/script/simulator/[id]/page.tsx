@@ -10,7 +10,7 @@ export default function CallSimulatorReportPage({ params }: { params: Promise<{ 
   const { id } = use(params);
   return (
     <div className="flex flex-col">
-      <StickyPageHeader title="Get Clients" tabs={<CoachToolsHubTabs hub="get-clients" />} />
+      <StickyPageHeader title="Win Clients" tabs={<CoachToolsHubTabs hub="get-clients" />} />
       <CallSimReport id={id} />
     </div>
   );

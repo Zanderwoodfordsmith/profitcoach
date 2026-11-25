@@ -1154,7 +1154,7 @@ export function SalesCallWorkspace() {
 
   return (
     // Flush against the app sidebar, the way My Blueprint is: a tinted rail, the white script, a tinted notes panel.
-    <div className="-mx-4 -mb-6 flex min-h-[calc(100dvh-57px)] flex-col md:-mx-[60px] lg:flex-row lg:items-stretch">
+    <div className="-mx-4 -mb-6 flex min-h-[calc(100dvh-57px)] flex-col md:-mx-8 lg:flex-row lg:items-stretch">
       {/* The call, phase by phase */}
       <nav
         aria-label="Call phases"

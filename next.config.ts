@@ -72,6 +72,8 @@ const nextConfig: NextConfig = {
       "./content/practice-skills/**/*",
     ],
     "/api/coach/sales-call/**": ["./content/agent/references/**/*"],
+    // Newsletter covers: fonts and backgrounds read at render time.
+    "/api/coach/newsletter/cover/**": ["./src/lib/newsletterCover/assets/**/*"],
   },
   // Routes that read files by a runtime path (Ava, practice flow) make tracing pull in the whole
   // project, videos included, which takes functions over Vercel's 250 MB limit. No server code

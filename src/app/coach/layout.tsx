@@ -231,7 +231,7 @@ export default function CoachLayout({
   const chromeEnabled = !playbooksReader && !isMinimalWorkshopChrome;
   /** How the title bar (and the setup strip above it) reaches the edges of main on pages without main's padding. */
   const chromeBleed = membershipPage
-    ? "px-4 md:px-[60px]"
+    ? "px-4 md:px-8"
     : edgeToEdgeInbox || blueprintPage
       ? "px-4 md:px-6"
       : undefined;
@@ -318,14 +318,14 @@ export default function CoachLayout({
             edgeToEdgeInbox
               ? "h-dvh overflow-hidden px-0 pb-0 max-md:pb-[calc(3.5rem+env(safe-area-inset-bottom))]"
               : prospectsListPage || campaignsListPage
-              ? "h-dvh overflow-hidden px-4 md:px-[60px] pb-3 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+              ? "h-dvh overflow-hidden px-4 md:px-8 pb-3 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
               : membershipPage
               ? "min-h-screen px-0 pb-0"
               : playbooksReader
               ? "min-h-screen px-0 pb-10"
               : blueprintPage
               ? "h-dvh overflow-hidden px-0 pb-0 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
-              : "min-h-screen px-4 md:px-[60px] pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
+              : "min-h-screen px-4 md:px-8 pb-6 max-md:pb-[calc(5.5rem+env(safe-area-inset-bottom))]"
           }`}
         >
           <div
@@ -343,7 +343,7 @@ export default function CoachLayout({
               <CoachSetupBar
                 key={impersonatingCoachId ?? "self"}
                 coachId={impersonatingCoachId}
-                bleedInset={chromeBleed ?? "-mx-4 px-4 md:-mx-[60px] md:px-[60px]"}
+                bleedInset={chromeBleed ?? "-mx-4 px-4 md:-mx-8 md:px-8"}
                 // The column's gap-4 would push the title bar away from the strip.
                 flushBelow={!fullHeightPage && !isSignaturePage && !playbooksReader}
               />

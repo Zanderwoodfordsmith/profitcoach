@@ -89,7 +89,7 @@ export function PoolPersonOpenGate() {
       header={
         <StickyPageHeader
           className="shrink-0"
-          title="Get Clients"
+          title="Get Calls"
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />
       }

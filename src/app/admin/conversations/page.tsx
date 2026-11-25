@@ -19,7 +19,7 @@ export default function AdminConversationsPage() {
         <StickyPageHeader
           bleedInset="px-4 md:px-6"
           className="shrink-0"
-          title="Get Clients"
+          title="Get Calls"
           description="Inbox for LinkedIn, WhatsApp, email and booked-call messages. Sync pulls new threads from connected channels."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />

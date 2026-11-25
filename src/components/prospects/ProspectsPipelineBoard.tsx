@@ -333,7 +333,7 @@ export function ProspectsPipelineBoard({
       {loading && prospects.length === 0 ? (
         <p className="text-sm text-slate-500">Loading pipeline…</p>
       ) : (
-        <div className="-mr-4 min-h-0 min-w-0 flex-1 overflow-x-auto overscroll-x-contain pb-2 md:-mr-[60px]">
+        <div className="-mr-4 min-h-0 min-w-0 flex-1 overflow-x-auto overscroll-x-contain pb-2 md:-mr-8">
           <div className="flex h-full w-max gap-3 pr-4">
           {columns.map((col) =>
             col.collapsible && layout.collapsedIds.includes(col.id) ? (

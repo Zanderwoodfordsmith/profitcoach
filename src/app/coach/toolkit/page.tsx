@@ -13,7 +13,7 @@ export default function CoachToolkitPage() {
       contentMaxWidthClass="max-w-7xl"
       header={
         <StickyPageHeader
-          title="Get Clients"
+          title="Get Calls"
           description="The 90-day brochure from your Blueprint, plus posts, banners and print files with your name and QR code."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />

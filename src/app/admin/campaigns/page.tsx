@@ -18,7 +18,7 @@ export default function AdminCampaignsPage() {
       header={
         <StickyPageHeader
           className="shrink-0"
-          title="Get Clients"
+          title="Get Calls"
           description="Outreach campaigns and the lead magnets they send people to."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />

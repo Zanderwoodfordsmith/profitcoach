@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import {
@@ -17,7 +17,8 @@ import {
 } from "@/lib/leadLists/audienceLists";
 import { syncPersonAcrossLists } from "@/lib/leadLists/syncPersonAcrossLists";
 import { asFitLabel } from "@/lib/pool/fit";
-import { CHECK_FIT_MAX, checkPeopleFit, setPeopleFit } from "@/lib/pool/fitCheck";
+import { CHECK_FIT_MAX, checkPeopleFit, rerateListFit, setPeopleFit } from "@/lib/pool/fitCheck";
+import { asFitBefore, asFitCall, makeFitCall, setFitReason, undoFitCall } from "@/lib/pool/fitCalls";
 import {
   MAX_PROSPECT_TAGS,
   normalizeProspectTags,
@@ -26,7 +27,8 @@ import {
 type Ctx = { params: Promise<{ id: string }> };
 
 /** Ava's check can label up to 200 people in one go. */
-export const maxDuration = 120;
+export const maxDuration = 300;
+// Check fit's re-sort (job 285) runs after the reply and can take a few minutes for a big list.
 
 function parseItemIds(
   raw: unknown,
@@ -85,7 +87,47 @@ export async function POST(request: Request, ctx: Ctx) {
     target_list_id?: unknown;
     name?: unknown;
     fit?: unknown;
+    item_id?: unknown;
+    call?: unknown;
+    reason?: unknown;
+    before?: unknown;
   };
+
+  // Check fit (job 285): one call at a time, its reason, Undo, then Ava re-sorts the rest.
+  if (body.action === "fit_call" || body.action === "fit_reason" || body.action === "fit_undo") {
+    const itemId = typeof body.item_id === "string" && isLeadListUuid(body.item_id) ? body.item_id : null;
+    const call = asFitCall(body.call);
+    if (!itemId || (body.action !== "fit_reason" && !call)) {
+      return NextResponse.json({ error: "Pick a person and a call." }, { status: 400 });
+    }
+    try {
+      if (body.action === "fit_call") {
+        const result = await makeFitCall(auth.userId, itemId, call!, body.reason);
+        return NextResponse.json({ ok: true, ...result });
+      }
+      if (body.action === "fit_reason") {
+        await setFitReason(auth.userId, itemId, body.reason);
+        return NextResponse.json({ ok: true });
+      }
+      const before = asFitBefore(body.before);
+      if (!before) return NextResponse.json({ error: "Nothing to undo." }, { status: 400 });
+      await undoFitCall(auth.userId, itemId, call!, before);
+      return NextResponse.json({ ok: true });
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : "Could not save that." },
+        { status: 500 }
+      );
+    }
+  }
+
+  if (body.action === "fit_rerate") {
+    const coachId = auth.userId;
+    after(async () => {
+      await rerateListFit(coachId, id).catch((err) => console.error("[fit_rerate]", err));
+    });
+    return NextResponse.json({ ok: true, started: true });
+  }
 
   // Fit (job 278): the coach or BCA sets Good, OK or Bad (or clears it), or asks Ava to check.
   if (body.action === "set_fit") {

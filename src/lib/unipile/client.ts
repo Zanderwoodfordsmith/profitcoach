@@ -270,6 +270,7 @@ export async function createHostedAuthLink(input: {
   bypass_success_screen?: boolean;
   google_scopes?: string;
   microsoft_scopes?: string;
+  instagram?: { allow_methods: string[] };
 }) {
   const body: Record<string, unknown> = {
     type: input.type,
@@ -290,6 +291,7 @@ export async function createHostedAuthLink(input: {
     body.bypass_success_screen = input.bypass_success_screen;
   if (input.google_scopes) body.google_scopes = input.google_scopes;
   if (input.microsoft_scopes) body.microsoft_scopes = input.microsoft_scopes;
+  if (input.instagram) body.instagram = input.instagram;
 
   return unipileFetch<{ object: string; url: string }>(
     "POST",

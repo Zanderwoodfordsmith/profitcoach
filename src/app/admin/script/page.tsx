@@ -10,7 +10,7 @@ export default function AdminScriptsPage() {
   return (
     <div className="flex flex-col">
       <StickyPageHeader
-        title="Get Clients"
+        title="Win Clients"
         description="Every script for your conversations with owners, from first contact to the close."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />

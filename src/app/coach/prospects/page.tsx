@@ -22,7 +22,7 @@ export default function CoachProspectsPage() {
         <StickyPageHeader
           className="shrink-0"
           rootRef={page.pageHeaderRef}
-          title="Get Clients"
+          title="Win Clients"
           description="Add prospects and share your assessment link, or view those who have completed assessments."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />

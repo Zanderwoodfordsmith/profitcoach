@@ -141,15 +141,16 @@ export function CoachSetupBar({
     "inline-flex shrink-0 items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1 font-medium text-white hover:bg-sky-700 disabled:opacity-60";
 
   return (
-    <div className={`flex shrink-0 items-center gap-3 border-b border-sky-200 bg-sky-50 py-1.5 text-sm text-sky-950 max-md:flex-wrap ${bleedInset} ${flushBelow ? "-mb-4" : ""}`}>
+    <div className={`relative flex shrink-0 items-center gap-3 border-b border-sky-200 bg-sky-50 py-1.5 text-sm text-sky-950 max-md:flex-wrap max-md:items-start max-md:gap-y-2.5 max-md:py-3 ${bleedInset} ${flushBelow ? "-mb-4" : ""}`}>
       {aboutYou ? (
-        <UserRound className="h-4 w-4 shrink-0 text-sky-700" aria-hidden />
+        <UserRound className="h-4 w-4 shrink-0 text-sky-700 max-md:mt-0.5" aria-hidden />
       ) : (
-        <LinkedInSolidIcon className="h-4 w-4" />
+        <LinkedInSolidIcon className="h-4 w-4 max-md:mt-0.5" />
       )}
-      <p className="min-w-0 flex-1">
+      <p className="min-w-0 flex-1 max-md:basis-[calc(100%-1.75rem)] max-md:pr-7">
         {error ?? (opened ? "Once Sales Navigator is on your LinkedIn, check again here." : copy.text)}
       </p>
+      <div className="flex shrink-0 items-center gap-3 max-md:basis-full max-md:pl-7">
       {opened ? (
         <button
           type="button"
@@ -183,11 +184,12 @@ export function CoachSetupBar({
           {copy.button}
         </button>
       )}
+      </div>
       <button
         type="button"
         onClick={close}
         aria-label="Hide for now"
-        className="shrink-0 rounded-md p-1 text-sky-700 hover:bg-sky-100 hover:text-sky-900"
+        className="shrink-0 rounded-md p-1 text-sky-700 hover:bg-sky-100 hover:text-sky-900 max-md:absolute max-md:right-2 max-md:top-2"
       >
         <X className="h-4 w-4" />
       </button>

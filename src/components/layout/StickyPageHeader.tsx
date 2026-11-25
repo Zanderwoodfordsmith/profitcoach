@@ -60,8 +60,8 @@ export function StickyPageHeader({
   below,
   actions,
   className,
-  // 60px = main px.
-  bleedInset = "-mx-4 px-4 md:-mx-[60px] md:px-[60px]",
+  // 32px (md:px-8) = main px.
+  bleedInset = "-mx-4 px-4 md:-mx-8 md:px-8",
   rootRef,
   nowrap = true,
   showChrome,

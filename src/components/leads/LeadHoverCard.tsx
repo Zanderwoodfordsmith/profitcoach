@@ -28,6 +28,8 @@ export type LeadHoverPerson = {
   linkedinUrl: string | null;
   /** LinkedIn company id, when the row has it (saves finding it from the cache). */
   companyId?: string | null;
+  /** The company's own site, for a description when it has no LinkedIn page. */
+  website?: string | null;
   role?: string | null;
   company?: string | null;
   headline?: string | null;
@@ -115,6 +117,7 @@ export function LeadCompanySection({
       <div className="mt-1">
         <Facts facts={facts} />
       </div>
+      {company?.summary ? <p className="mt-2 text-sm font-medium text-slate-900">{company.summary}</p> : null}
       {company?.description ? (
         <p className="mt-2 line-clamp-5 whitespace-pre-line text-ui leading-relaxed text-slate-700">{company.description}</p>
       ) : loading ? (
@@ -323,6 +326,8 @@ export function leadCardLoader(headers: () => Promise<Record<string, string> | n
     const qs = new URLSearchParams();
     if (person.linkedinUrl) qs.set("url", person.linkedinUrl);
     if (person.companyId) qs.set("company", person.companyId);
+    if (person.website) qs.set("website", person.website);
+    if (person.company) qs.set("name", person.company);
     const res = await fetch(`/api/coach/lead-card?${qs.toString()}`, { headers: (await headers()) ?? {} });
     if (!res.ok) return null;
     const body = (await res.json().catch(() => null)) as { card?: LeadCard } | null;

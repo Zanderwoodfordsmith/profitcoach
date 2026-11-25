@@ -442,6 +442,15 @@ function inboxAgeBand(iso: string, now = new Date()): string {
 }
 
 const WAITING_ON_REPLY_BAND = "Needs coach";
+const IN_PROGRESS_BAND = "In progress";
+
+/** Open list order: needs our reply (by age), then In progress, then Needs coach. */
+function openListRank(
+  row: Pick<AdminTicketRow, "status" | "lastUnrepliedMemberAt" | "lastActivityAt" | "reopened_at" | "nothingToAnswer">
+): number {
+  if (!ticketNeedsStaffReply(row)) return 2;
+  return row.status === "in_progress" ? 1 : 0;
+}
 
 /**
  * Open filter sections:
@@ -478,8 +487,10 @@ function inboxListBand(
   >,
   statusFilter: SupportStatusFilter
 ): string {
-  if (statusFilter === "open" && !ticketNeedsStaffReply(row)) {
-    return WAITING_ON_REPLY_BAND;
+  if (statusFilter === "open") {
+    const rank = openListRank(row);
+    if (rank === 2) return WAITING_ON_REPLY_BAND;
+    if (rank === 1) return IN_PROGRESS_BAND;
   }
   const at =
     statusFilter === "open"
@@ -493,8 +504,9 @@ function personListBand(
   statusFilter: SupportStatusFilter
 ): string {
   if (statusFilter === "open") {
-    const needsReply = group.tickets.some((t) => ticketNeedsStaffReply(t));
-    if (!needsReply) return WAITING_ON_REPLY_BAND;
+    const rank = Math.min(...group.tickets.map(openListRank));
+    if (rank === 2) return WAITING_ON_REPLY_BAND;
+    if (rank === 1) return IN_PROGRESS_BAND;
   }
   return inboxAgeBand(group.latestAt);
 }
@@ -617,25 +629,40 @@ async function loadTicketReplyActivity(
   return byTicket;
 }
 
-function WaitingSectionHeader({
+/** Foldable status group in the Open list: In progress (light blue) or Needs coach (grey). */
+function StatusSectionHeader({
+  band,
   count,
   open,
   onToggle,
 }: {
+  band: string;
   count: number;
   open: boolean;
   onToggle: () => void;
 }) {
+  const inProgress = band === IN_PROGRESS_BAND;
   return (
-    <li className="sticky top-0 z-[1] bg-slate-100 px-3.5 py-1.5">
+    <li
+      className={`sticky top-0 z-[1] px-3.5 py-1.5 ${
+        inProgress ? "bg-sky-50" : "bg-slate-100"
+      }`}
+    >
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="flex w-full items-center gap-1.5 text-left text-slate-500"
+        className={`flex w-full items-center gap-1.5 text-left ${
+          inProgress ? "text-[#0c5290]" : "text-slate-500"
+        }`}
       >
+        <JobStatusCircle
+          status={inProgress ? "in_progress" : "needs_you"}
+          audience="admin"
+          className="h-3 w-3 shrink-0"
+        />
         <span className="min-w-0 truncate text-kicker font-semibold uppercase ">
-          {WAITING_ON_REPLY_BAND}
+          {band}
         </span>
         <span className="text-caption font-semibold tabular-nums tracking-wide">
           {count}
@@ -727,6 +754,7 @@ export function AdminSupportPage() {
     {}
   );
   const [waitingSectionOpen, setWaitingSectionOpen] = useState(true);
+  const [inProgressSectionOpen, setInProgressSectionOpen] = useState(true);
   /** report_id → user ids @mentioned in any internal note */
   const [mentionsByTicket, setMentionsByTicket] = useState<
     Record<string, string[]>
@@ -1043,9 +1071,11 @@ export function AdminSupportPage() {
     if (statusFilter !== "open") return next;
 
     return [...next].sort((a, b) => {
-      const aWaiting = ticketNeedsStaffReply(a) ? 0 : 1;
-      const bWaiting = ticketNeedsStaffReply(b) ? 0 : 1;
-      if (aWaiting !== bWaiting) return aWaiting - bWaiting;
+      const aRank = openListRank(a);
+      const bRank = openListRank(b);
+      if (aRank !== bRank) return aRank - bRank;
+      const aWaiting = aRank === 2;
+      const bWaiting = bRank === 2;
       const aAt = aWaiting
         ? a.lastActivityAt || a.created_at
         : a.lastUnrepliedMemberAt || a.created_at;
@@ -1099,9 +1129,9 @@ export function AdminSupportPage() {
     }
     return Array.from(map.values()).sort((a, b) => {
       if (statusFilter === "open") {
-        const aNeeds = a.tickets.some((t) => ticketNeedsStaffReply(t));
-        const bNeeds = b.tickets.some((t) => ticketNeedsStaffReply(t));
-        if (aNeeds !== bNeeds) return aNeeds ? -1 : 1;
+        const aRank = Math.min(...a.tickets.map(openListRank));
+        const bRank = Math.min(...b.tickets.map(openListRank));
+        if (aRank !== bRank) return aRank - bRank;
       }
       return a.latestAt < b.latestAt ? 1 : -1;
     });
@@ -1252,6 +1282,18 @@ export function AdminSupportPage() {
     if (statusFilter !== "open") return 0;
     return personGroups.filter(
       (group) => !group.tickets.some((ticket) => ticketNeedsStaffReply(ticket))
+    ).length;
+  }, [personGroups, statusFilter]);
+
+  const inProgressTicketCount = useMemo(() => {
+    if (statusFilter !== "open") return 0;
+    return listTickets.filter((row) => openListRank(row) === 1).length;
+  }, [listTickets, statusFilter]);
+
+  const inProgressPersonCount = useMemo(() => {
+    if (statusFilter !== "open") return 0;
+    return personGroups.filter(
+      (group) => Math.min(...group.tickets.map(openListRank)) === 1
     ).length;
   }, [personGroups, statusFilter]);
 
@@ -2121,7 +2163,7 @@ export function AdminSupportPage() {
       contentClassName={
         topTab === "settings"
           ? // Inbox shell is overflow-hidden; settings must scroll inside it.
-            "!mx-0 mr-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 md:px-[60px]"
+            "!mx-0 mr-auto min-h-0 w-full flex-1 overflow-y-auto overscroll-contain px-4 pb-8 pt-6 md:px-8"
           : topTab === "help"
             ? // Topic and answer pages bring their own topic sidebar, flush against the app sidebar.
               searchParams.get("topic") || searchParams.get("a")
@@ -2297,18 +2339,25 @@ export function AdminSupportPage() {
                           : null;
                       const showBandHeader = ageBand !== prevBand;
                       const isWaiting = ageBand === WAITING_ON_REPLY_BAND;
-                      if (isWaiting && !waitingSectionOpen && !showBandHeader) {
+                      const isInProgress = ageBand === IN_PROGRESS_BAND;
+                      const folded =
+                        (isWaiting && !waitingSectionOpen) ||
+                        (isInProgress && !inProgressSectionOpen);
+                      if (folded && !showBandHeader) {
                         return null;
                       }
                       return (
                         <Fragment key={group.key}>
                           {showBandHeader ? (
-                            isWaiting ? (
-                              <WaitingSectionHeader
-                                count={waitingPersonCount}
-                                open={waitingSectionOpen}
+                            isWaiting || isInProgress ? (
+                              <StatusSectionHeader
+                                band={ageBand}
+                                count={isWaiting ? waitingPersonCount : inProgressPersonCount}
+                                open={isWaiting ? waitingSectionOpen : inProgressSectionOpen}
                                 onToggle={() =>
-                                  setWaitingSectionOpen((open) => !open)
+                                  isWaiting
+                                    ? setWaitingSectionOpen((open) => !open)
+                                    : setInProgressSectionOpen((open) => !open)
                                 }
                               />
                             ) : (
@@ -2319,7 +2368,7 @@ export function AdminSupportPage() {
                               </li>
                             )
                           ) : null}
-                          {isWaiting && !waitingSectionOpen ? null : (
+                          {folded ? null : (
                           <li className={isWaiting ? "bg-slate-50 px-2 py-0.5" : "px-2 py-0.5"}>
                             <button
                               type="button"
@@ -2413,18 +2462,25 @@ export function AdminSupportPage() {
                             ? row.lastUnrepliedMemberAt || row.created_at
                             : row.lastActivityAt || row.created_at
                           : row.created_at;
-                      if (isWaiting && !waitingSectionOpen && !showBandHeader) {
+                      const isInProgress = ageBand === IN_PROGRESS_BAND;
+                      const folded =
+                        (isWaiting && !waitingSectionOpen) ||
+                        (isInProgress && !inProgressSectionOpen);
+                      if (folded && !showBandHeader) {
                         return null;
                       }
                       return (
                         <Fragment key={row.id}>
                           {showBandHeader ? (
-                            isWaiting ? (
-                              <WaitingSectionHeader
-                                count={waitingTicketCount}
-                                open={waitingSectionOpen}
+                            isWaiting || isInProgress ? (
+                              <StatusSectionHeader
+                                band={ageBand}
+                                count={isWaiting ? waitingTicketCount : inProgressTicketCount}
+                                open={isWaiting ? waitingSectionOpen : inProgressSectionOpen}
                                 onToggle={() =>
-                                  setWaitingSectionOpen((open) => !open)
+                                  isWaiting
+                                    ? setWaitingSectionOpen((open) => !open)
+                                    : setInProgressSectionOpen((open) => !open)
                                 }
                               />
                             ) : (
@@ -2435,7 +2491,7 @@ export function AdminSupportPage() {
                               </li>
                             )
                           ) : null}
-                          {isWaiting && !waitingSectionOpen ? null : (
+                          {folded ? null : (
                           <li
                             className={
                               isWaiting ? "bg-slate-50 px-2 py-0.5" : "px-2 py-0.5"

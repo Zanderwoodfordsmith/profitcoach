@@ -35,7 +35,7 @@ Facts the support copilot can use. Keep each answer to one line. Update this whe
 ## BOSS Scorecard
 
 - BOSS stands for Business Operating System Score. The BOSS Score is the short one (10 questions plus 3); BOSS Pro is the 50-question one.
-- Where completed scorecards show: Get Clients → Prospects, open the person, BOSS Score.
+- Where completed scorecards show: Win Clients → Pipeline, open the person, BOSS Score.
 - Email alert when a prospect completes the scorecard: say it is coming if NOTES confirm it, otherwise say it is logged.
 - Nurture email placeholders blank: their CRM profile is missing the value (for example a booking link). Staff can check which field.
 

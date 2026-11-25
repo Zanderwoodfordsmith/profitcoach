@@ -379,7 +379,8 @@ export type DecisionRecordPayload = {
 export type BlueprintBlock =
   | { type: "lede"; text: string }
   | { type: "paragraph"; text: string }
-  | { type: "heading"; text: string }
+  /** level 3 is a subheading (newsletters); a heading has no level. */
+  | { type: "heading"; text: string; level?: 3 }
   | { type: "bullets"; items: string[] }
   | { type: "numbered"; items: string[] }
   | { type: "quote"; text: string; cite?: string }
@@ -389,7 +390,9 @@ export type BlueprintBlock =
   | { type: "message"; label: string; body: string; note?: string }
   | { type: "callout"; tone: "tip" | "warning" | "note"; title?: string; text: string }
   | { type: "steps"; items: { title: string; detail: string }[] }
-  | { type: "timeline"; items: { when: string; title: string; detail?: string }[] };
+  | { type: "timeline"; items: { when: string; title: string; detail?: string }[] }
+  /** A picture the coach added (newsletters). `cover` marks the newsletter's cover photo. */
+  | { type: "image"; url: string; alt?: string; cover?: boolean; href?: string };
 
 export type BuiltSection = {
   blocks: BlueprintBlock[];
@@ -399,7 +402,13 @@ export type BuiltSection = {
   edited_at?: string | null;
   /** The version before Ava's last change, so she can put it back. replaced_at is that change's edited_at. */
   previous?: (Omit<BuiltSection, "previous"> & { replaced_at: string }) | null;
+  /** A newsletter issue the coach marked scheduled or published on LinkedIn (none = draft). `at` is when. */
+  publish?: NewsletterPublish | null;
+  /** Where a newsletter draft sits in the coach's queue (Newsletter tab, drag to reorder). None goes last. */
+  position?: number | null;
 };
+
+export type NewsletterPublish = { status: "scheduled" | "published"; at: string | null };
 
 export type PracticeKnowledgeRow = {
   coach_id: string;

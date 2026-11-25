@@ -533,7 +533,7 @@ export function PracticeShell({
       className={`bp-doc app-canvas-bg print:bg-white ${
         embedded
           ? "flex h-full min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-none [contain:paint] lg:flex-row lg:items-stretch lg:overflow-hidden"
-          : "-mx-4 -mt-4 -mb-6 flex min-h-[calc(100dvh-3.5rem)] flex-col md:-mx-[60px] lg:flex-row lg:items-stretch"
+          : "-mx-4 -mt-4 -mb-6 flex min-h-[calc(100dvh-3.5rem)] flex-col md:-mx-8 lg:flex-row lg:items-stretch"
       }`}
       style={{ "--practice-nav-w": `${navWidth}px` } as CSSProperties}
     >

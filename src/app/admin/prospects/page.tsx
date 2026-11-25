@@ -38,7 +38,7 @@ export default function AdminProspectsPage() {
         <StickyPageHeader
           className="shrink-0"
           rootRef={page.pageHeaderRef}
-          title="Get Clients"
+          title="Win Clients"
           description="View prospects by coach, filter, and add prospects directly from the admin area."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />

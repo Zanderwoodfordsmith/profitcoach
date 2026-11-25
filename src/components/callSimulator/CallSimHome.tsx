@@ -267,7 +267,7 @@ export function CallSimHome() {
         </div>
       </section>
 
-      <div className="mx-auto mt-10 w-full max-w-[1280px] px-1">
+      <div className="mx-auto mt-10 w-full max-w-[1280px]">
         <History sessions={data?.sessions ?? null} prefix={prefix} />
       </div>
 

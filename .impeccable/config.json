@@ -316,6 +316,24 @@
         ],
         "createdAt": "2026-11-21T07:54:28.745Z",
         "reason": "Claude, 21 Nov: one ternary holds both states; the grey text is the unselected option with no background, the selected one is white on sky-600"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/table/TablePaginationFooter.tsx"
+        ],
+        "createdAt": "2026-11-25T05:22:02.522Z",
+        "reason": "Claude: slate-600 text on slate-100 hover is neutral grey on grey, copied verbatim from the Pool pagination footer"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/admin/linkedin/CoverMaker.tsx"
+        ],
+        "createdAt": "2026-11-25T07:26:52.221Z",
+        "reason": "Claude triage: grey text only on the unselected state of toggle/chip buttons; the coloured bg-sky-600 state uses white text"
       }
     ]
   }

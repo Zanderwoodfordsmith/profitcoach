@@ -13,6 +13,7 @@ import {
   CircleHelp,
   CreditCard,
   Settings,
+  Search,
   Smartphone,
 } from "lucide-react";
 import {
@@ -20,8 +21,10 @@ import {
   adminSectionNavItems,
   coachClientsTabHrefs,
   coachToolsNavItems,
-  getClientsHubPaths,
+  getCallsHubPaths,
   isToolsHubPath,
+  isWinClientsPath,
+  winClientsHubPaths,
   isAcademyPath,
   mainNavItems,
   mobileNavShortLabel,
@@ -46,6 +49,7 @@ import { NavHoverHints } from "@/components/layout/NavHoverHints";
 import { loadCoachDirectory } from "@/lib/admin/coachDirectoryClient";
 import { profileInitialsFromName } from "@/lib/communityProfile";
 import { prefetchGetClientsHref } from "@/lib/getClients/hubFetchers";
+import { openSearchOverlay } from "@/lib/search/overlay";
 import {
   getClientsHubHomeHref,
   readGetClientsLastTabHref,
@@ -304,11 +308,19 @@ export function DashboardSidebar({
   const mainItems = mainNavItems(prefix);
   const mobileTabs = mobileTabNavItems(prefix);
   const toolsNavItems = coachToolsNavItems(prefix);
-  const getClientsHrefs = getClientsHubPaths(prefix);
+  const getClientsHrefs = getCallsHubPaths(prefix);
+  const winClientsHrefs = winClientsHubPaths(prefix);
   const coachClientsHrefs = coachClientsTabHrefs(prefix);
+  // One remembered tab serves Get Calls and Win Clients: each link uses it only when it's theirs.
+  const lastTabIsWin = isWinClientsPath(getClientsHref);
 
   const resolveToolsHref = (item: DashboardNavItem) => {
-    if (item.toolsHub === "get-clients") return getClientsHref;
+    if (item.toolsHub === "get-clients") {
+      return lastTabIsWin ? getClientsHubHomeHref(prefix) : getClientsHref;
+    }
+    if (item.toolsHub === "win-clients") {
+      return lastTabIsWin ? getClientsHref : `${prefix}/calls`;
+    }
     if (item.toolsHub === "coach-clients") return keepClientsHref;
     if (item.toolsHub === "blueprint") return blueprintHref;
     return item.href;
@@ -317,6 +329,9 @@ export function DashboardSidebar({
   const isToolsNavActive = (item: DashboardNavItem) => {
     if (item.toolsHub === "get-clients") {
       return isToolsHubPath(pathname, getClientsHrefs);
+    }
+    if (item.toolsHub === "win-clients") {
+      return isToolsHubPath(pathname, winClientsHrefs);
     }
     if (item.toolsHub === "coach-clients") {
       return isToolsHubPath(pathname, coachClientsHrefs);
@@ -519,7 +534,10 @@ export function DashboardSidebar({
                     data-hint-description={item.description}
                       onClick={() => markPending(href)}
                       onMouseEnter={() => {
-                        if (item.toolsHub === "get-clients") {
+                        if (
+                          item.toolsHub === "get-clients" ||
+                          item.toolsHub === "win-clients"
+                        ) {
                           prefetchGetClientsHref(href);
                         }
                       }}
@@ -777,12 +795,13 @@ export function DashboardSidebar({
         placement="right"
       />
 
-      {/* Phone: Academy and Blueprint, Ava raised in the middle, Get and Keep Clients. */}
+      {/* Phone: Academy and Blueprint, Ava raised in the middle, Get Calls and Win Clients. Keep Clients is in the photo sheet. */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 border-t border-white/15 bg-[linear-gradient(165deg,#051e36_0%,#0c5290_48%,#1a8fd4_100%)] pb-[env(safe-area-inset-bottom)] text-white shadow-[0_-4px_24px_rgba(0,0,0,0.18)] md:hidden"
         aria-label="Main navigation"
       >
-        <div className="flex min-h-[3.5rem] items-stretch">
+        {/* Pulled in from the edges so the outer tabs clear curved phone corners. */}
+        <div className="flex min-h-[3.5rem] items-stretch pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))]">
           {mobileTabs.left.map((item) => renderMobileNavLink(item))}
           {showMobileAva && chrome ? (
             <button
@@ -889,6 +908,49 @@ export function DashboardSidebar({
                 )}
               </div>
             ) : null}
+            {/* Search and Keep Clients live here on phones: the bar holds two tabs each side of Ava. */}
+            <ul className="space-y-0.5 border-t border-white/15 px-4 py-3">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobileSheets();
+                    openSearchOverlay();
+                  }}
+                  className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left text-[0.9375rem] text-slate-100/90 hover:bg-white/10"
+                >
+                  <Search className="h-5 w-5 shrink-0 opacity-95" />
+                  <span className="min-w-0 flex-1">Search</span>
+                </button>
+              </li>
+              {mobileTabs.sheet.map((item) => {
+                const href = resolveToolsHref(item);
+                const Icon = item.icon;
+                const locked = navItemLocked(item.requiredFeature);
+                return (
+                  <li key={item.toolsHub ?? item.href}>
+                    <Link
+                      href={href}
+                      onClick={() => {
+                        markPending(href);
+                        closeMobileSheets();
+                      }}
+                      className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-[0.9375rem] ${
+                        isToolsNavActive(item)
+                          ? SIDEBAR_NAV_ACTIVE
+                          : "text-slate-100/90 hover:bg-white/10"
+                      }`}
+                    >
+                      <Icon className="h-5 w-5 shrink-0 opacity-95" />
+                      <span className="min-w-0 flex-1">{item.label}</span>
+                      {locked ? (
+                        <Lock className="h-3.5 w-3.5 shrink-0 text-sky-200/60" aria-label="Upgrade to unlock" />
+                      ) : null}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
             <div className="border-t border-white/15 px-4 py-3">
               {showJoinPremiumPromo ? (
                 <MembershipSidebarPromo

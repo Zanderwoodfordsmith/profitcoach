@@ -42,7 +42,8 @@ export function DashboardChromeActions({
           <AvaChatsVersionSwitch />
         </Suspense>
       ) : null}
-      <SearchTopBarTrigger className="shrink-0" />
+      {/* Phones open search from the photo sheet, which leaves room for the page tabs. */}
+      <SearchTopBarTrigger className="shrink-0 max-md:hidden" />
       <DashboardTopActions
         variant={chrome.variant}
         signingOut={chrome.signingOut}

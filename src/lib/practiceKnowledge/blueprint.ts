@@ -749,7 +749,7 @@ const GROUPS: BlueprintGroup[] = [
         href: "/coach/blueprint/campaigns",
         open: { href: "/coach/campaigns", label: "Open Campaigns" },
         heading: "Create a repeatable flow of conversations",
-        summary: "What to say to your avatar, from the first message to the booked call. Approve it here, then it runs in Get Clients.",
+        summary: "What to say to your avatar, from the first message to the booked call. Approve it here, then it runs in Get Calls.",
         short: "The messages that take owners to a booked call.",
         sections: [
           {
@@ -759,7 +759,7 @@ const GROUPS: BlueprintGroup[] = [
             source: "we_build",
             about: "For new owners from your list, 2nd and 3rd degree. A connection request with a short note, then five follow-ups over two weeks. The main way coaches get calls.",
             from: ["Pain points", "Commercial achievements", "Your voice"],
-            feeds: "Get Clients connection campaign",
+            feeds: "Get Calls connection campaign",
             needs: ["market:pains", "voice:sound"],
             uses: { fields: ["proof.career_results", "market.industries_credibility", "client.says", "client.words_avoid", ...VOICE_STYLE_PATHS], sources: ["library", "preread"] },
             link: { href: "/coach/campaigns", label: "Open your campaigns" },
@@ -770,7 +770,7 @@ const GROUPS: BlueprintGroup[] = [
             source: "we_build",
             about: "For people you're already connected with on LinkedIn but have never spoken to. Four short messages that start a chat and offer the free BOSS Score.",
             from: ["Pain points", "Commercial achievements", "Your voice"],
-            feeds: "Get Clients message campaign",
+            feeds: "Get Calls message campaign",
             needs: ["market:pains", "voice:sound"],
             uses: { fields: ["proof.career_results", "market.industries_credibility", "client.says", "client.words_avoid", ...VOICE_STYLE_PATHS], sources: ["library", "preread"] },
             link: { href: "/coach/campaigns", label: "Open your campaigns" },
@@ -781,7 +781,7 @@ const GROUPS: BlueprintGroup[] = [
             source: "we_build",
             about: "For people you already know: past colleagues, old contacts, and anyone who connected or replied before and went quiet. Up to three short messages that restart the conversation.",
             from: ["Experience", "Commercial achievements", "Short bio", "Your voice"],
-            feeds: "Get Clients reactivation campaign",
+            feeds: "Get Calls reactivation campaign",
             needs: ["story:bio", "voice:sound"],
             uses: { fields: ["market.roles_held", "market.industries_worked", "proof.career_results", "proof.superpowers", ...VOICE_STYLE_PATHS, "practice.voice_stories", "practice.voice_hobbies"], sources: ["linkedin"] },
             link: { href: "/coach/campaigns", label: "Open your campaigns" },
@@ -793,7 +793,7 @@ const GROUPS: BlueprintGroup[] = [
         title: "Content",
         href: "/coach/blueprint/content",
         heading: "Stay in front of your network between campaigns",
-        summary: "What your newsletter is called, who it is for and where it sends people, then your post pillars. The issues themselves live in Get Clients, under Content.",
+        summary: "What your newsletter is called, who it is for and where it sends people, then your post pillars. The issues themselves live in Get Calls, under Newsletter.",
         short: "Your newsletter, and what you post about.",
         sections: [
           {
@@ -802,7 +802,7 @@ const GROUPS: BlueprintGroup[] = [
             source: "from_you",
             layout: "inline",
             about: "The name, who it is for, what it promises, how often it goes out, and the call to action. Every issue uses these.",
-            link: { href: "/coach/linkedin?tab=newsletter", label: "Open your newsletter" },
+            link: { href: "/coach/newsletters", label: "Open your newsletter" },
             fields: [
               {
                 path: "practice.newsletter_cadence",

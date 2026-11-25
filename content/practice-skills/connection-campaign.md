@@ -78,4 +78,4 @@ One coach's test can't settle these: at about 1 interested reply per 100 request
 
 No Open Profile message: not written for now (Zander, 2 Nov 2026).
 
-A B version of the connection request is written only when asked for, under its own heading "Connection request B": the same rules, a different angle. Get Clients sends A and B to half the list each.
+A B version of the connection request is written only when asked for, under its own heading "Connection request B": the same rules, a different angle. The campaign sends A to half the list and B to the other half.

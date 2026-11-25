@@ -83,7 +83,7 @@ export function ResourcesShell({ children }: { children: ReactNode }) {
 
   return (
     <SearchTextProvider value={searchText}>
-      <div className="bp-doc app-canvas-bg -mx-4 -mb-6 -mt-6 flex min-h-[calc(100dvh-57px)] flex-col md:-mx-[60px] lg:flex-row lg:items-stretch print:m-0 print:bg-white">
+      <div className="bp-doc app-canvas-bg -mx-4 -mb-6 -mt-6 flex min-h-[calc(100dvh-57px)] flex-col md:-mx-8 lg:flex-row lg:items-stretch print:m-0 print:bg-white">
         <aside
           className={`rs-no-print relative shrink-0 border-b border-[var(--app-subnav-rule)] bg-[var(--app-subnav-bg)] lg:sticky lg:top-[57px] lg:h-[calc(100dvh-57px)] lg:self-start lg:border-b-0 lg:border-r ${
             navOpen ? "lg:w-[17.3rem]" : "lg:w-14"

@@ -931,7 +931,7 @@ export default function AdminCoachDetailPage({
         <div className="space-y-4">
           {/* Like a project in Linear (Zander, 21 Nov): one slim row under the top bar,
               "Coaches › Name" then the coach's tabs. The big name block shows on Overview only. */}
-          <div className="-mx-4 -mt-6 flex flex-wrap items-center gap-x-8 gap-y-1 border-b border-slate-200 bg-white px-4 md:-mx-[60px] md:px-[60px]">
+          <div className="-mx-4 -mt-6 flex flex-wrap items-center gap-x-8 gap-y-1 border-b border-slate-200 bg-white px-4 md:-mx-8 md:px-8">
             <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-1.5 py-2 text-sm">
               <Link href={back.href} title={`Back to ${back.label}`} className="shrink-0 font-medium text-slate-500 hover:text-slate-900">
                 Coaches

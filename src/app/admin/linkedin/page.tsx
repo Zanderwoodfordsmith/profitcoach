@@ -11,7 +11,7 @@ export default function AdminLinkedInPage() {
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
-        title="Get Clients"
+        title="Get Calls"
         description="Compose, schedule, and reuse LinkedIn content."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />

@@ -61,7 +61,7 @@ function StudioPageContent() {
   );
 
   const title = isAdmin
-    ? "Get Clients"
+    ? "Get Calls"
     : showHub
       ? "Create"
       : skillId

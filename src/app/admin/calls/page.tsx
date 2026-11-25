@@ -135,7 +135,7 @@ export default function AdminCallsPage() {
   return (
     <div className="flex flex-col gap-4">
       <StickyPageHeader
-        title="Get Clients"
+        title="Win Clients"
         description="Calendar is the working view; the call list and booking settings are still available."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />

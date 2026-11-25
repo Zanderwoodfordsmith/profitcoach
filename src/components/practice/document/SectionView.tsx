@@ -1491,9 +1491,9 @@ function SendToCampaigns({ sectionKey, name }: { sectionKey: string; name: strin
 
   return (
     <div className="bp-handoff bp-no-print mt-6 rounded-xl border border-[var(--bp-rule)] bg-white px-5 py-4">
-      <p className="text-[0.9375rem] font-semibold text-[var(--bp-ink)]">Happy with it? Send it to Get Clients</p>
+      <p className="text-[0.9375rem] font-semibold text-[var(--bp-ink)]">Happy with it? Send it to Get Calls</p>
       <p className="mt-1 text-sm leading-6 text-[var(--bp-muted)]">
-        Creates a draft campaign with these messages and timings. From then on, change it in Get Clients, not here.
+        Creates a draft campaign with these messages and timings. From then on, change it in Get Calls, not here.
         Nothing sends until prospects are added and the campaign is started.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">

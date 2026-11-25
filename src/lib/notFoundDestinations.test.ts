@@ -6,7 +6,7 @@ describe("bestGuessDestination", () => {
   const coach = destinationsForRole("coach");
 
   it("matches the most specific word in the path", () => {
-    assert.equal(bestGuessDestination("/coach/clients/scripts", coach)?.label, "Get Clients");
+    assert.equal(bestGuessDestination("/coach/clients/scripts", coach)?.label, "Win Clients");
     assert.equal(bestGuessDestination("/coach/blueprint/old-page", coach)?.label, "My Blueprint");
   });
 

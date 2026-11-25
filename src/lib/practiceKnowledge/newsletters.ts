@@ -61,3 +61,9 @@ export function newsletterTitle(blocks: BlueprintBlock[] | undefined, fallback: 
   }
   return fallback;
 }
+
+/** "Issue 2: Channels. …" reads as "Channels. …": the number only takes up room in a title. */
+export function withoutIssueNumber(title: string): string {
+  const stripped = title.replace(/^\s*issue\s*\d+\s*[:.\-–—]\s*/i, "").trim();
+  return stripped || title;
+}

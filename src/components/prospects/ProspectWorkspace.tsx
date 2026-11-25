@@ -145,7 +145,7 @@ export function ProspectWorkspace({ contactId }: Props) {
         <StickyPageHeader
           bleedInset="px-4 md:px-6"
           className="shrink-0"
-          title="Get Clients"
+          title="Win Clients"
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />
       }

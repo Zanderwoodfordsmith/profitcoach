@@ -12,6 +12,7 @@ export type GetClientsLastTabKey =
   | "prospects"
   | "script"
   | "content"
+  | "newsletters"
   | "links"
   | "toolkit"
   | "scoreboard";
@@ -23,6 +24,7 @@ export const GET_CLIENTS_LAST_TAB_KEYS: readonly GetClientsLastTabKey[] = [
   "prospects",
   "script",
   "content",
+  "newsletters",
   "links",
   "toolkit",
   "scoreboard",
@@ -32,7 +34,7 @@ const LAST_TAB_KEY_SET = new Set<string>(GET_CLIENTS_LAST_TAB_KEYS);
 
 export const GET_CLIENTS_LAST_TAB_STORAGE_PREFIX = "pc-get-clients-last-tab";
 
-/** Keep in sync with `getClientsTabItems` hrefs. */
+/** Keep in sync with the Get Calls and Win Clients tab hrefs (`getClientsTabItems`). */
 const TAB_HREF: Record<GetClientsLastTabKey, (prefix: HubPrefix) => string> = {
   campaigns: (prefix) => `${prefix}/campaigns`,
   conversations: (prefix) => `${prefix}/conversations`,
@@ -40,6 +42,7 @@ const TAB_HREF: Record<GetClientsLastTabKey, (prefix: HubPrefix) => string> = {
   prospects: (prefix) => `${prefix}/prospects`,
   script: (prefix) => `${prefix}/script`,
   content: (prefix) => `${prefix}/linkedin`,
+  newsletters: (prefix) => `${prefix}/newsletters`,
   links: (prefix) => `${prefix}/share`,
   toolkit: (prefix) => `${prefix}/toolkit`,
   scoreboard: (prefix) => `${prefix}/scoreboard`,

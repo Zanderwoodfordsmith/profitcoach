@@ -42,7 +42,7 @@ export default function AdminCampaignInvitesPage() {
       contentMaxWidthClass="max-w-6xl"
       header={
         <StickyPageHeader
-          title="Get Clients"
+          title="Get Calls"
           description="Withdraw pending LinkedIn connection requests, by hand or on a schedule."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />

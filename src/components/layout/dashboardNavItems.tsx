@@ -26,7 +26,7 @@ export type DashboardNavItem = {
   /** When set, item is hidden unless the coach has this feature. */
   requiredFeature?: CoachFeature;
   /** Tools hub: sidebar stays active across every tab in the hub. */
-  toolsHub?: "get-clients" | "coach-clients" | "blueprint";
+  toolsHub?: "get-clients" | "win-clients" | "coach-clients" | "blueprint";
 };
 
 export type AdminSectionNavItem = DashboardNavItem & {
@@ -135,19 +135,22 @@ export function filterNavItemsByFeatures(
 }
 
 /**
- * Phone bottom bar: two tabs each side of Ava. Settings and Log out sit on
- * the photo in the top bar; admin pages are in that sheet too.
+ * Phone bottom bar: two tabs each side of Ava. Keep Clients, Settings and
+ * Log out sit on the photo in the top bar; admin pages are in that sheet too.
+ * (25 Nov 2026: Get Clients split in two, so Keep Clients moved to the sheet.)
  */
 export function mobileTabNavItems(prefix: "/coach" | "/admin"): {
   left: DashboardNavItem[];
   right: DashboardNavItem[];
+  sheet: DashboardNavItem[];
 } {
   const tools = coachToolsNavItems(prefix);
   const hub = (key: DashboardNavItem["toolsHub"]) =>
     tools.filter((item) => item.toolsHub === key);
   return {
     left: [academyNavItem(prefix), ...hub("blueprint")],
-    right: [...hub("get-clients"), ...hub("coach-clients")],
+    right: [...hub("get-clients"), ...hub("win-clients")],
+    sheet: hub("coach-clients"),
   };
 }
 
@@ -248,11 +251,19 @@ export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
     ...blueprint,
     {
       href: `${prefix}/conversations`,
-      label: "Get Clients",
-      description: "Campaigns, conversations and sales calls",
+      label: "Get Calls",
+      description: "Campaigns, conversations and content that book calls",
       icon: IconUserPlus,
       requiredFeature: "nav.marketing",
       toolsHub: "get-clients",
+    },
+    {
+      href: `${prefix}/calls`,
+      label: "Win Clients",
+      description: "Your sales calls, pipeline and scripts",
+      icon: IconPhoneCall,
+      requiredFeature: "nav.marketing",
+      toolsHub: "win-clients",
     },
     {
       href: `${prefix}/clients`,
@@ -265,7 +276,7 @@ export function coachToolsNavItems(prefix: "/coach" | "/admin"): DashboardNavIte
   ];
 }
 
-/** Tabs inside the Get Clients hub (former Marketing links). */
+/** Every Get Calls and Win Clients tab link. */
 export function getClientsTabHrefs(prefix: "/coach" | "/admin"): string[] {
   return getClientsTabItems(prefix)
     .filter((item) => !item.iconOnly)
@@ -317,65 +328,14 @@ export type CoachClientsTabItem = {
 };
 
 /**
- * Get Clients peer tabs — Classroom Get Calls order:
- * Campaigns generate conversations, conversations book calls. Scripts sit
- * beside Calls, where they're used; Prospects is a list to look things up in.
- * Campaigns → Conversations → Calls → Scripts → Prospects → Content → Toolkit → Scoreboard
- * Create tools live in Profit Coach AI (fullscreen Create tab).
- *
- * Toolkit holds Links (`/share`, its first sub-tab, so it does not collide
- * with the admin page at `/admin/links`) and the brochure and graphics
- * (`/toolkit`). See {@link isGetClientsToolkitPath}.
+ * Every Get Calls and Win Clients tab, for things that list them all (warm-up,
+ * link pickers). The tab bars use {@link getCallsTabItems} and {@link winClientsTabItems}.
  */
 export function getClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem[] {
-  // Today is hidden from coaches while it's redesigned; admins find it under Tools and links.
-  const items: ToolsHubTabItem[] = [
-    {
-      href: `${prefix}/campaigns`,
-      label: "Campaigns",
-      description: "LinkedIn campaigns that start conversations",
-    },
-    {
-      href: `${prefix}/conversations`,
-      label: "Conversations",
-      description: "Your messages from LinkedIn, WhatsApp and email",
-    },
-    {
-      href: `${prefix}/calls`,
-      label: "Calls",
-      description: "Sales calls booked in your calendar",
-    },
-    {
-      href: `${prefix}/script`,
-      label: "Scripts",
-      description: "Every script for your calls with owners",
-    },
-    {
-      href: `${prefix}/prospects`,
-      label: "Prospects",
-      description: "People you've added or who took your BOSS Score",
-    },
-  ];
-  items.push({
-    href: prefix === "/admin" ? "/admin/linkedin" : "/coach/linkedin",
-    label: "Content",
-    description: "Plan and write your LinkedIn posts",
-  });
-  items.push({
-    href: `${prefix}/share`,
-    label: "Toolkit",
-    description: "Your links, brochure and ready-made graphics",
-  });
-  // Last, not first (Zander, 5 Nov 2026): it's an example to plan with, not their own numbers yet.
-  items.push({
-    href: `${prefix}/scoreboard`,
-    label: "Scoreboard",
-    description: "Plan your numbers against an income target",
-  });
-  return items;
+  return [...getCallsTabItems(prefix), ...winClientsTabItems(prefix)];
 }
 
-/** Paths that belong to Get Clients (tabs + Create / Content satellites). */
+/** Paths that belong to Get Calls or Win Clients (tabs + Create / Content satellites). */
 export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
   const paths = [
     ...getClientsTabHrefs(prefix),
@@ -402,6 +362,108 @@ export function getClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
     );
   }
   return Array.from(new Set(paths));
+}
+
+/**
+ * Get Clients became Get Calls + Win Clients (25 Nov 2026).
+ * The line is the booked call: everything up to it is Get Calls, everything
+ * after it (the call, its review, the pipeline, scripts) is Win Clients.
+ */
+export function winClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
+  return [
+    `${prefix}/calls`,
+    `${prefix}/prospects`,
+    `${prefix}/pipeline`,
+    `${prefix}/script`,
+    `${prefix}/scoreboard`,
+  ];
+}
+
+export function getCallsHubPaths(prefix: "/coach" | "/admin"): string[] {
+  const win = new Set(winClientsHubPaths(prefix));
+  return getClientsHubPaths(prefix).filter((path) => !win.has(path));
+}
+
+export function isWinClientsPath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  const prefix = pathname.startsWith("/admin") ? "/admin" : "/coach";
+  return isToolsHubPath(pathname, winClientsHubPaths(prefix));
+}
+
+/**
+ * Get Calls tabs, in the order the work runs (Zander, 25 Nov 2026): who you'll
+ * reach, how you reach them, the replies, then what you send people to.
+ * Lead lists (the Pool) and Lead magnets come out of Campaigns, so it has no sub-tabs.
+ */
+export function getCallsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem[] {
+  return [
+    {
+      href: `${prefix}/campaigns?tab=pool`,
+      label: "Lead Lists",
+      description: "The people your campaigns can reach",
+    },
+    {
+      href: `${prefix}/campaigns`,
+      label: "Campaigns",
+      description: "LinkedIn campaigns that start conversations",
+    },
+    {
+      href: `${prefix}/conversations`,
+      label: "Conversations",
+      description: "Your messages from LinkedIn, WhatsApp and email",
+    },
+    {
+      href: prefix === "/admin" ? "/admin/linkedin" : "/coach/linkedin",
+      label: "Content",
+      description: "Plan and write your LinkedIn posts",
+    },
+    {
+      href: `${prefix}/newsletters`,
+      label: "Newsletter",
+      description: "Write and edit your newsletter issues",
+    },
+    {
+      href: `${prefix}/campaigns?tab=magnets`,
+      label: "Lead Magnets",
+      description: "Your BOSS Score and other pages people can sign up on",
+    },
+    {
+      href: `${prefix}/share`,
+      label: "Toolkit",
+      description: "Your links, brochure and ready-made graphics",
+    },
+  ];
+}
+
+/** Win Clients tabs: from the booked call to a yes. Proposals joins later (job 109). */
+export function winClientsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem[] {
+  return [
+    {
+      href: `${prefix}/calls`,
+      label: "Calls",
+      description: "Sales calls in your calendar, with recordings",
+    },
+    {
+      href: `${prefix}/prospects`,
+      label: "Pipeline",
+      description: "Everyone you're talking to, and where they are",
+    },
+    {
+      href: `${prefix}/script`,
+      label: "Scripts",
+      description: "Every script for your calls with owners",
+    },
+    {
+      href: `${prefix}/script/simulator`,
+      label: "Call Practice",
+      description: "Practise your sales calls out loud and get a score",
+    },
+    {
+      href: `${prefix}/scoreboard`,
+      label: "Scoreboard",
+      description: "Plan your numbers against an income target",
+    },
+  ];
 }
 
 /** Content tab is the LinkedIn planner. */
@@ -475,14 +537,14 @@ export function coachClientsTabItems(
     {
       key: "profit-levers",
       href: `${prefix}/profit-levers`,
-      label: "Profit levers",
+      label: "Profit Levers",
       description: "What small moves on six numbers are worth",
       adminPreview: true,
     },
     {
       key: "simulator",
       href: `${prefix}/simulator`,
-      label: "Client simulator",
+      label: "Client Simulator",
       description: "Practise out loud with AI clients and get a score",
     },
   ];

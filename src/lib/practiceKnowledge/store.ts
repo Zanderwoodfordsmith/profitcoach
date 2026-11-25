@@ -274,6 +274,27 @@ export async function saveBuiltSection(opts: {
   return saved;
 }
 
+/** Several sections in one save (the Newsletter tab's draft order). Sections not already there are skipped. */
+export async function patchBuiltSections(
+  coachId: string,
+  patch: (key: string, section: BuiltSection) => BuiltSection | null
+): Promise<PracticeKnowledgeRow> {
+  const current = await ensurePracticeKnowledge(coachId);
+  const next = { ...current.built_sections };
+  for (const [key, section] of Object.entries(next)) {
+    const changed = patch(key, section);
+    if (changed) next[key] = changed;
+  }
+  const { data, error } = await supabaseAdmin
+    .from("coach_practice_knowledge")
+    .update({ built_sections: sanitizeBuiltSections(next), updated_at: new Date().toISOString() })
+    .eq("coach_id", coachId)
+    .select("*")
+    .single();
+  if (error || !data) throw new Error(error?.message ?? "Could not save the sections.");
+  return mapKnowledgeRow(data as Record<string, unknown>);
+}
+
 export async function syncPracticeToBrain(coachId: string): Promise<void> {
   const row = await ensurePracticeKnowledge(coachId);
   const prev = (await loadCoachAiContextRow(coachId)) ?? {};

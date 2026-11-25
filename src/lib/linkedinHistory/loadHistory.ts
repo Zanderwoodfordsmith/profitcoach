@@ -1,5 +1,5 @@
-import { issueHeading, newsletterTitle, stripStandingFacts } from "@/lib/practiceKnowledge/newsletters";
-import type { BlueprintBlock, BuiltSection, PracticeKnowledgePayload } from "@/lib/practiceKnowledge/types";
+import { issueHeading, newsletterTitle, stripStandingFacts, withoutIssueNumber } from "@/lib/practiceKnowledge/newsletters";
+import type { BlueprintBlock, BuiltSection, NewsletterPublish, PracticeKnowledgePayload } from "@/lib/practiceKnowledge/types";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import { pickIssueTopics, summarizeHistory, type HistoryKind, type HistorySummary } from "./parse";
 
@@ -42,7 +42,15 @@ export type NewsletterDraftItem = {
   title: string;
   blocks: BlueprintBlock[];
   post: BlueprintBlock[] | null;
+  /** The Blueprint section that holds the feed post, so it can be edited. */
+  post_key: string | null;
   written_at: string;
+  /** When BCA first wrote it. The list keeps this order, so editing an issue doesn't move it. */
+  generated_at: string;
+  /** Marked scheduled or published by the coach; null is a draft. */
+  publish: NewsletterPublish | null;
+  /** Its place in the coach's queue once they've dragged it; null keeps BCA's order, after the placed ones. */
+  position: number | null;
 };
 
 export type NewsletterSettings = {
@@ -81,8 +89,10 @@ const DRAFT_KEY = /^content:(newsletter|analogy|kpis|nl-[a-z0-9]{6,12})$/;
 /** BCA's issues open with "Subject: …" inside the message; that line is the headline. */
 function draftSubject(blocks: BlueprintBlock[]): string | null {
   for (const block of blocks) {
-    if (block.type !== "message") continue;
-    const line = block.body.split("\n").find((l) => /^subject:/i.test(l.trim()));
+    // Written by BCA it's inside a message; edited in the Newsletter tab it's a plain paragraph.
+    const text = block.type === "message" ? block.body : block.type === "paragraph" ? block.text : null;
+    if (text === null) continue;
+    const line = text.split("\n").find((l) => /^subject:/i.test(l.trim()));
     if (line) return line.trim().replace(/^subject:\s*/i, "").slice(0, 120) || null;
   }
   return null;
@@ -98,9 +108,26 @@ function draftsFrom(built: Record<string, BuiltSection> | null | undefined): New
         draftSubject(section.blocks) ?? (key.startsWith("content:nl-") ? newsletterTitle(section.blocks, "Issue") : issueHeading(section.blocks, "Next issue"));
       const postKey = key === "content:newsletter" ? "content:post" : key.startsWith("content:nl-") ? `${key}-post` : null;
       const post = postKey ? built[postKey]?.blocks ?? null : null;
-      return { key, title, blocks, post: post?.length ? post : null, written_at: section.edited_at || section.generated_at };
+      return {
+        key,
+        title: withoutIssueNumber(title),
+        blocks,
+        post: post?.length ? post : null,
+        post_key: post?.length ? postKey : null,
+        written_at: section.edited_at || section.generated_at,
+        generated_at: section.generated_at,
+        publish: section.publish ?? null,
+        position: section.position ?? null,
+      };
     })
-    .sort((a, b) => (a.key === "content:newsletter" ? -1 : b.key === "content:newsletter" ? 1 : a.written_at.localeCompare(b.written_at)));
+    // The coach's own order first (dragged in the Newsletter tab), then BCA's: the order it wrote them in.
+    .sort(
+      (a, b) =>
+        (a.position ?? Infinity) - (b.position ?? Infinity) ||
+        (a.key === "content:newsletter" ? -1 : b.key === "content:newsletter" ? 1 : 0) ||
+        a.generated_at.localeCompare(b.generated_at) ||
+        a.key.localeCompare(b.key)
+    );
 }
 
 export async function loadLinkedInHistory(userId: string): Promise<LinkedInHistoryPayload> {

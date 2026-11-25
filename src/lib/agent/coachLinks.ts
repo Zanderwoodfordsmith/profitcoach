@@ -5,7 +5,7 @@ import { coachBookPath } from "@/lib/shareLinks/bookUrl";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 /**
- * The coach's three links, as Get Clients → Toolkit → Links shows them, so Ava
+ * The coach's three links, as Get Calls → Toolkit → Links shows them, so Ava
  * puts the real links in posts and newsletters instead of a gap.
  */
 export async function coachLinkLines(coachId: string): Promise<string[]> {
@@ -25,7 +25,7 @@ export async function coachLinkLines(coachId: string): Promise<string[]> {
 
   return [
     `## Their links`,
-    `Booking link (${call?.name ?? "Constraint Call"}): ${booking || "none yet. Write [calendar link] and tell them to tick Public book link in Get Clients → Calls → Settings."}`,
+    `Booking link (${call?.name ?? "Constraint Call"}): ${booking || "none yet. Write [calendar link] and tell them to tick Public book link in Win Clients → Calls → Settings."}`,
     `BOSS Score link: ${score || "none yet (no public URL set on the Links page)."}`,
     `Newsletter link: ${newsletter || "none saved under Your links on the Links page."}`,
   ];

@@ -86,7 +86,7 @@ function ScriptLibraryPage({ script, asked }: { script: ScriptCard; asked: strin
     }`;
 
   return (
-    <div className="-mx-4 -mb-6 flex min-h-[calc(100dvh-57px)] flex-col md:-mx-[60px] lg:flex-row lg:items-stretch">
+    <div className="-mx-4 -mb-6 flex min-h-[calc(100dvh-57px)] flex-col md:-mx-8 lg:flex-row lg:items-stretch">
       <nav
         aria-label={`${script.title} parts`}
         className="min-w-0 shrink-0 border-b border-[var(--app-subnav-rule)] bg-[var(--app-subnav-bg)] px-3 py-3 lg:sticky lg:top-[57px] lg:h-[calc(100dvh-57px)] lg:w-64 lg:self-start lg:overflow-y-auto lg:border-b-0 lg:border-r lg:py-5"

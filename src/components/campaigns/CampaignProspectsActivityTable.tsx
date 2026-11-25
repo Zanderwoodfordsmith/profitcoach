@@ -36,6 +36,12 @@ import { cardClass } from "@/components/ui/Card";
 import { CampaignAudienceEmpty } from "@/components/campaigns/CampaignAudienceEmpty";
 import type { CampaignAddChoice } from "@/components/campaigns/CampaignAudienceEmpty";
 import { fieldClass } from "@/components/ui/Field";
+import {
+  DEFAULT_TABLE_PAGE_SIZE,
+  TablePaginationFooter,
+  readStoredTablePageSize,
+  storeTablePageSize,
+} from "@/components/table/TablePaginationFooter";
 import { badgeClass, type BadgeTone } from "@/components/ui/Badge";
 import { dispositionFromInterestOutcome } from "@/lib/prospects/replyDispositionInfer";
 import {
@@ -125,6 +131,7 @@ const COL_NEXT = "w-[9rem]";
 const COL_DUE = "w-36";
 const COL_STARTED = "w-16";
 const ROW = "flex items-center gap-x-3 px-3";
+const PAGE_SIZE_STORAGE_KEY = "campaign-prospects-page-size-v1";
 const PROGRESS_POPOVER_WIDTH = 360;
 const PROGRESS_OPEN_MS = 80;
 const PROGRESS_CLOSE_MS = 160;
@@ -257,6 +264,8 @@ export function CampaignProspectsActivityTable({
   const [menu, setMenu] = useState<ToolbarMenu>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [contactWide, setContactWide] = useState(false);
+  const [pageState, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   const jobsByLead = useMemo(() => {
@@ -361,10 +370,24 @@ export function CampaignProspectsActivityTable({
     return decorated;
   }, [leads, steps, jobsByLead, filter, query, sortField, sortDir, campaignStatus]);
 
+  const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
+  // Back to page 1 when the search, filter, sort or grouping changes.
+  const viewKey = `${query}|${filter}|${sortField}|${sortDir}|${groupField}`;
+  const [pageViewKey, setPageViewKey] = useState(viewKey);
+  if (pageViewKey !== viewKey) {
+    setPageViewKey(viewKey);
+    setPage(1);
+  }
+  const page = Math.min(pageState, totalPages);
+  const pagedRows = useMemo(
+    () => rows.slice((page - 1) * pageSize, page * pageSize),
+    [rows, page, pageSize]
+  );
+
   const groups = useMemo(() => {
-    if (!groupField) return [{ key: "all", label: null as string | null, rows }];
-    const map = new Map<string, typeof rows>();
-    for (const row of rows) {
+    if (!groupField) return [{ key: "all", label: null as string | null, rows: pagedRows }];
+    const map = new Map<string, typeof pagedRows>();
+    for (const row of pagedRows) {
       const key =
         groupField === "status"
           ? leadStatusLabel(row.status)
@@ -378,9 +401,9 @@ export function CampaignProspectsActivityTable({
     return [...map.entries()]
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([key, groupRows]) => ({ key, label: key, rows: groupRows }));
-  }, [groupField, rows]);
+  }, [groupField, pagedRows]);
 
-  const visibleIds = useMemo(() => rows.map((row) => row.lead.id), [rows]);
+  const visibleIds = useMemo(() => pagedRows.map((row) => row.lead.id), [pagedRows]);
   const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
   const selectedCount = selectedIds.length;
   const allVisibleSelected =
@@ -399,6 +422,15 @@ export function CampaignProspectsActivityTable({
   useEffect(() => {
     setSelectedIds((ids) => ids.filter((id) => leads.some((lead) => lead.id === id)));
   }, [leads]);
+
+  useEffect(() => {
+    setPageSize(readStoredTablePageSize(PAGE_SIZE_STORAGE_KEY));
+  }, []);
+
+  useEffect(() => {
+    storeTablePageSize(PAGE_SIZE_STORAGE_KEY, pageSize);
+  }, [pageSize]);
+
 
   useEffect(() => {
     if (!menu) return;
@@ -706,16 +738,17 @@ export function CampaignProspectsActivityTable({
         </div>
       ) : (
         <div
-          className={cardClass("plain", "overflow-x-auto overflow-y-hidden")}
+          className={cardClass("plain", "overflow-hidden")}
           aria-label="Campaign prospect activity"
         >
+          <div className="overflow-x-auto">
           <div className={`${ROW} border-b border-slate-200 bg-slate-50 py-2.5 text-kicker font-semibold uppercase text-slate-500`}>
             <div className="flex w-8 shrink-0 items-center justify-center">
               <input
                 type="checkbox"
                 checked={allVisibleSelected}
                 onChange={toggleAllVisible}
-                aria-label="Select all contacts in this view"
+                aria-label="Select all contacts on this page"
                 className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
               />
             </div>
@@ -830,6 +863,20 @@ export function CampaignProspectsActivityTable({
               </li>
             ))}
           </ul>
+          </div>
+          <TablePaginationFooter
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            pageSize={pageSize}
+            onPageSizeChange={(next) => {
+              setPageSize(next);
+              setPage(1);
+            }}
+            totalCount={rows.length}
+            ariaLabel="Prospects pagination"
+            className="px-3"
+          />
         </div>
       )}
     </div>

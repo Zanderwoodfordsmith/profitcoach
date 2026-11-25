@@ -666,7 +666,7 @@ function NoteVersions({
         {shown?.type === "message" ? (
           <>
             {tab === "open" ? <p className="mb-2 text-sm text-[var(--bp-muted)]">For owners with an Open Profile: sent as a free InMail instead of a connection request.</p> : null}
-            {tab === "b" ? <p className="mb-2 text-sm text-[var(--bp-muted)]">Get Clients sends A to half the list and B to the other half.</p> : null}
+            {tab === "b" ? <p className="mb-2 text-sm text-[var(--bp-muted)]">The campaign sends A to half the list and B to the other half.</p> : null}
             <Area value={shown.body} onChange={(body) => onChange(index, body)} />
           </>
         ) : null}
@@ -746,7 +746,7 @@ export function BlockBoxes({
                 const at = checks < 0 ? d.length : checks;
                 const added: BlueprintBlock[] =
                   version === "b"
-                    ? [{ type: "heading", text: "Connection request B" }, { type: "message", label: "Connection request B", body, note: "A second version: Get Clients sends A to half the list and B to the other half." }]
+                    ? [{ type: "heading", text: "Connection request B" }, { type: "message", label: "Connection request B", body, note: "A second version: the campaign sends A to half the list and B to the other half." }]
                     : [{ type: "heading", text: "Open Profile message" }, { type: "message", label: "Open Profile message", body, note: "No connection needed: for owners with an Open Profile." }];
                 return [...d.slice(0, at), ...added, ...d.slice(at)];
               })

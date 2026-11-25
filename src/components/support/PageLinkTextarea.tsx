@@ -26,7 +26,6 @@ function allPages(): PageLinkOption[] {
         ? { ...page, description: `${page.description ?? ""} scorecard` }
         : page
     ),
-    { path: "/coach/campaigns?tab=magnets", label: "Lead magnets", group: "Get Clients" },
     ...CHAT_PAGES.map((page) => ({
       path: page.path,
       label: page.name,

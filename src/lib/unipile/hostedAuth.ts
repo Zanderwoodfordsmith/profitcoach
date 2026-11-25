@@ -127,6 +127,11 @@ export async function createProviderConnectLink(
     notify_url: `${base}/api/unipile/notify`,
     bypass_success_screen: true,
     ...hostedAuthMailCalendarScopes(provider),
+    // Instagram often blocks Unipile's password sign-in ("too many attempts"),
+    // so also offer the cookie sign-in on Unipile's page.
+    ...(provider === "INSTAGRAM"
+      ? { instagram: { allow_methods: ["credentials", "cookies"] } }
+      : {}),
     ...(reconnectAccountId ? { reconnect_account: reconnectAccountId } : {}),
   });
 

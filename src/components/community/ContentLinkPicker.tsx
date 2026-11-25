@@ -18,8 +18,10 @@ import {
 import { supabaseClient } from "@/lib/supabaseClient";
 import {
   coachClientsTabItems,
-  getClientsTabItems,
+  getCallsTabItems,
   mainNavItems,
+  winClientsTabItems,
+  type ToolsHubTabItem,
 } from "@/components/layout/dashboardNavItems";
 import type {
   MentionTreeBlueprintPage,
@@ -118,14 +120,19 @@ export function coachPages(): PageLink[] {
       group: "Community and Classroom",
     },
   );
-  const getClients: PageLink[] = getClientsTabItems("/coach")
-    .filter((item) => !item.iconOnly && !item.adminPreview)
-    .map((item) => ({
-      path: item.href,
-      label: item.label,
-      description: item.description,
-      group: "Get Clients",
-    }));
+  const hubLinks = (items: ToolsHubTabItem[], group: string): PageLink[] =>
+    items
+      .filter((item) => !item.iconOnly && !item.adminPreview)
+      .map((item) => ({
+        path: item.href,
+        label: item.label,
+        description: item.description,
+        group,
+      }));
+  const getClients: PageLink[] = [
+    ...hubLinks(getCallsTabItems("/coach"), "Get Calls"),
+    ...hubLinks(winClientsTabItems("/coach"), "Win Clients"),
+  ];
   const keepClients: PageLink[] = coachClientsTabItems("/coach")
     .filter((item) => !item.adminPreview)
     .map((item) => ({

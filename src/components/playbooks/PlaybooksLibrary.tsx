@@ -26,7 +26,7 @@ export type PlaybooksLibraryProps = {
   isLocked?: (ref: string) => boolean;
   /** Client view: BOSS score on cards. */
   getScore?: (ref: string) => 0 | 1 | 2 | undefined;
-  /** Match dashboard main padding (`-mx-[60px] px-[60px]`). Use `false` for standalone pages. */
+  /** Match dashboard main padding (`md:-mx-8 md:px-8`). Use `false` for standalone pages. */
   stickyBleedInset?: string | false;
   headerLeading?: ReactNode;
   /** Optional header tabs (e.g. Keep Clients hub). */

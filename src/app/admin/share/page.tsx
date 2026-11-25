@@ -14,7 +14,7 @@ export default function AdminShareLinksPage() {
       contentMaxWidthClass="max-w-7xl"
       header={
         <StickyPageHeader
-          title="Get Clients"
+          title="Get Calls"
           description="Copy a link, or send it in a conversation."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />

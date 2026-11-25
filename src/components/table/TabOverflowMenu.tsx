@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { MoreVertical, Copy, Pencil, Trash2 } from "lucide-react";
+import { MoreVertical, Copy, ExternalLink, Pencil, Trash2 } from "lucide-react";
 
 type Props = {
   label: string;
@@ -13,6 +13,8 @@ type Props = {
   onRename?: () => void;
   onDelete?: () => void;
   onDuplicate?: () => void;
+  /** Opens outside the app, in a new tab (e.g. the Sales Navigator search a list came from). */
+  link?: { href: string; label: string } | null;
 };
 
 const MENU_WIDTH = 160;
@@ -26,6 +28,7 @@ export function TabOverflowMenu({
   onRename,
   onDelete,
   onDuplicate,
+  link,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(
@@ -81,7 +84,7 @@ export function TabOverflowMenu({
     };
   }, [open]);
 
-  if (!canRename && !canDelete && !canDuplicate) return null;
+  if (!canRename && !canDelete && !canDuplicate && !link) return null;
 
   const menu =
     open && typeof document !== "undefined"
@@ -99,6 +102,22 @@ export function TabOverflowMenu({
             onClick={(e) => e.stopPropagation()}
             onPointerDown={(e) => e.stopPropagation()}
           >
+            {link ? (
+              <a
+                href={link.href}
+                target="_blank"
+                rel="noreferrer"
+                role="menuitem"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpen(false);
+                }}
+              >
+                <ExternalLink className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+                {link.label}
+              </a>
+            ) : null}
             {canDuplicate && onDuplicate ? (
               <button
                 type="button"

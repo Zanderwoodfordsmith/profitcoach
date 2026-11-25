@@ -1,0 +1,30 @@
+import { chromium } from "playwright";
+import { createClient } from "@supabase/supabase-js";
+const S = process.argv[2];
+async function main() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const admin = createClient(url, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const anon = createClient(url, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const { data: link } = await admin.auth.admin.generateLink({ type: "magiclink", email: "zander+paymenttest3@businesscoachacademy.com" });
+  const { data: s } = await anon.auth.verifyOtp({ token_hash: link!.properties!.hashed_token, type: "magiclink" });
+  const ref = new URL(url).hostname.split(".")[0];
+  const browser = await chromium.launch();
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  page.on("pageerror", (e) => console.log("pageerror:", e.message));
+  await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [`sb-${ref}-auth-token`, JSON.stringify(s!.session)]);
+  await page.goto("http://localhost:3002/coach/campaigns?tab=pool", { waitUntil: "domcontentloaded", timeout: 240000 });
+  console.log("loaded");
+  await page.waitForTimeout(20000);
+  await page.screenshot({ path: `${S}/fit-v4-before.png` });
+  const btn = page.getByRole("button", { name: "Check fit" });
+  console.log("buttons:", await btn.count());
+  await btn.first().click({ timeout: 120000 });
+  await page.waitForTimeout(5000);
+  await page.keyboard.press(" "); await page.waitForTimeout(3500);
+  await page.screenshot({ path: `${S}/fit-v4.png` });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: `${S}/fit-v4-phone.png` });
+  await browser.close();
+}
+main().catch((e) => { console.log("ERR", String(e).slice(0, 300)); process.exit(1); });

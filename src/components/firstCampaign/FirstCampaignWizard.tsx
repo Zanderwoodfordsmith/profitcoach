@@ -88,7 +88,7 @@ export function FirstCampaignWizard({ variant = "full" }: Props) {
     <Suspense
       fallback={
         <div className="flex flex-col gap-4">
-          <StickyPageHeader title="Get Clients" tabs={<CoachToolsHubTabs hub="get-clients" />} />
+          <StickyPageHeader title="Get Calls" tabs={<CoachToolsHubTabs hub="get-clients" />} />
           <p className="px-1 text-sm text-slate-500">Loading your campaign setup…</p>
         </div>
       }
@@ -223,7 +223,7 @@ function FirstCampaignWizardInner({ variant }: { variant: CampaignWizardVariant 
   if (loading) {
     return (
       <div className="flex flex-col gap-4">
-        <StickyPageHeader title="Get Clients" tabs={<CoachToolsHubTabs hub="get-clients" />} />
+        <StickyPageHeader title="Get Calls" tabs={<CoachToolsHubTabs hub="get-clients" />} />
         <p className="px-1 text-sm text-slate-500">Loading your campaign setup…</p>
       </div>
     );

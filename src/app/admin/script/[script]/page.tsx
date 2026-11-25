@@ -13,7 +13,7 @@ export default function AdminScriptPage() {
   if (!script) notFound();
   return (
     <div className="flex flex-col">
-      <StickyPageHeader title="Get Clients" description={script.summary} tabs={<CoachToolsHubTabs hub="get-clients" />} />
+      <StickyPageHeader title="Win Clients" description={script.summary} tabs={<CoachToolsHubTabs hub="get-clients" />} />
       <Suspense fallback={null}>
         <ScriptView script={script} />
       </Suspense>

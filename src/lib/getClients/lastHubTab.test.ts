@@ -114,9 +114,12 @@ describe("getClientsTabItems stay rememberable", () => {
         const key = getClientsLastTabKeyForPathname(item.href);
         assert.ok(
           key,
-          `unmapped Get Clients tab ${item.href} — add it to lastHubTab`
+          `unmapped Get Calls / Win Clients tab ${item.href} — add it to lastHubTab`
         );
-        assert.equal(hrefForGetClientsLastTab(prefix, key), item.href);
+        // Lead Lists / Lead Magnets (`?tab=`) and Call Practice (`/script/simulator`) come back to their page.
+        const path = item.href.split("?")[0] ?? item.href;
+        const back = hrefForGetClientsLastTab(prefix, key);
+        assert.ok(path === back || path.startsWith(`${back}/`), `${item.href} comes back as ${back}`);
         assert.ok(GET_CLIENTS_LAST_TAB_KEYS.includes(key));
       }
     }

@@ -1,4 +1,4 @@
-import type { BlueprintBlock, BuiltSection } from "./types";
+import type { BlueprintBlock, BuiltSection, NewsletterPublish } from "./types";
 
 /**
  * Blueprint blocks: the typed pieces a written section is made of.
@@ -10,7 +10,8 @@ const TEXT = 4000;
 const SHORT = 400;
 const ITEMS = 24;
 const ROWS = 30;
-const BLOCKS = 50;
+// A newsletter edited in place is one block per paragraph, so it needs more than a written section.
+const BLOCKS = 80;
 
 function clip(value: unknown, max: number): string {
   return String(value ?? "")
@@ -45,7 +46,9 @@ export function sanitizeBlocks(raw: unknown): BlueprintBlock[] {
       case "paragraph":
       case "heading": {
         const text = clip(b.text, b.type === "heading" ? SHORT : TEXT);
-        if (text) out.push({ type: b.type, text });
+        if (!text) break;
+        if (b.type === "heading" && b.level === 3) out.push({ type: "heading", text, level: 3 });
+        else out.push({ type: b.type, text });
         break;
       }
       case "bullets":
@@ -117,11 +120,33 @@ export function sanitizeBlocks(raw: unknown): BlueprintBlock[] {
         if (items.length) out.push({ type: "timeline", items });
         break;
       }
+      case "image": {
+        const url = clip(b.url, 1000);
+        if (!/^https:\/\/\S+$/.test(url)) break;
+        const alt = clip(b.alt, SHORT);
+        const href = clip(b.href, 1000);
+        out.push({
+          type: "image",
+          url,
+          ...(alt ? { alt } : {}),
+          ...(b.cover === true ? { cover: true } : {}),
+          ...(/^https?:\/\/\S+$/.test(href) ? { href } : {}),
+        });
+        break;
+      }
       default:
         break;
     }
   }
   return out;
+}
+
+/** A newsletter issue's status on LinkedIn, or null for a draft. */
+export function sanitizePublish(raw: unknown): NewsletterPublish | null {
+  const p = rec(raw);
+  if (p.status !== "scheduled" && p.status !== "published") return null;
+  const at = typeof p.at === "string" && !Number.isNaN(Date.parse(p.at)) ? new Date(p.at).toISOString() : null;
+  return { status: p.status, at };
 }
 
 export function sanitizeBuiltSections(raw: unknown): Record<string, BuiltSection> {
@@ -137,6 +162,8 @@ export function sanitizeBuiltSections(raw: unknown): Record<string, BuiltSection
       generated_at: clip(v.generated_at, 40),
       model: clip(v.model, 80),
       edited_at: v.edited_at ? clip(v.edited_at, 40) : null,
+      ...(sanitizePublish(v.publish) ? { publish: sanitizePublish(v.publish) } : {}),
+      ...(typeof v.position === "number" && Number.isFinite(v.position) ? { position: Math.max(0, Math.round(v.position)) } : {}),
       ...(prevBlocks.length && prev.replaced_at
         ? {
             previous: {
@@ -179,7 +206,7 @@ export function blocksToMarkdown(blocks: BlueprintBlock[], headingLevel = 4): st
         parts.push(b.text);
         break;
       case "heading":
-        parts.push(`${h} ${b.text}`);
+        parts.push(`${b.level === 3 ? `${h}#` : h} ${b.text}`);
         break;
       case "bullets":
         parts.push(b.items.map((i) => `- ${i}`).join("\n"));
@@ -218,6 +245,9 @@ export function blocksToMarkdown(blocks: BlueprintBlock[], headingLevel = 4): st
         break;
       case "timeline":
         parts.push(b.items.map((i) => `- **${i.when}:** ${i.title}${i.detail ? `. ${i.detail}` : ""}`).join("\n"));
+        break;
+      case "image":
+        parts.push(b.href ? `[![${b.alt ?? ""}](${b.url})](${b.href})` : `![${b.alt ?? ""}](${b.url})`);
         break;
     }
   }

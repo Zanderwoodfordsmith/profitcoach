@@ -37,9 +37,16 @@ function memberDestinations(prefix: "/coach" | "/admin"): NotFoundDestination[] 
     },
     {
       href: `${prefix}/conversations`,
-      label: "Get Clients",
-      description: "Campaigns, conversations and sales calls",
-      keywords: ["conversations", "campaign", "campaigns", "prospect", "prospects", "script", "scripts", "calls", "call", "linkedin", "content", "message", "messages", "lead", "leads", "pipeline", "newsletter", "share", "toolkit", "proposal", "proposals"],
+      label: "Get Calls",
+      description: "Lead lists, campaigns, conversations and content",
+      keywords: ["conversations", "campaign", "campaigns", "pool", "linkedin", "content", "message", "messages", "lead", "leads", "lists", "magnet", "magnets", "newsletter", "share", "toolkit"],
+      listed: true,
+    },
+    {
+      href: `${prefix}/calls`,
+      label: "Win Clients",
+      description: "Your sales calls, pipeline and scripts",
+      keywords: ["calls", "call", "prospect", "prospects", "pipeline", "script", "scripts", "practice", "simulator", "scoreboard", "proposal", "proposals"],
       listed: true,
     },
     {

@@ -251,7 +251,7 @@ export function FunnelSettingsClient({ embed = false }: FunnelSettingsClientProp
       gapClass="gap-6"
       header={
         <StickyPageHeader
-          title="Get Clients"
+          title="Get Calls"
           description="Share links, CRM sync, and funnel landing copy."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />

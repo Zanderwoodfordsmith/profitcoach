@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
 import { buildSection, isBuildableSection } from "@/lib/practiceKnowledge/buildSection";
-import { sanitizeBlocks } from "@/lib/practiceKnowledge/blocks";
+import { sanitizeBlocks, sanitizePublish } from "@/lib/practiceKnowledge/blocks";
 import { isNewsletterLibraryKey } from "@/lib/practiceKnowledge/newsletters";
-import { ensurePracticeKnowledge, saveBuiltSection } from "@/lib/practiceKnowledge/store";
+import { ensurePracticeKnowledge, patchBuiltSections, saveBuiltSection } from "@/lib/practiceKnowledge/store";
 
 /**
  * Writes one "We build" section of the Practice Blueprint for the coach.
@@ -19,13 +19,43 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: check.error ?? "Unauthorized" }, { status: 401 });
   }
 
-  let body: { section?: string; clear?: boolean; blocks?: unknown } = {};
+  let body: { section?: string; clear?: boolean; blocks?: unknown; publish?: unknown; order?: unknown } = {};
   try {
-    body = (await request.json()) as { section?: string; clear?: boolean; blocks?: unknown };
+    body = (await request.json()) as { section?: string; clear?: boolean; blocks?: unknown; publish?: unknown; order?: unknown };
   } catch {
     return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
   }
+  // The coach's newsletter drafts in a new order (Newsletter tab, drag to reorder).
+  if (Array.isArray(body.order)) {
+    const order = body.order.filter((k): k is string => typeof k === "string" && /^content:(newsletter|analogy|kpis|nl-[a-z0-9]{6,12})$/.test(k)).slice(0, 80);
+    try {
+      const knowledge = await patchBuiltSections(check.userId, (k, section) => {
+        const at = order.indexOf(k);
+        return at < 0 ? null : { ...section, position: at };
+      });
+      return NextResponse.json({ knowledge });
+    } catch (err) {
+      console.error("practice build order:", err instanceof Error ? err.message : "failed");
+      return NextResponse.json({ error: "Could not save the order." }, { status: 502 });
+    }
+  }
   const key = String(body.section ?? "");
+  // A newsletter issue marked draft, scheduled or published (Newsletter tab). The text stays as it is.
+  if (body.publish !== undefined && (isNewsletterLibraryKey(key) || isBuildableSection(key))) {
+    try {
+      const current = (await ensurePracticeKnowledge(check.userId)).built_sections[key];
+      if (!current) return NextResponse.json({ error: "Nothing to mark." }, { status: 400 });
+      const knowledge = await saveBuiltSection({
+        coachId: check.userId,
+        key,
+        section: { ...current, publish: sanitizePublish(body.publish) },
+      });
+      return NextResponse.json({ knowledge });
+    } catch (err) {
+      console.error("practice build publish:", err instanceof Error ? err.message : "failed");
+      return NextResponse.json({ error: "Could not save that." }, { status: 502 });
+    }
+  }
   if (isNewsletterLibraryKey(key)) {
     try {
       if (body.clear === true) {

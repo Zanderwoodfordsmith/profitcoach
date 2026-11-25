@@ -76,10 +76,10 @@ export const HELP_TOPICS: HelpTopic[] = [
   { id: "blueprint", name: "My Blueprint", blurb: "About You, your LinkedIn profile and your newsletter." },
   {
     id: "get-clients",
-    name: "Get Clients",
-    blurb: "Prospects, campaigns, the BOSS Score and calls.",
+    name: "Get Calls and Win Clients",
+    blurb: "Lead lists, campaigns, the BOSS Score, calls and your pipeline.",
     groups: [
-      { id: "prospects", name: "Prospects and lists" },
+      { id: "prospects", name: "Lead lists and pipeline" },
       { id: "campaigns", name: "Campaigns and replies" },
       { id: "boss-score", name: "BOSS Score" },
       { id: "calls", name: "Calls and scripts" },
@@ -212,7 +212,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "app",
     question: "What can Ava do for me?",
     answer:
-      "Ava works from your Blueprint. She fills in and sharpens your Blueprint with you, finds prospects, builds lists, sets up campaigns and writes your messages. She also answers how-to questions about the app and gives you the link to the right page.\n\nAnything that sends, spends money or removes people waits for your OK. She shows a card with a Confirm button. Blueprint wording shows as a draft first, with Save to Blueprint and Change it. Nothing changes until you press Save.\n\nIf your plan doesn't include Get Clients, Ava still helps with your Blueprint and questions. She tells you when something needs Get Clients. Tap the thumbs down on any reply that's wrong. We read every one.",
+      "Ava works from your Blueprint. She fills in and sharpens your Blueprint with you, finds prospects, builds lists, sets up campaigns and writes your messages. She also answers how-to questions about the app and gives you the link to the right page.\n\nAnything that sends, spends money or removes people waits for your OK. She shows a card with a Confirm button. Blueprint wording shows as a draft first, with Save to Blueprint and Change it. Nothing changes until you press Save.\n\nIf your plan doesn't include Get Calls and Win Clients, Ava still helps with your Blueprint and questions. She tells you when something needs them. Tap the thumbs down on any reply that's wrong. We read every one.",
     aliases: ["what can ava do", "ava help", "is ava a person", "ai assistant", "ava can't do campaigns"],
     sources: ["app", "content/agent/AGENT.md"],
   },
@@ -315,7 +315,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     fix: true,
     question: "A link in a lesson asks me to log in somewhere else. Is it broken?",
     answer:
-      "Yes, that link is out of date. Some lessons still point at the old site. Tell us which lesson in Support and we fix it and send you the new place.\n\nThe tools themselves are in [Toolkit](/coach/toolkit) under Get Clients.",
+      "Yes, that link is out of date. Some lessons still point at the old site. Tell us which lesson in Support and we fix it and send you the new place.\n\nThe tools themselves are in [Toolkit](/coach/toolkit) under Get Calls.",
     aliases: ["disco login", "broken link in lesson", "roi calculator", "pairwise tool"],
     sources: ["SUP-466", "community 15 Jun", "playbook"],
   },
@@ -336,7 +336,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "training",
     question: "How do I get certified now?",
     answer:
-      "Certification is a sales call in the [Call simulator](/coach/script/simulator). Open Get Clients, then Scripts, and click Start practising. You run the call, it's scored, and you pass at 60 percent. Your result and feedback come back to you in Support within a week.\n\nIf you did the assessment and haven't heard back, tell us in Support and we chase it.",
+      "Certification is a sales call in [Call Practice](/coach/script/simulator). Open Win Clients, then Call Practice. You run the call, it's scored, and you pass at 60 percent. Your result and feedback come back to you in Support within a week.\n\nIf you did the assessment and haven't heard back, tell us in Support and we chase it.",
     aliases: ["certificate", "coach assessment", "certified profit coach", "mark has left"],
     sources: ["Yair, WhatsApp 6 Nov", "SUP-525", "SUP-583"],
   },
@@ -461,9 +461,9 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     id: "pool-vs-prospects",
     topic: "get-clients",
     group: "prospects",
-    question: "What's the difference between the Pool and Prospects?",
+    question: "What's the difference between Lead Lists and Pipeline?",
     answer:
-      "The [Pool](/coach/campaigns?tab=pool) is everyone you might contact: imports, searches and spreadsheets. You sort it into lists and add people from it to campaigns.\n\n[Prospects](/coach/prospects) is the people you have added, or who took your BOSS Score. Open someone there to see their score, their messages and what happens next.",
+      "The [Lead Lists](/coach/campaigns?tab=pool) is everyone you might contact: imports, searches and spreadsheets. You sort it into lists and add people from it to campaigns.\n\n[Pipeline](/coach/prospects) is the people you have added, or who took your BOSS Score. Open someone there to see their score, their messages and what happens next.",
     aliases: ["what is the pool", "pool or prospects", "where are my leads"],
     sources: ["ticket 20 Nov", "app"],
   },
@@ -471,9 +471,9 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     id: "prospect-stages",
     topic: "get-clients",
     group: "prospects",
-    question: "What does each column on Prospects mean?",
+    question: "What does each column on Pipeline mean?",
     answer:
-      "[Prospects](/coach/prospects) has two views. Switch between them with the two small buttons at the top: Pipeline view (columns of cards) and List view (a table).\n\nPipeline view has a column for each stage. Some columns split into smaller groups inside them:\n\n1. Pool: people you might contact. Not started means they are in no campaign yet. In outreach means a campaign is messaging them. This column is hidden unless you turn it on.\n2. To sort: people with no stage yet, no scorecard, no call and no next step. Give each one a status or a next action.\n3. Replied: they answered a message.\n4. Interested: they want to hear more. Lead magnet means they finished your BOSS Score. Expressed means they showed interest another way, such as a reply, without finishing it.\n5. Booked: a call is set. Upcoming is a call still to come. Rebook is a call that has happened or they missed, so book the next one.\n6. Follow-up: you set a next action. It splits by when it is due: Overdue, This week, This month, Later and No date.\n7. Closed: Won (they became a client), Abandoned (it went quiet) or Lost (they said no).\n\nCards move on their own as things happen. A booked call moves them to Booked, a finished BOSS Score to Interested, a next action to Follow-up. You can also change a status by hand. Click the status on their card or row and pick one. To hand it back to the app, choose Use auto.\n\nList view shows one row per person:\n\n1. Name.\n2. Contact Info: email and phone.\n3. Status: the stage above. Click it to change it.\n4. LinkedIn: opens their profile.\n5. Source: where they came from, such as BOSS Score, Sales Navigator, LinkedIn, Campaign or Manual.\n6. Boss: their BOSS Score and the date. Share copies their report link. Get link copies a scorecard link made just for them.\n7. Boss Pro: the same for BOSS Pro. Start begins one with them.\n8. Date created: when they came into the app.\n9. Next call: the next booked call and when.\n10. Next action: what you plan to do next. Click to change it.\n\nBusiness details (revenue, team size and years in business) and CRM link are hidden at first. Click Columns to show or hide any column, and drag to change the order. Filter, Sort and Group sit beside it. Tags are not a column, so find them under Filter.",
+      "[Pipeline](/coach/prospects) has two views. Switch between them with the two small buttons at the top: Pipeline view (columns of cards) and List view (a table).\n\nPipeline view has a column for each stage. Some columns split into smaller groups inside them:\n\n1. Pool: people you might contact. Not started means they are in no campaign yet. In outreach means a campaign is messaging them. This column is hidden unless you turn it on.\n2. To sort: people with no stage yet, no scorecard, no call and no next step. Give each one a status or a next action.\n3. Replied: they answered a message.\n4. Interested: they want to hear more. Lead magnet means they finished your BOSS Score. Expressed means they showed interest another way, such as a reply, without finishing it.\n5. Booked: a call is set. Upcoming is a call still to come. Rebook is a call that has happened or they missed, so book the next one.\n6. Follow-up: you set a next action. It splits by when it is due: Overdue, This week, This month, Later and No date.\n7. Closed: Won (they became a client), Abandoned (it went quiet) or Lost (they said no).\n\nCards move on their own as things happen. A booked call moves them to Booked, a finished BOSS Score to Interested, a next action to Follow-up. You can also change a status by hand. Click the status on their card or row and pick one. To hand it back to the app, choose Use auto.\n\nList view shows one row per person:\n\n1. Name.\n2. Contact Info: email and phone.\n3. Status: the stage above. Click it to change it.\n4. LinkedIn: opens their profile.\n5. Source: where they came from, such as BOSS Score, Sales Navigator, LinkedIn, Campaign or Manual.\n6. Boss: their BOSS Score and the date. Share copies their report link. Get link copies a scorecard link made just for them.\n7. Boss Pro: the same for BOSS Pro. Start begins one with them.\n8. Date created: when they came into the app.\n9. Next call: the next booked call and when.\n10. Next action: what you plan to do next. Click to change it.\n\nBusiness details (revenue, team size and years in business) and CRM link are hidden at first. Click Columns to show or hide any column, and drag to change the order. Filter, Sort and Group sit beside it. Tags are not a column, so find them under Filter.",
     aliases: ["prospect status", "expressed interest", "prospects tab", "prospects columns", "what does lead magnet mean", "not started", "pipeline view", "to sort", "rebook"],
     sources: ["community 2 Oct", "app"],
   },
@@ -481,9 +481,9 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     id: "fill-pool",
     topic: "get-clients",
     group: "prospects",
-    question: "How do I add people to my Pool?",
+    question: "How do I add people to my lead lists?",
     answer:
-      "Open [Pool](/coach/campaigns?tab=pool) and click Add people. Choose how. Your connections brings in owners you already know on LinkedIn. Sales Navigator uses a search we build from your Blueprint, or one you paste in. Google Maps and Google Search find businesses by trade and town. Upload CSV takes a spreadsheet, and Add one person is for someone you met.\n\nEveryone lands in the Pool. You can also put them on a list as they come in. If someone is already in your Pool, they stay as one person, however many times you add them.",
+      "Open [Lead Lists](/coach/campaigns?tab=pool) and click Add people. Choose how. Your connections brings in owners you already know on LinkedIn. Sales Navigator uses a search we build from your Blueprint, or one you paste in. Google Maps and Google Search find businesses by trade and town. Upload CSV takes a spreadsheet, and Add one person is for someone you met.\n\nEveryone lands in Lead Lists. You can also put them on a list as they come in. If someone is already in your Pool, they stay as one person, however many times you add them.",
     aliases: ["import prospects", "import linkedin connections", "google maps import", "upload csv", "add leads", "build my list"],
     sources: ["SUP-508", "SUP-511", "ticket 19 Nov", "app"],
   },
@@ -493,7 +493,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "prospects",
     question: "Do I need Sales Navigator, and when should I get it?",
     answer:
-      "If LinkedIn is your main way of finding clients, yes, and for most of our coaches it is. Get it before your first campaign goes live.\n\nIt helps in three ways:\n\n1. You can send about twice as many connection requests each week, so your campaign reaches twice as many owners. See [how many messages go out](/coach/support?tab=help&a=campaign-sending-limits).\n2. You can search and filter owners properly: by job title, industry, company size and area. Plain LinkedIn search can't do that.\n3. Those searches fill your Pool. You bring them in, sort them into lead lists, and add the lists to your campaigns. See [how to import a Sales Navigator search](/coach/support?tab=help&a=sales-nav-import) and [the Pool and Prospects](/coach/support?tab=help&a=pool-vs-prospects).\n\nThe app also uses it to bring in your own LinkedIn connections. If you mostly find clients another way, such as calls, email or events, you can fill your Pool without it, using Google Maps, Google Search or a spreadsheet.\n\nYou can [get your first two months free](/coach/support?tab=help&a=sales-nav-free) with our link. Once you have it, connect it in [Settings](/coach/settings?tab=integrations).",
+      "If LinkedIn is your main way of finding clients, yes, and for most of our coaches it is. Get it before your first campaign goes live.\n\nIt helps in three ways:\n\n1. You can send about twice as many connection requests each week, so your campaign reaches twice as many owners. See [how many messages go out](/coach/support?tab=help&a=campaign-sending-limits).\n2. You can search and filter owners properly: by job title, industry, company size and area. Plain LinkedIn search can't do that.\n3. Those searches fill your lead lists. You bring them in, sort them into lead lists, and add the lists to your campaigns. See [how to import a Sales Navigator search](/coach/support?tab=help&a=sales-nav-import) and [Lead Lists and Pipeline](/coach/support?tab=help&a=pool-vs-prospects).\n\nThe app also uses it to bring in your own LinkedIn connections. If you mostly find clients another way, such as calls, email or events, you can fill your lead lists without it, using Google Maps, Google Search or a spreadsheet.\n\nYou can [get your first two months free](/coach/support?tab=help&a=sales-nav-free) with our link. Once you have it, connect it in [Settings](/coach/settings?tab=integrations).",
     aliases: ["should I get sales nav", "sales navigator subscription", "do I have to pay for sales navigator", "is sales navigator worth it"],
     sources: ["ticket 17 Nov", "app"],
   },
@@ -513,7 +513,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "prospects",
     question: "How do I import a Sales Navigator search?",
     answer:
-      "1. Open [Pool](/coach/campaigns?tab=pool), click Add people, then Sales Navigator.\n2. Click Base search. It opens Sales Navigator with our filters set.\n3. Change the area or anything else you want, then copy the web address.\n4. Back here, paste it under Custom URL. A saved search link works too.\n5. Pick an Import size and click Import to pool.\n\nSales Navigator needs to be connected in [Settings](/coach/settings?tab=integrations) first.",
+      "1. Open [Lead Lists](/coach/campaigns?tab=pool), click Add people, then Sales Navigator.\n2. Click Base search. It opens Sales Navigator with our filters set.\n3. Change the area or anything else you want, then copy the web address.\n4. Back here, paste it under Custom URL. A saved search link works too.\n5. Pick an Import size and click Import to pool.\n\nSales Navigator needs to be connected in [Settings](/coach/settings?tab=integrations) first.",
     aliases: ["sales navigator url", "import saved search", "custom url", "base search"],
     sources: ["ticket 19 Nov", "SUP-505", "SUP-563", "app"],
   },
@@ -555,7 +555,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     topic: "get-clients",
     group: "prospects",
     fix: true,
-    question: "The Pool search found the wrong kind of businesses. What can I do?",
+    question: "The Lead Lists search found the wrong kind of businesses. What can I do?",
     answer:
       "A broad term pulls in everything nearby that mentions it. \"IT services\" finds electricians and carpet cleaners who list IT work. Use the words the owner would use for their own business, and add the town or area.\n\nIf you are stuck on wording, tell us who you want and we run the search with you.",
     aliases: ["google maps import", "pool import wrong results"],
@@ -565,9 +565,9 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     id: "filtered-pool-next",
     topic: "get-clients",
     group: "prospects",
-    question: "I've filtered my Pool. What's the next step?",
+    question: "I've filtered my lead lists. What's the next step?",
     answer:
-      "1. In [Pool](/coach/campaigns?tab=pool), tick the people you want.\n2. Click Add to campaign and pick the campaign.\n\nA LinkedIn campaign needs people with a LinkedIn profile, and an email campaign needs an email address. Anyone on your blacklist is left out on its own. You can also add them from inside the campaign: open its Prospects tab, click Add prospects and choose Already in the system.\n\nRather we did it? Tell us in Support which list to start with and we add them for you.",
+      "1. In [Lead Lists](/coach/campaigns?tab=pool), tick the people you want.\n2. Click Add to campaign and pick the campaign.\n\nA LinkedIn campaign needs people with a LinkedIn profile, and an email campaign needs an email address. Anyone on your blacklist is left out on its own. You can also add them from inside the campaign: open its Prospects tab, click Add prospects and choose Already in the system.\n\nRather we did it? Tell us in Support which list to start with and we add them for you.",
     aliases: ["pool ready", "start my campaign", "marketing campaign going", "add to campaign", "add list to campaign", "add prospects"],
     sources: ["SUP-608"],
   },
@@ -577,7 +577,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "prospects",
     question: "Can I export my prospects?",
     answer:
-      "Yes. On [Pool](/coach/campaigns?tab=pool) or [Prospects](/coach/prospects), click Export. Choose Shown columns for what you see on screen, or All columns for everything. If you have ticked some people, you can export just those.\n\nYou get a CSV file that opens in Excel or Google Sheets.",
+      "Yes. On [Lead Lists](/coach/campaigns?tab=pool) or [Pipeline](/coach/prospects), click Export. Choose Shown columns for what you see on screen, or All columns for everything. If you have ticked some people, you can export just those.\n\nYou get a CSV file that opens in Excel or Google Sheets.",
     aliases: ["export to excel", "download prospects", "download my list", "csv export"],
     sources: ["ticket 21 May", "app"],
   },
@@ -587,7 +587,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "prospects",
     question: "How do I stop a prospect's follow-up emails?",
     answer:
-      "Use this when someone took your BOSS Score but you don't want the emails to keep going to them, for example a friend testing it or someone who isn't a prospect.\n\n1. Open [Prospects](/coach/prospects) and click the person's name.\n2. On the left, find the Campaigns section. Each set of follow-ups shows as a small box, such as \"Scorecard · Completed · In sequence\".\n3. Click the small × on that box.\n4. Click OK when it asks \"Do you want to remove them from…?\"\n\nThat stops the emails for this one person. Everyone else keeps getting theirs.\n\nThe emails also stop on their own when the person books a call or replies. To stop everything for someone who asked not to be contacted, see [someone asked not to be contacted](/coach/support?tab=help&a=do-not-contact). If you get stuck, send us their name or email in Support and we stop it.",
+      "Use this when someone took your BOSS Score but you don't want the emails to keep going to them, for example a friend testing it or someone who isn't a prospect.\n\n1. Open [Pipeline](/coach/prospects) and click the person's name.\n2. On the left, find the Campaigns section. Each set of follow-ups shows as a small box, such as \"Scorecard · Completed · In sequence\".\n3. Click the small × on that box.\n4. Click OK when it asks \"Do you want to remove them from…?\"\n\nThat stops the emails for this one person. Everyone else keeps getting theirs.\n\nThe emails also stop on their own when the person books a call or replies. To stop everything for someone who asked not to be contacted, see [someone asked not to be contacted](/coach/support?tab=help&a=do-not-contact). If you get stuck, send us their name or email in Support and we stop it.",
     aliases: ["unsubscribe prospect", "stop nurture emails", "spamming her", "stop follow up", "stop sequence", "remove from sequence", "stop scorecard emails"],
     sources: ["community 28 Oct", "app"],
   },
@@ -597,7 +597,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "prospects",
     question: "Someone asked not to be contacted. How do I stop everything?",
     answer:
-      "1. Open each campaign they are in, go to the Prospects tab, tick them and click Remove. Nothing more goes out to them.\n2. In [Pool](/coach/campaigns?tab=pool), tick them and click Blacklist, so no campaign takes them again.\n3. If they took your BOSS Score, stop their follow-up emails too. See [stop a prospect's follow-up emails](/coach/support?tab=help&a=stop-scorecard-emails).",
+      "1. Open each campaign they are in, go to the Prospects tab, tick them and click Remove. Nothing more goes out to them.\n2. In [Lead Lists](/coach/campaigns?tab=pool), tick them and click Blacklist, so no campaign takes them again.\n3. If they took your BOSS Score, stop their follow-up emails too. See [stop a prospect's follow-up emails](/coach/support?tab=help&a=stop-scorecard-emails).",
     aliases: ["unsubscribe", "do not contact", "dnd", "opt out", "remove from campaign", "blacklist", "stop messaging someone"],
     sources: ["ticket 12 Jun", "app"],
   },
@@ -782,7 +782,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "boss-score",
     question: "What are lead magnets, and where do I manage them?",
     answer:
-      "A lead magnet is something free a business owner gets for their name and email. Yours are the BOSS Score and BOSS Pro. Find them under Get Clients, in [Campaigns, then Lead Magnets](/coach/campaigns?tab=magnets).\n\nOpen one to manage it. Overview shows how many people opted in, started and finished. People lists each of them by name. Sequences holds the emails they get afterwards. Share gives you the links, a QR code and the code for your website.\n\nSettings on the same page sets who sends the emails: this app or your old CRM.",
+      "A lead magnet is something free a business owner gets for their name and email. Yours are the BOSS Score and BOSS Pro. Find them under Get Calls, in [Lead Magnets](/coach/campaigns?tab=magnets).\n\nOpen one to manage it. Overview shows how many people opted in, started and finished. People lists each of them by name. Sequences holds the emails they get afterwards. Share gives you the links, a QR code and the code for your website.\n\nSettings on the same page sets who sends the emails: this app or your old CRM.",
     aliases: ["about lead magnets", "lead magnet", "where are my lead magnets", "funnel settings"],
     sources: ["ticket 20 Nov", "app"],
   },
@@ -792,7 +792,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "boss-score",
     question: "Where are my BOSS Score links to send to prospects?",
     answer:
-      "1. In the left sidebar, under Get Clients, click Campaigns.\n2. Click the Lead Magnets tab.\n3. Open Boss Score Assessment and click Share.\n4. Copy the link and paste it into your message.\n\nEach link is yours, so anyone who completes it shows up in your [Prospects](/coach/prospects) with their score. To send one person a link with their details already filled in, see [personalised scorecard links](/coach/support?tab=help&a=personalised-scorecard-link).\n\nThe older videos show this under Settings. It moved, and the videos are being redone.",
+      "1. In the left sidebar, click Get Calls.\n2. Click the Lead Magnets tab.\n3. Open Boss Score Assessment and click Share.\n4. Copy the link and paste it into your message.\n\nEach link is yours, so anyone who completes it shows up in your [Pipeline](/coach/prospects) with their score. To send one person a link with their details already filled in, see [personalised scorecard links](/coach/support?tab=help&a=personalised-scorecard-link).\n\nThe older videos show this under Settings. It moved, and the videos are being redone.",
     aliases: ["scorecard link", "lead magnet link", "boss score not in my profile"],
     sources: ["SUP-609", "SUP-558"],
   },
@@ -812,7 +812,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "boss-score",
     question: "A prospect finished the scorecard. Where do I see their answers?",
     answer:
-      "1. Open [Prospects](/coach/prospects) and click the person's name.\n2. On the left, find the Assessment section.\n3. Click their Boss Score. Their report opens with the score, each answer and when they did it.\n\nTo send them a copy, see [send a prospect their scorecard](/coach/support?tab=help&a=send-prospect-their-scorecard).\n\nYou also get an email when someone completes it, so you can call them while it is fresh.",
+      "1. Open [Pipeline](/coach/prospects) and click the person's name.\n2. On the left, find the Assessment section.\n3. Click their Boss Score. Their report opens with the score, each answer and when they did it.\n\nTo send them a copy, see [send a prospect their scorecard](/coach/support?tab=help&a=send-prospect-their-scorecard).\n\nYou also get an email when someone completes it, so you can call them while it is fresh.",
     aliases: ["see scorecard answers", "completed scorecard", "only see the score"],
     sources: ["playbook", "community 26 May", "SUP-496"],
   },
@@ -822,7 +822,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "boss-score",
     question: "Can I send a prospect a copy of the scorecard they filled in?",
     answer:
-      "Yes. You copy a link to their report and send it to them yourself.\n\n1. Open [Prospects](/coach/prospects) and click the person's name.\n2. On the left, find the Assessment section. You see their Boss Score and the date.\n3. Click Report link, just under the score. It copies the link and shows Copied!\n4. Open your message to them, in [Conversations](/coach/conversations), LinkedIn or email.\n5. Paste the link and send. They click it and see their full results.\n\nThere is a quicker way too. In the List view on Prospects, click Share in the Boss column. It copies the same link. For BOSS Pro, use Client link instead.\n\nIf you want it as a PDF for a meeting, ask in Support and we send one.",
+      "Yes. You copy a link to their report and send it to them yourself.\n\n1. Open [Pipeline](/coach/prospects) and click the person's name.\n2. On the left, find the Assessment section. You see their Boss Score and the date.\n3. Click Report link, just under the score. It copies the link and shows Copied!\n4. Open your message to them, in [Conversations](/coach/conversations), LinkedIn or email.\n5. Paste the link and send. They click it and see their full results.\n\nThere is a quicker way too. In the List view on Prospects, click Share in the Boss column. It copies the same link. For BOSS Pro, use Client link instead.\n\nIf you want it as a PDF for a meeting, ask in Support and we send one.",
     aliases: ["resend scorecard results", "prospect lost their scorecard", "share report", "send results", "report link"],
     sources: ["community 13 Jul", "app"],
   },
@@ -852,7 +852,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "boss-score",
     question: "Can I put the BOSS Score on my own website?",
     answer:
-      "1. Open [Lead Magnets](/coach/campaigns?tab=magnets), open Boss Score Assessment and click Share.\n2. Under Embed on your website, pick Full funnel embed, which starts with the opt-in page, or Scorecard-only embed, which goes straight to the questions.\n3. Click Copy code.\n4. Paste the code where your website accepts HTML, such as an embed or code block.\n\nIt sizes itself to fit. Anyone who finishes it lands in your [Prospects](/coach/prospects), the same as from your link.\n\nThe code needs your public link. If Share asks for one, add it there first.",
+      "1. Open [Lead Magnets](/coach/campaigns?tab=magnets), open Boss Score Assessment and click Share.\n2. Under Embed on your website, pick Full funnel embed, which starts with the opt-in page, or Scorecard-only embed, which goes straight to the questions.\n3. Click Copy code.\n4. Paste the code where your website accepts HTML, such as an embed or code block.\n\nIt sizes itself to fit. Anyone who finishes it lands in your [Pipeline](/coach/prospects), the same as from your link.\n\nThe code needs your public link. If Share asks for one, add it there first.",
     aliases: ["embed", "iframe", "scorecard on my website", "opt in box on my site", "embed landing page"],
     sources: ["ticket 28 May", "app"],
   },
@@ -862,7 +862,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "boss-score",
     question: "Where's a blank BOSS Scorecard I can print?",
     answer:
-      "Open [Toolkit, then Print](/coach/toolkit?view=print) under Get Clients. BOSS Scorecard - A4 carries your name, photo and a QR code that opens your scorecard online. Click PDF to print it, PNG for a picture, or SVG for a printer or designer.\n\nThe QR code needs your public link. If the page asks for one, set it in [Links](/coach/share) first.",
+      "Open [Toolkit, then Print](/coach/toolkit?view=print) under Get Calls. BOSS Scorecard - A4 carries your name, photo and a QR code that opens your scorecard online. Click PDF to print it, PNG for a picture, or SVG for a printer or designer.\n\nThe QR code needs your public link. If the page asks for one, set it in [Links](/coach/share) first.",
     aliases: ["blank score card", "printable scorecard", "paper scorecard", "scorecard pdf", "print the scorecard"],
     sources: ["ticket 16 Nov", "app"],
   },
@@ -1048,7 +1048,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "clients",
     question: "A prospect has become a client. How do I move them across?",
     answer:
-      "Well done. There is no button for this yet, so tell us in Support who it is and we move them across for you, with everything they've done so far.\n\nPlease don't add them again with Add client. The app sees the same LinkedIn profile and stops you, because they are already a prospect.\n\nMeanwhile, set their status on [Prospects](/coach/prospects) to Won, so your numbers count them.",
+      "Well done. There is no button for this yet, so tell us in Support who it is and we move them across for you, with everything they've done so far.\n\nPlease don't add them again with Add client. The app sees the same LinkedIn profile and stops you, because they are already a prospect.\n\nMeanwhile, set their status on [Pipeline](/coach/prospects) to Won, so your numbers count them.",
     aliases: ["convert prospect to client", "won a client", "prospect became client", "already a prospect"],
     sources: ["app"],
   },
@@ -1158,7 +1158,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "coaching",
     question: "Where are the client simulator and the call simulator?",
     answer:
-      "There are two. The [Client simulator](/coach/simulator) is under Keep Clients. You practise coaching conversations out loud with AI clients, then get a score and a report.\n\nThe [Call simulator](/coach/script/simulator) is for sales calls. Open Get Clients, then Scripts, and click Start practising under the scripts. You talk to AI owners, from a cold call to the close. It comes with Get Clients.\n\nOld links on theprofitcoach.com or academy.businesscoachacademy.com no longer work. Use these instead.",
+      "There are two. The [Client simulator](/coach/simulator) is under Keep Clients. You practise coaching conversations out loud with AI clients, then get a score and a report.\n\n[Call Practice](/coach/script/simulator) is for sales calls. Open Win Clients, then Call Practice. You talk to AI owners, from a cold call to the close. It comes with Get Calls and Win Clients.\n\nOld links on theprofitcoach.com or academy.businesscoachacademy.com no longer work. Use these instead.",
     aliases: ["client simulator", "call simulator", "practice calls", "ai coaching practice", "role play", "simulator link broken"],
     sources: ["ticket 14 Jul (I cannot find a link to the client simulators)", "ticket 5 Nov (Scorecard not filling in)", "app"],
   },
