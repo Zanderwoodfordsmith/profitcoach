@@ -161,9 +161,12 @@ export async function processExpiredInviteTimeouts(): Promise<number> {
   const now = new Date().toISOString();
   const { data: leads, error } = await supabaseAdmin
     .from("linkedin_campaign_leads")
+    // Running campaigns only: leads of a paused campaign are skipped below
+    // without being cleared, and 20 of them would hide every other lead.
     .select(
-      "id, coach_id, campaign_id, contact_id, linkedin_url, linkedin_provider_id, first_name, last_name, company, title, current_step_position"
+      "id, coach_id, campaign_id, contact_id, linkedin_url, linkedin_provider_id, first_name, last_name, company, title, current_step_position, linkedin_campaigns!inner(status)"
     )
+    .eq("linkedin_campaigns.status", "running")
     .eq("status", "invited")
     .lte("next_action_at", now)
     .not("next_action_at", "is", null)

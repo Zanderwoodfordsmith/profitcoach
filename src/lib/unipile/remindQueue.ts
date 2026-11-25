@@ -624,13 +624,19 @@ export async function processRemindFallbacks(): Promise<{
   errors: string[];
 }> {
   const now = Date.now();
+  // Only reminders that can fall back to an auto-send. Reminders the coach
+  // handles by hand (no fallback, or a call) used to sit in this window and,
+  // once there were 20, hid every fallback behind them.
   const { data: jobs, error } = await supabaseAdmin
     .from("linkedin_send_jobs")
-    .select("*")
+    .select("*, linkedin_campaign_steps!inner(id)")
     .eq("status", "awaiting_coach")
     .lte("scheduled_for", new Date().toISOString())
+    .eq("linkedin_campaign_steps.step_type", "message")
+    .eq("linkedin_campaign_steps.send_mode", "remind")
+    .gt("linkedin_campaign_steps.fallback_hours", 0)
     .order("scheduled_for", { ascending: true })
-    .limit(20);
+    .limit(100);
   if (error) throw new Error(error.message);
 
   let processed = 0;
@@ -638,6 +644,8 @@ export async function processRemindFallbacks(): Promise<{
   let failed = 0;
   const errors: string[] = [];
   const sentAccounts = new Set<string>();
+  // An account that can't send now (limit, hours) is checked once per tick.
+  const blockedAccounts = new Set<string>();
 
   for (const job of jobs ?? []) {
     const { data: step } = await supabaseAdmin
@@ -713,7 +721,7 @@ export async function processRemindFallbacks(): Promise<{
     const outreachAccountId =
       (campaign.outreach_account_id as string | null) ?? null;
     const accountKey = outreachAccountId || `coach:${String(job.coach_id)}`;
-    if (sentAccounts.has(accountKey)) continue;
+    if (sentAccounts.has(accountKey) || blockedAccounts.has(accountKey)) continue;
 
     const sendAccount = outreachAccountId
       ? await loadAccountSendSettings(outreachAccountId)
@@ -732,6 +740,7 @@ export async function processRemindFallbacks(): Promise<{
       sendAccount,
     });
     if (!safety.result.ok) {
+      blockedAccounts.add(accountKey);
       // Do not move scheduled_for — fallbackAt is derived from it.
       await supabaseAdmin
         .from("linkedin_send_jobs")

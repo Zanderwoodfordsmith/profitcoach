@@ -66,8 +66,113 @@ import { normalizeUnipileProvider } from "@/lib/unipile/providers";
 
 /** Global jobs claimed per cron tick (across coaches). */
 const MAX_JOBS_PER_TICK = 8;
-/** Lookahead so we can pick one job per LinkedIn account. */
-const CANDIDATE_JOBS_PER_TICK = 48;
+/** A claimed job still "running" after this died mid-send (functions stop at 60s). */
+const STALE_RUNNING_MS = 15 * 60_000;
+/** A safety deferral further out than this is a limit or closed hours, not pacing. */
+const BULK_DEFER_AFTER_MS = 30 * 60_000;
+
+/**
+ * The oldest due job of each running campaign.
+ *
+ * Until 25 Nov this read the 48 oldest due jobs across everyone. One coach
+ * whose account hit its daily limit filled that window (46 of 48 were Andy's)
+ * and no other coach sent for 18 hours. One job per campaign means a stuck
+ * campaign can never hide another one, and jobs of paused, draft or archived
+ * campaigns are never read.
+ */
+async function loadOldestDueJobPerRunningCampaign(
+  now: string
+): Promise<Array<Record<string, unknown>>> {
+  const { data: campaigns, error } = await supabaseAdmin
+    .from("linkedin_campaigns")
+    .select("id")
+    .eq("status", "running");
+  if (error) throw new Error(error.message);
+  const rows = await Promise.all(
+    (campaigns ?? []).map(async (c) => {
+      const { data, error: jobErr } = await supabaseAdmin
+        .from("linkedin_send_jobs")
+        .select("*")
+        .eq("campaign_id", c.id as string)
+        .eq("status", "pending")
+        .lte("scheduled_for", now)
+        .order("scheduled_for", { ascending: true })
+        .limit(1);
+      if (jobErr) throw new Error(jobErr.message);
+      return (data ?? [])[0] as Record<string, unknown> | undefined;
+    })
+  );
+  return rows.filter((r): r is Record<string, unknown> => Boolean(r));
+}
+
+async function loadJobsById(
+  ids: string[],
+  now: string
+): Promise<Array<Record<string, unknown>>> {
+  const { data, error } = await supabaseAdmin
+    .from("linkedin_send_jobs")
+    .select("*")
+    .in("id", ids)
+    .eq("status", "pending")
+    .lte("scheduled_for", now)
+    .order("scheduled_for", { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as Array<Record<string, unknown>>;
+}
+
+/**
+ * A job left "running" means the function stopped mid-send. It never retries
+ * and its lead never moves on. Fail it with a plain reason so it shows up;
+ * not retried, because the message may already have gone.
+ */
+async function releaseStaleRunningJobs(): Promise<void> {
+  const cutoff = new Date(Date.now() - STALE_RUNNING_MS).toISOString();
+  await supabaseAdmin
+    .from("linkedin_send_jobs")
+    .update({
+      status: "failed",
+      last_error:
+        "Stopped part-way through sending. Check LinkedIn to see if it went before sending again.",
+    })
+    .eq("status", "running")
+    .lt("updated_at", cutoff);
+}
+
+/**
+ * A limit or closed hours holds every due job of this kind in the campaign,
+ * not just this one. Move them all together so the queue does not re-check
+ * them one per tick.
+ */
+async function deferCampaignStepTypeJobs(input: {
+  campaignId: string;
+  stepType: string;
+  deferUntil: Date;
+  reason: string;
+}): Promise<void> {
+  const { data: steps } = await supabaseAdmin
+    .from("linkedin_campaign_steps")
+    .select("id, config")
+    .eq("campaign_id", input.campaignId)
+    .eq("step_type", input.stepType);
+  // Invite steps that fall back to Open Profile InMail use the message quota,
+  // so an invite limit must not hold them.
+  const stepIds = (steps ?? [])
+    .filter(
+      (s) => input.stepType !== "invite" || !inviteOpenProfileInmailFrom(s.config)
+    )
+    .map((s) => s.id as string);
+  if (!stepIds.length) return;
+  await supabaseAdmin
+    .from("linkedin_send_jobs")
+    .update({
+      scheduled_for: input.deferUntil.toISOString(),
+      last_error: input.reason,
+    })
+    .eq("campaign_id", input.campaignId)
+    .eq("status", "pending")
+    .in("step_id", stepIds)
+    .lt("scheduled_for", input.deferUntil.toISOString());
+}
 
 function isCannotResendYet(err: unknown): boolean {
   const message = err instanceof Error ? err.message : String(err);
@@ -374,22 +479,14 @@ export async function processOutreachJobsTick(options?: {
   const fallback = only ? { processed: 0, succeeded: 0, failed: 0, errors: [] as string[] } : await processRemindFallbacks();
   if (!only) await processExpiredInviteTimeouts();
 
+  if (!only) await releaseStaleRunningJobs();
+
   const now = new Date().toISOString();
-  let query = supabaseAdmin
-    .from("linkedin_send_jobs")
-    .select("*")
-    .eq("status", "pending")
-    .lte("scheduled_for", now);
-  if (only) query = query.in("id", only);
-  const { data: candidates, error } = await query
-    .order("scheduled_for", { ascending: true })
-    .limit(CANDIDATE_JOBS_PER_TICK);
+  const candidates = only
+    ? await loadJobsById(only, now)
+    : await loadOldestDueJobPerRunningCampaign(now);
 
-  if (error) throw new Error(error.message);
-
-  const jobs = await pickJobsOnePerAccount(
-    (candidates ?? []) as Array<Record<string, unknown>>
-  );
+  const jobs = await pickJobsOnePerAccount(candidates);
 
   let processed = 0;
   let succeeded = 0;
@@ -530,6 +627,17 @@ export async function processOutreachJobsTick(options?: {
               last_error: safety.result.reason,
             })
             .eq("id", job.id);
+          if (
+            safety.result.deferUntil.getTime() - Date.now() >
+            BULK_DEFER_AFTER_MS
+          ) {
+            await deferCampaignStepTypeJobs({
+              campaignId: job.campaign_id,
+              stepType,
+              deferUntil: safety.result.deferUntil,
+              reason: safety.result.reason,
+            });
+          }
           continue;
         }
       }
