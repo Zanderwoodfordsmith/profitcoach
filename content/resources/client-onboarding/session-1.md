@@ -85,7 +85,7 @@ If they are just saying “well as much as possible”, ask them how much in the
 ## 3. Profit System Overview (5m)
 
 - Explain that the way to help bridge that gap between where they are now and their ideal is through using the profit system so just going to take 5 minutes to share it so they have absolute clarity.
-- Go through 5 levels (relate it back to the levels in the PFM), 3 Pillars & 9 steps (you can learn this in other parts of the system). Present it in your style.
+- Go through 5 levels (relate it back to the levels in the PFM), 3 Pillars & 9 steps (learn them in the lesson [The Profit System: 5 Levels, 3 Pillars, 9 Steps](/coach/academy/classroom/coach-clients/coach-clients-client-onboarding-profit-system)). Present it in your style.
 
 Question to Ask
 

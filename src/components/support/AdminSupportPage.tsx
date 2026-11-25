@@ -58,6 +58,7 @@ import type { SupportCallContactPrefill } from "@/lib/support/supportCallPrefill
 import type { SupportCallHostSlug } from "@/lib/support/supportCallHosts";
 import { SupportCallAdminSettings } from "@/components/support/SupportCallAdminSettings";
 import { SupportTicketBookCall } from "@/components/support/SupportTicketBookCall";
+import { SupportSentFrom } from "@/components/support/SupportSentFrom";
 import { SupportChatPagePicker } from "@/components/support/SupportChatPagePicker";
 import { SupportTicketCoachPayments } from "@/components/support/SupportTicketCoachPayments";
 import {
@@ -1609,6 +1610,11 @@ export function AdminSupportPage() {
     selected && !showPeopleList ? (
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">
+          {selected.page_path ? (
+            <div className="mb-4">
+              <SupportSentFrom path={selected.page_path} />
+            </div>
+          ) : null}
           {selected.created_by ? (
             <div className="mb-4">
               <span className="mb-1 block text-xs font-medium text-slate-600">What it&apos;s about</span>
@@ -1909,6 +1915,11 @@ export function AdminSupportPage() {
                 <ClipboardList className="h-3.5 w-3.5" aria-hidden />
                 Blueprint
               </a>
+            </div>
+          ) : null}
+          {row.page_path ? (
+            <div className="mt-4">
+              <SupportSentFrom path={row.page_path} />
             </div>
           ) : null}
 
@@ -2887,6 +2898,7 @@ export function AdminSupportPage() {
                     <h3 className="text-kicker font-semibold uppercase tracking-wide text-slate-400">
                       This thread
                     </h3>
+                    {selected.page_path ? <SupportSentFrom path={selected.page_path} /> : null}
                     <label className="flex items-center gap-3">
                       <span className="w-16 shrink-0 text-xs font-medium text-slate-600">Assigned</span>
                       <select

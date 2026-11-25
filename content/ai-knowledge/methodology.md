@@ -53,11 +53,13 @@ The 10 areas cover:
 
 ### The 3 Pillars
 
-| Pillar | Focus | What It Solves |
+Clarify vision, Control velocity, Create value. Use the full phrase or one word each: Clarify, Control, Create, or Vision, Velocity, Value.
+
+| Pillar | Steps | What It Solves |
 |--------|-------|---------------|
-| **Control** | Visibility, structure, accountability | Owner can't see what's happening, no systems, firefighting |
-| **Velocity** | Cash flow, quick wins, fast interventions | Business is stuck, needs immediate momentum and cash |
-| **Value** | Sustainable growth, people, leadership, strategy | Business needs to grow beyond the owner, build team and culture |
+| **Clarify vision** | 1 Aligned Vision, 2 Defined Strategy, 3 Disciplined Planning | Foggy future, busy tactics, endless to-dos with no 90-day rhythm |
+| **Control velocity** | 4 Profit & Cash Flow, 5 Revenue & Marketing, 6 Operations & Delivery | Tight cash, feast or famine sales, a business that needs the owner to deliver |
+| **Create value** | 7 Financials & Metrics, 8 Infrastructure & Systems, 9 Team & Leadership | Gut-feel numbers, daily heroics, an owner doing it all instead of a team |
 
 ---
 
