@@ -857,10 +857,17 @@ export function DashboardTopActions({
 
   useEffect(() => {
     if (!notificationViewer?.id) return;
-    void loadNotifications();
-    if (prospectsEnabled) {
-      void loadProspectNotifications();
-    }
+    // First load of the page: let the page's own data go first, then fill
+    // the bell (it paints from cache straight away on later pages).
+    const firstLoad = window.setTimeout(
+      () => {
+        void loadNotifications();
+        if (prospectsEnabled) {
+          void loadProspectNotifications();
+        }
+      },
+      peekHubQuery(`bell:${variant}:${notificationViewer.id}`) ? 0 : 1500
+    );
     const refresh = () => {
       if (document.hidden) return;
       void loadNotifications();
@@ -871,6 +878,7 @@ export function DashboardTopActions({
     const handle = window.setInterval(refresh, 60_000);
     document.addEventListener("visibilitychange", refresh);
     return () => {
+      window.clearTimeout(firstLoad);
       window.clearInterval(handle);
       document.removeEventListener("visibilitychange", refresh);
     };
@@ -879,6 +887,7 @@ export function DashboardTopActions({
     loadProspectNotifications,
     notificationViewer?.id,
     prospectsEnabled,
+    variant,
   ]);
 
   useEffect(() => {

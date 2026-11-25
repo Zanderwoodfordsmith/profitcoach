@@ -39,10 +39,12 @@ export function GetClientsHubWarmup() {
     }
 
     const current = pathname.split("?")[0] ?? pathname;
+    // Lead Lists, Campaigns and Lead Magnets share one path (?tab=…), so
+    // compare the whole link: from Lead Lists, still warm Campaigns.
+    const currentHref = `${current}${window.location.search}`;
     const idle = window.setTimeout(() => {
       for (const item of items) {
-        const href = item.href.split("?")[0] ?? item.href;
-        if (href === current) continue;
+        if (item.href === currentHref) continue;
         prefetchGetClientsHref(item.href);
       }
       if (!current.endsWith("/calls")) {

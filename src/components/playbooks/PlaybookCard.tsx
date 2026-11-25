@@ -73,6 +73,7 @@ export function PlaybookCard({
   return (
     <Link
       href={href}
+      data-tour="playbook-card"
       className={`${cardClass("raised")} group flex h-full min-h-0 min-w-0 flex-col overflow-hidden text-left transition duration-300 hover:-translate-y-1 hover:border-slate-300/90 hover:shadow-[0_18px_44px_-16px_rgba(12,82,144,0.38)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290] focus-visible:ring-offset-2 ${
         locked ? "opacity-[0.92]" : ""
       }`}

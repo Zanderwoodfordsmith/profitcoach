@@ -22,6 +22,7 @@ export function CallSimBanner() {
   return (
     <Link
       href={`${prefix}/script/simulator`}
+      data-tour="scripts-call-sim"
       className="classroom-system-banner group mt-6 flex flex-col overflow-hidden rounded-xl border border-white/80 bg-white/35 shadow-[0_16px_44px_rgba(15,23,42,0.14),0_3px_10px_rgba(15,23,42,0.06)] backdrop-blur-xl ring-1 ring-inset ring-white/55 transition duration-300 hover:bg-white/45 hover:shadow-[0_28px_56px_rgba(15,23,42,0.24),0_8px_18px_rgba(15,23,42,0.1),0_0_0_1px_rgba(12,82,144,0.12),0_0_22px_rgba(12,82,144,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
     >
       <div className="classroom-system-banner__preview !bg-[radial-gradient(120%_90%_at_50%_100%,#0c5290_0%,#051e36_62%)]">

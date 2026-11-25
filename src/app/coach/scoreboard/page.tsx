@@ -9,7 +9,7 @@ export default function CoachScoreboardPage() {
     <div className="flex flex-col">
       <StickyPageHeader
         title="Win Clients"
-        description="Your numbers against your income target, from first outreach to new clients. Drag any of them to see what changes."
+        description="Set your income target and see how many messages, calls and clients it takes. Drag any number to see what changes."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
       <ScoreboardBoardV2 />

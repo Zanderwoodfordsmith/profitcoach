@@ -105,9 +105,56 @@ type CampaignListRow = {
   updated_at: string;
 };
 
+type CampaignLeadCountRow = {
+  status: string | null;
+  interest_outcome: string | null;
+  n: number;
+};
+
+/**
+ * Lead counts per campaign by status and reply outcome. The database does the
+ * counting (campaign_lead_counts) instead of sending every lead row here.
+ */
+async function loadCampaignLeadCounts(
+  campaignIds: string[]
+): Promise<Map<string, CampaignLeadCountRow[]>> {
+  const countRowsByCampaign = new Map<
+    string,
+    CampaignLeadCountRow[]
+  >();
+  if (campaignIds.length > 0) {
+    const { data: countRows, error: countError } = await fetchAllSupabasePages<{
+      campaign_id: string;
+      status: string | null;
+      interest_outcome: string | null;
+      n: number | string;
+    }>(async (from, to) =>
+      supabaseAdmin
+        .rpc("campaign_lead_counts", { p_campaign_ids: campaignIds })
+        .range(from, to)
+    );
+    if (countError) throw new Error(countError.message ?? "Unable to load leads.");
+    for (const row of countRows) {
+      const list = countRowsByCampaign.get(row.campaign_id) ?? [];
+      list.push({
+        status: row.status,
+        interest_outcome: row.interest_outcome,
+        n: Number(row.n) || 0,
+      });
+      countRowsByCampaign.set(row.campaign_id, list);
+    }
+  }
+
+  return countRowsByCampaign;
+}
+
 async function withCampaignListCounts(campaigns: CampaignListRow[]) {
   const campaignIds = campaigns.map((c) => c.id);
   const stepTypesByCampaign = new Map<string, string[]>();
+  // Step types and lead counts load side by side.
+  const countsPromise = loadCampaignLeadCounts(campaignIds);
+  // Awaited below; this stops a failure counting as unhandled meanwhile.
+  countsPromise.catch(() => undefined);
   if (campaignIds.length > 0) {
     const { data: stepRows } = await supabaseAdmin
       .from("linkedin_campaign_steps")
@@ -122,34 +169,20 @@ async function withCampaignListCounts(campaigns: CampaignListRow[]) {
     }
   }
 
+  const countRowsByCampaign = await countsPromise;
+
   return Promise.all(
     campaigns.map(async (c) => {
-      // PostgREST caps a single response at ~1000 rows — page through.
-      const { data: leadRows, error: leadsError } = await fetchAllSupabasePages<{
-        status: string | null;
-        interest_outcome: string | null;
-      }>(async (from, to) =>
-        supabaseAdmin
-          .from("linkedin_campaign_leads")
-          .select("status, interest_outcome")
-          .eq("campaign_id", c.id)
-          .order("created_at", { ascending: true })
-          .range(from, to)
-      );
-      if (leadsError) throw new Error(leadsError.message ?? "Unable to load leads.");
-
       const status_counts: Record<string, number> = {};
       const replies = emptyReplyCounts();
-      for (const row of leadRows) {
-        const s = (row.status as string) || "queued";
-        status_counts[s] = (status_counts[s] || 0) + 1;
-        const sentiment = classifyLeadReply(
-          s,
-          row.interest_outcome as string | null
-        );
-        if (sentiment) replies[sentiment] += 1;
+      let lead_count = 0;
+      for (const row of countRowsByCampaign.get(c.id) ?? []) {
+        const s = row.status || "queued";
+        status_counts[s] = (status_counts[s] || 0) + row.n;
+        lead_count += row.n;
+        const sentiment = classifyLeadReply(s, row.interest_outcome);
+        if (sentiment) replies[sentiment] += row.n;
       }
-      const lead_count = leadRows.length;
       const replied = status_counts.replied || 0;
       const interested =
         (status_counts.interested || 0) +

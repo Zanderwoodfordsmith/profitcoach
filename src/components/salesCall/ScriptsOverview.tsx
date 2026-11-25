@@ -28,11 +28,12 @@ export function ScriptsOverview() {
   if (useSearchParams().get("v") === "1") return <ScriptsOverviewV1 />;
   return (
     <div className="mx-auto w-[80%] max-w-6xl pt-11">
-      <ul className="grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3 xl:gap-y-8">
+      <ul data-tour="scripts-list" className="grid items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-3 xl:gap-y-8">
         {SCRIPTS.map((s) => (
           <li key={s.id}>
             <Link
               href={`${prefix}/script/${s.id}`}
+              data-tour={`script-${s.id}`}
               className="group flex h-full flex-col overflow-hidden rounded-xl border border-white/80 bg-white/35 shadow-[0_16px_44px_rgba(15,23,42,0.14),0_3px_10px_rgba(15,23,42,0.06)] backdrop-blur-xl ring-1 ring-inset ring-white/55 transition duration-300 hover:bg-white/45 hover:shadow-[0_28px_56px_rgba(15,23,42,0.24),0_8px_18px_rgba(15,23,42,0.1),0_0_0_1px_rgba(12,82,144,0.12),0_0_22px_rgba(12,82,144,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
             >
               <div className="relative aspect-[16/9] overflow-hidden bg-slate-200">

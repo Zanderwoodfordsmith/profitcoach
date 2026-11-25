@@ -906,7 +906,7 @@ function CoachWorkshopPageContent() {
 
       <div className="flex min-w-0 flex-col gap-6 overflow-x-hidden">
       {!isMinimalChrome && !sessionSummary && (!loading || sessionSummary) && !error && (
-        <div className={cardClass("plain", "p-5 sm:p-6")}>
+        <div data-tour="boss-picker" className={cardClass("plain", "p-5 sm:p-6")}>
           <WorkshopSessionPicker idPrefix="workshop-main" {...workshopPickerProps} />
         </div>
       )}

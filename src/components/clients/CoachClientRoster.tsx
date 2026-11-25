@@ -256,6 +256,7 @@ function AddClientComposer({
   return (
     <form
       onSubmit={handleSave}
+      data-tour="clients-add-form"
       className={cardClass("plain", prominent ? "p-6 sm:p-8" : "p-5")}
     >
       <div className="flex items-start justify-between gap-3">
@@ -713,7 +714,7 @@ export function CoachClientRoster({
   return (
     <div className="flex flex-col gap-4 selection:bg-sky-200 selection:text-sky-950">
       <div className="flex flex-wrap items-end justify-between gap-3">
-        <p className="text-sm font-medium text-slate-800">{summary}</p>
+        <p data-tour="clients-summary" className="scroll-mt-20 text-sm font-medium text-slate-800">{summary}</p>
         <div className="flex flex-wrap items-center gap-2">
           {showSearch ? (
             <label className="relative block">
@@ -740,7 +741,8 @@ export function CoachClientRoster({
             <button
               type="button"
               onClick={() => setBulkOpen(true)}
-              className={buttonClass("second", "small")}
+              data-tour="clients-add-many"
+              className={buttonClass("second", "small", "scroll-mt-20")}
             >
               Add many
             </button>
@@ -749,7 +751,8 @@ export function CoachClientRoster({
             <button
               type="button"
               onClick={() => setAdding(true)}
-              className={buttonClass("main", "small")}
+              data-tour="clients-add"
+              className={buttonClass("main", "small", "scroll-mt-20")}
             >
               <Plus className="h-4 w-4" aria-hidden />
               Add client
@@ -776,7 +779,7 @@ export function CoachClientRoster({
       ) : null}
 
       {clients.length > 0 ? (
-        <div className={cardClass("plain", "overflow-x-auto")}>
+        <div data-tour="clients-table" className={cardClass("plain", "scroll-mt-20 overflow-x-auto")}>
           <table className="w-full min-w-[960px] border-collapse text-left">
             <caption className="sr-only">Your clients</caption>
             <thead>
@@ -825,6 +828,7 @@ export function CoachClientRoster({
                     <Fragment key={client.id}>
                       <tr
                         id={`client-row-${client.id}`}
+                        data-tour="clients-row"
                         tabIndex={0}
                         aria-expanded={open}
                         aria-label={`${open ? "Close" : "Edit"} ${client.fullName}`}
@@ -903,6 +907,7 @@ export function CoachClientRoster({
                         <td className="whitespace-nowrap px-3 py-3 text-right text-sm">
                           <Link
                             href={bossProHubPath(client.id)}
+                            data-tour="clients-boss"
                             onClick={(e) => e.stopPropagation()}
                             className="font-semibold tabular-nums text-sky-800 hover:text-sky-950"
                             aria-label={

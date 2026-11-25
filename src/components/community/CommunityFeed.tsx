@@ -2116,6 +2116,7 @@ export function CommunityFeed() {
                 ) : (
                   <button
                     type="button"
+                    data-tour="community-compose"
                     onClick={() => setComposeOpen(true)}
                     disabled={Boolean(loadError) || visibleCategories.length === 0}
                     className="mb-2 flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2 text-left shadow-[0_1px_2px_rgb(15_23_42/0.18),0_4px_10px_-2px_rgb(15_23_42/0.30)] transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60"
@@ -2143,6 +2144,7 @@ export function CommunityFeed() {
               {calendarLiveOccurrence ? (
                 <Link
                   href={communityCalendarHref}
+                  data-tour="community-next-call"
                   className="mt-[-8px] flex w-full max-md:translate-y-0.5 items-center justify-center gap-1.5 px-1 py-0 text-center"
                 >
                   <span className="inline-flex items-center gap-1 rounded-md bg-red-500 px-1.5 py-0 text-[9px] font-bold uppercase tracking-wide text-white">
@@ -2155,7 +2157,7 @@ export function CommunityFeed() {
                   <span className="text-[15px] font-medium text-slate-700">now</span>
                 </Link>
               ) : calendarNextOccurrence && nextEventWhen?.label ? (
-                <div className="mt-[-8px] flex w-full max-md:translate-y-0.5 items-center justify-center gap-1.5 px-1 py-0 text-center text-[15px] text-slate-800">
+                <div data-tour="community-next-call" className="mt-[-8px] flex w-full max-md:translate-y-0.5 items-center justify-center gap-1.5 px-1 py-0 text-center text-[15px] text-slate-800">
                   <Link
                     href={communityCalendarHref}
                     className="shrink-0 text-slate-600 hover:text-slate-800"
@@ -2351,7 +2353,7 @@ export function CommunityFeed() {
                       ) : null}
                     </section>
                   ) : null}
-                  <ul className={FEED_POST_LIST_CLASS}>
+                  <ul data-tour="community-feed" className={FEED_POST_LIST_CLASS}>
                     {displayedPublishedPosts.map((post) => (
                       <li key={post.id}>
                         <PostCard

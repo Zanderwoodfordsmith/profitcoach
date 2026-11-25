@@ -1068,46 +1068,7 @@ export function LinkedInCampaignsOverview() {
           prefix={prefix}
           active={magnetsTab ? "magnets" : poolTab ? "pool" : "campaigns"}
           actions={
-            campaignsTab ? (
-              <>
-                {!okLinkedInAccount && configured && !preview ? (
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => void connectLinkedIn()}
-                    className="text-sm font-medium text-[#0c5290] hover:underline disabled:opacity-50"
-                  >
-                    Connect LinkedIn
-                  </button>
-                ) : null}
-                {preview || okLinkedInAccount ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowSending(true)}
-                    className={buttonClass("second", "small")}
-                  >
-                    <SlidersHorizontal
-                      className="h-3.5 w-3.5 text-slate-500"
-                      strokeWidth={2.25}
-                      aria-hidden
-                    />
-                    Settings
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    setError(null);
-                    setShowCreate(true);
-                  }}
-                  className={buttonClass("main", "small")}
-                >
-                  <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
-                  Create campaign
-                </button>
-              </>
-            ) : magnetsTab ? (
+            magnetsTab ? (
               <LeadMagnetSettingsButton impersonatingCoachId={impersonatingCoachId} prefix={prefix} />
             ) : undefined
           }
@@ -1117,7 +1078,7 @@ export function LinkedInCampaignsOverview() {
       {campaignsTab ? (
         <div className="min-h-0 flex-1 overflow-y-auto pb-28">
           <div className="campaigns-overview-grid flex flex-col gap-4 pt-4 xl:grid xl:grid-cols-[minmax(0,1fr)_27rem] xl:grid-rows-[auto_1fr]">
-            <div className="xl:col-start-1 xl:row-start-1">
+            <div data-tour="campaigns-activity" className="xl:col-start-1 xl:row-start-1">
               <CampaignOverviewHero
                 connectRate={rates.connect}
                 replies={rates.replies}
@@ -1129,7 +1090,7 @@ export function LinkedInCampaignsOverview() {
                 Loading campaigns…
               </div>
             ) : (
-              <div className={cardClass("plain", "flex flex-col overflow-hidden xl:col-start-1 xl:row-start-2 xl:h-full xl:min-h-0")}>
+              <div data-tour="campaigns-list" className={cardClass("plain", "flex flex-col overflow-hidden xl:col-start-1 xl:row-start-2 xl:h-full xl:min-h-0")}>
                 {sorted.length === 0 && archivedCampaigns.length === 0 ? (
                   <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
                     <p className="text-sm font-medium text-slate-800">
@@ -1140,6 +1101,7 @@ export function LinkedInCampaignsOverview() {
                     </p>
                     <button
                       type="button"
+                      data-tour="campaigns-new"
                       onClick={() => {
                         setError(null);
                         setShowCreate(true);
@@ -1204,8 +1166,34 @@ export function LinkedInCampaignsOverview() {
                             >
                               Replies
                             </th>
-                            <th scope="col" className="w-12 px-3 py-3">
+                            <th scope="col" className="w-12 whitespace-nowrap py-1.5 pl-2 pr-4 text-right normal-case">
                               <span className="sr-only">Actions</span>
+                              <div className="inline-flex items-center gap-1">
+                                {preview || okLinkedInAccount ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowSending(true)}
+                                    title="Sending settings"
+                                    aria-label="Sending settings"
+                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
+                                  >
+                                    <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
+                                  </button>
+                                ) : null}
+                                <button
+                                  type="button"
+                                  data-tour="campaigns-new"
+                                  disabled={busy}
+                                  onClick={() => {
+                                    setError(null);
+                                    setShowCreate(true);
+                                  }}
+                                  className="inline-flex h-7 items-center gap-1.5 rounded-full bg-sky-600 px-3 text-caption font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
+                                >
+                                  <Plus className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+                                  New Campaign
+                                </button>
+                              </div>
                             </th>
                           </tr>
                         </thead>
@@ -1377,7 +1365,7 @@ export function LinkedInCampaignsOverview() {
               </div>
             )}
             <aside className="flex w-full flex-col gap-3 xl:col-start-2 xl:row-span-2 xl:row-start-1 xl:w-auto">
-              <div className={cardClass("plain", "flex h-[min(34rem,calc(100dvh-12rem))] shrink-0 flex-col overflow-hidden")}>
+              <div data-tour="campaigns-todo" className={cardClass("plain", "flex h-[min(34rem,calc(100dvh-12rem))] shrink-0 flex-col overflow-hidden")}>
                 <CampaignActivityPane preview={preview} />
               </div>
               {/* Locked, the cards show sample numbers under the blur. */}
@@ -1541,7 +1529,7 @@ export function LinkedInCampaignsOverview() {
           </div>
         ) : (
           <div className={cardClass("plain", "overflow-hidden")}>
-            <div className="flex justify-end border-b border-slate-100 px-5 py-3">
+            <div data-tour="magnets-url" className="flex justify-end border-b border-slate-100 px-5 py-3">
               <PublicSlugEditor
                 slug={coachSlug ?? ""}
                 onSlugChange={(next) => setCoachSlug(next)}

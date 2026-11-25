@@ -12,7 +12,7 @@ export default function CoachShareLinksPage() {
       header={
         <StickyPageHeader
           title="Get Calls"
-          description="Copy a link, or send it in a conversation."
+          description="Your links, ready to copy or send in a conversation, so an owner can start with you in one click."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />
       }

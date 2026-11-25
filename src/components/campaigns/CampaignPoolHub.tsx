@@ -58,6 +58,13 @@ import {
   partitionOrderedColumns,
 } from "@/hooks/usePersistedColumnSettings";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import {
+  clearHubQueries,
+  isHubQueryFresh,
+  peekHubQuery,
+  writeHubQuery,
+} from "@/lib/getClients/hubQueryCache";
+import { hubQueryKey } from "@/lib/getClients/hubKeys";
 import { LeadHoverCard, leadCardLoader } from "@/components/leads/LeadHoverCard";
 import { FitCheck } from "@/components/leads/FitCheck";
 import { fitOption } from "@/lib/pool/fit";
@@ -351,6 +358,32 @@ function downloadCsv(filename: string, rows: string[][]) {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * People per list view, kept in the hub paint cache so leaving Lead Lists and
+ * coming back paints at once (cleared on sign-out with the rest of the cache).
+ */
+const poolPeopleCache = {
+  key: (view: string) => hubQueryKey(`pool-people:${view}`),
+  get(view: string) {
+    return peekHubQuery<PoolPerson[]>(this.key(view));
+  },
+  set(view: string, rows: PoolPerson[]) {
+    writeHubQuery(this.key(view), rows);
+  },
+  fresh(view: string) {
+    return isHubQueryFresh(this.key(view));
+  },
+  clear() {
+    clearHubQueries(hubQueryKey("pool-people:"));
+  },
+  poolListId() {
+    return peekHubQuery<string>(hubQueryKey("pool-list-id")) ?? null;
+  },
+  setPoolListId(id: string) {
+    writeHubQuery(hubQueryKey("pool-list-id"), id);
+  },
+};
+
 export function CampaignPoolHub({
   campaigns,
   onToggleCampaign,
@@ -364,7 +397,13 @@ export function CampaignPoolHub({
   const isAdmin = pathname.startsWith("/admin");
   const { impersonatingCoachId } = useImpersonation();
   const [people, setPeople] = useState<PoolPerson[]>([]);
-  const [poolListId, setPoolListId] = useState<string | null>(null);
+  const [poolListId, setPoolListIdState] = useState<string | null>(() =>
+    poolPeopleCache.poolListId()
+  );
+  const setPoolListId = useCallback((id: string | null) => {
+    if (id) poolPeopleCache.setPoolListId(id);
+    setPoolListIdState(id);
+  }, []);
   const [activeViewId, setActiveViewId] = useState<"pool" | string>("pool");
   const [importLists, setImportLists] = useState<AudienceListSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -477,7 +516,6 @@ export function CampaignPoolHub({
   const activeViewIdRef = useRef(activeViewId);
   activeViewIdRef.current = activeViewId;
   const loadGenRef = useRef(0);
-  const peopleCacheRef = useRef<Map<string, PoolPerson[]>>(new Map());
 
   const listId =
     activeViewId === "pool" ? poolListId : activeViewId;
@@ -490,8 +528,8 @@ export function CampaignPoolHub({
     (rowId: string, patch: Partial<PoolPerson>) => {
       const apply = (row: PoolPerson) => (row.id === rowId ? { ...row, ...patch } : row);
       setPeople((prev) => prev.map(apply));
-      const cached = peopleCacheRef.current.get(activeViewId);
-      if (cached) peopleCacheRef.current.set(activeViewId, cached.map(apply));
+      const cached = poolPeopleCache.get(activeViewId);
+      if (cached) poolPeopleCache.set(activeViewId, cached.map(apply));
     },
     [activeViewId]
   );
@@ -609,13 +647,15 @@ export function CampaignPoolHub({
       view !== "pool" ? `listId=${encodeURIComponent(view)}` : "";
     setError(null);
 
-    const cached = peopleCacheRef.current.get(cacheKey);
+    const cached = poolPeopleCache.get(cacheKey);
     if (cached && cached.length > 0) {
       setPeople(cached);
       setLoading(false);
       setLoadingMore(false);
       setSelectedIds([]);
       setPage(1);
+      // Back on the tab within a few seconds: the list is current, no refetch.
+      if (!opts?.soft && poolPeopleCache.fresh(cacheKey)) return;
     } else {
       setLoading(true);
       setLoadingMore(false);
@@ -628,36 +668,39 @@ export function CampaignPoolHub({
       const headers = await getAuthHeaders();
       if (!headers) throw new Error("Sign in required.");
 
-      const previewQs = [listQs, "limit=15"].filter(Boolean).join("&");
-      const previewRes = await fetch(`/api/coach/pool?${previewQs}`, {
-        headers,
-      });
-      const previewBody = (await previewRes.json().catch(() => ({}))) as {
-        error?: string;
-        people?: PoolPerson[];
-        list?: { id: string };
-        poolListId?: string;
-        hasMore?: boolean;
-      };
-      if (gen !== loadGenRef.current) return;
-      if (!previewRes.ok) {
-        throw new Error(previewBody.error || "Unable to load pool.");
-      }
-      const previewPeople = previewBody.people ?? [];
       if (!cached?.length) {
-        setPeople(previewPeople);
-      }
-      const poolId = previewBody.poolListId ?? previewBody.list?.id ?? null;
-      if (poolId) setPoolListId(poolId);
-      setLoading(false);
+        const previewQs = [listQs, "limit=15"].filter(Boolean).join("&");
+        const previewRes = await fetch(`/api/coach/pool?${previewQs}`, {
+          headers,
+        });
+        const previewBody = (await previewRes.json().catch(() => ({}))) as {
+          error?: string;
+          people?: PoolPerson[];
+          list?: { id: string };
+          poolListId?: string;
+          hasMore?: boolean;
+        };
+        if (gen !== loadGenRef.current) return;
+        if (!previewRes.ok) {
+          throw new Error(previewBody.error || "Unable to load pool.");
+        }
+        const previewPeople = previewBody.people ?? [];
+        if (!cached?.length) {
+          setPeople(previewPeople);
+        }
+        const poolId = previewBody.poolListId ?? previewBody.list?.id ?? null;
+        if (poolId) setPoolListId(poolId);
+        setLoading(false);
 
-      if (previewBody.hasMore === false) {
-        peopleCacheRef.current.set(cacheKey, previewPeople);
-        setLoadingMore(false);
-        return;
+        if (previewBody.hasMore === false) {
+          poolPeopleCache.set(cacheKey, previewPeople);
+          setLoadingMore(false);
+          return;
+        }
       }
 
-      setLoadingMore(true);
+      // Refreshing behind a cached list: no "loading more" flicker.
+      if (!cached?.length) setLoadingMore(true);
       const fullQs = listQs ? `?${listQs}` : "";
       const fullRes = await fetch(`/api/coach/pool${fullQs}`, { headers });
       const fullBody = (await fullRes.json().catch(() => ({}))) as {
@@ -671,7 +714,7 @@ export function CampaignPoolHub({
         throw new Error(fullBody.error || "Unable to load pool.");
       }
       const fullPeople = fullBody.people ?? [];
-      peopleCacheRef.current.set(cacheKey, fullPeople);
+      poolPeopleCache.set(cacheKey, fullPeople);
       setPeople(fullPeople);
       const fullPoolId = fullBody.poolListId ?? fullBody.list?.id ?? null;
       if (fullPoolId) setPoolListId(fullPoolId);
@@ -684,10 +727,10 @@ export function CampaignPoolHub({
         setLoadingMore(false);
       }
     }
-  }, [getAuthHeaders]);
+  }, [getAuthHeaders, setPoolListId]);
 
   const reloadPeople = useCallback(async () => {
-    peopleCacheRef.current.clear();
+    poolPeopleCache.clear();
     await load();
   }, [load]);
 
@@ -1502,8 +1545,8 @@ export function CampaignPoolHub({
       const patch = (row: PoolPerson) =>
         ids.includes(row.id) ? { ...row, fit, fit_by: by, fit_why: null } : row;
       setPeople((prev) => prev.map(patch));
-      const cached = peopleCacheRef.current.get(activeViewId);
-      if (cached) peopleCacheRef.current.set(activeViewId, cached.map(patch));
+      const cached = poolPeopleCache.get(activeViewId);
+      if (cached) poolPeopleCache.set(activeViewId, cached.map(patch));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not change their fit.");
     } finally {
@@ -1770,9 +1813,9 @@ export function CampaignPoolHub({
           return tags ? { ...row, tags } : row;
         })
       );
-      const cached = peopleCacheRef.current.get(activeViewId);
+      const cached = poolPeopleCache.get(activeViewId);
       if (cached) {
-        peopleCacheRef.current.set(
+        poolPeopleCache.set(
           activeViewId,
           cached.map((row) => {
             const tags = byId.get(row.id);
@@ -2370,7 +2413,7 @@ export function CampaignPoolHub({
           }}
         />
       ) : null}
-      <div ref={toolbarRef} className="shrink-0">
+      <div ref={toolbarRef} data-tour="pool-toolbar" className="shrink-0">
         <ProspectsPipelineToolbar
           search={query}
           onSearchChange={setQuery}
@@ -2947,6 +2990,7 @@ export function CampaignPoolHub({
               {selectedCount === 0 && listId ? (
                 <button
                   type="button"
+                  data-tour="pool-check-fit"
                   disabled={loading || filtered.length === 0}
                   onClick={() => {
                     setMatchMenuOpen(false);
@@ -2960,6 +3004,7 @@ export function CampaignPoolHub({
               ) : null}
               <button
                 type="button"
+                data-tour="pool-add-people"
                 onClick={() => {
                   setMatchMenuOpen(false);
                   setImportPreset({});
@@ -3225,7 +3270,7 @@ export function CampaignPoolHub({
         />
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-xl border border-t-0 border-slate-200 bg-white shadow-sm">
+      <div data-tour="pool-table" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-xl border border-t-0 border-slate-200 bg-white shadow-sm">
 
       {error ? (
         <div className="shrink-0 px-4 pt-3">
@@ -3292,7 +3337,11 @@ export function CampaignPoolHub({
               </th>
               <th className="overflow-hidden py-2 pl-1 pr-3">Name</th>
               {shownColumnOptions.map((option) => (
-                <th key={option.key} className="overflow-hidden px-3 py-2">
+                <th
+                  key={option.key}
+                  data-tour={option.key === "fit" ? "pool-fit" : undefined}
+                  className="overflow-hidden px-3 py-2"
+                >
                   {option.label}
                 </th>
               ))}

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { PublicSlugEditor } from "@/components/leadMagnets/PublicSlugEditor";
 import { TaggedLinkMaker } from "@/components/shareLinks/TaggedLinkMaker";
+import { YourPagesCard } from "@/components/shareLinks/YourPagesCard";
 import {
   ShareToProspectModal,
   type ShareTarget,
@@ -85,7 +86,10 @@ function LinkSection({
   children: ReactNode;
 }) {
   return (
-    <section className="border-t border-slate-200 first:border-t-0">
+    <section
+      data-tour={`links-${title.toLowerCase().replace(/\s+/g, "-")}`}
+      className="border-t border-slate-200 first:border-t-0"
+    >
       <div className="flex min-h-9 items-center justify-between gap-3 bg-slate-50/70 px-4 py-1.5 sm:px-5">
         <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           {title}
@@ -453,6 +457,8 @@ export function ShareLinksHub() {
           Set your public URL to share your scorecards and booking pages.
         </p>
       ) : null}
+
+      {slugReady ? <YourPagesCard slug={slug} appOrigin={appOrigin} /> : null}
 
       <div className={cardClass("plain", "overflow-hidden")}>
         <LinkSection title="Scorecards">

@@ -12,7 +12,7 @@ type Props = {
 export function CallsViewSwitcher({ view, onChange }: Props) {
   return (
     <div
-      className="inline-flex h-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white"
+      className="inline-flex h-10 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-white scroll-mt-20"
       role="group"
       aria-label="Calls view"
     >

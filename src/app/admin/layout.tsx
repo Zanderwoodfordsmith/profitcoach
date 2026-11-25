@@ -15,6 +15,7 @@ import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { AppPresenceHeartbeat } from "@/components/presence/AppPresenceHeartbeat";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
+import { SectionTour } from "@/components/layout/SectionTour";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
 import { SalesNavImportToast } from "@/components/leadFinder/SalesNavImportToast";
@@ -208,6 +209,7 @@ export default function AdminLayout({
       <AvaSessionProvider>
       <AdminSupportDockProvider>
         <SearchOverlay />
+        <SectionTour />
         <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
           {playbooksReader ? null : isMinimalWorkshopChrome && workshopTopRightSlot ? (
             <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">

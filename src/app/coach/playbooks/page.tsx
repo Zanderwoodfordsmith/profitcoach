@@ -104,7 +104,7 @@ export default function CoachPlaybooksPage() {
         loading={loading}
         error={error}
         title="Keep Clients"
-        description="Browse the full library. Open a playbook for the client-facing overview—your coach link is applied automatically when you share it."
+        description="Ready-made guides to share with clients, with your link added for you. Give clients a clear next step without writing it yourself."
         buildHref={hrefForRef}
         tabs={<CoachToolsHubTabs hub="coach-clients" />}
       />

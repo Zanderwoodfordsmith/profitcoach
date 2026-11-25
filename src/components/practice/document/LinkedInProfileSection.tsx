@@ -358,6 +358,7 @@ export function LinkedInProfileSection() {
         {canCopy ? (
           <button
             type="button"
+            data-tour="linkedin-copy"
             onClick={() => void copyPart(section)}
             title={`Copy the new ${label} to paste into LinkedIn`}
             className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-[#0a66c2] ring-1 ring-inset ring-[#c8d9ec] hover:bg-[#eef5fc]"

@@ -324,6 +324,7 @@ function TimedDayGrid({
                     <button
                       key={call.id}
                       type="button"
+                      data-tour="calls-event"
                       onClick={() => onSelectCall?.(call)}
                       className={`${timedEventCardInsetClass} z-10 overflow-hidden rounded-r-md border px-1.5 py-1 text-left shadow-sm ${callStatusCalendarClass(call.status_normalized)}`}
                       style={{
@@ -476,7 +477,7 @@ export function CallsWeekView({
   }
 
   return (
-    <div className={cardClass("plain", "overflow-hidden")}>
+    <div data-tour="calls-calendar" className={cardClass("plain", "scroll-mt-20 overflow-hidden")}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
           <button

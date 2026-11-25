@@ -348,6 +348,7 @@ export function CommunityCalendarSubscribeButton({
     <>
       <button
         type="button"
+        data-tour="calendar-subscribe"
         onClick={() => setOpen(true)}
         className={
           className ??

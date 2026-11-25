@@ -242,3 +242,9 @@
     font-size: 13px;
   }
 }
+
+/* A tile with no icon (number ranges): shorter, the label does the work */
+.qualify-role--plain,
+.qualify-roles--compact .qualify-role--plain {
+  min-height: 48px;
+}

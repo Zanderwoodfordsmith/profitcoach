@@ -19,7 +19,7 @@ export default function AdminCampaignsPage() {
         <StickyPageHeader
           className="shrink-0"
           title="Get Calls"
-          description="Outreach campaigns and the lead magnets they send people to."
+          description="Build lists of the owners you want, then run LinkedIn campaigns that message them for you. Replies land in Conversations."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />
       }

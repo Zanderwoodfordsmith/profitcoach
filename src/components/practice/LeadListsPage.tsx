@@ -92,7 +92,7 @@ export function LeadListsPage() {
   const coachId = waiting?.coach_id ?? released?.coach_id ?? null;
 
   return (
-    <div className="space-y-10">
+    <div data-tour="blueprint-lists" className="space-y-10">
       {waiting ? (
         <section className="space-y-4">
           <div className="bp-no-print flex flex-wrap items-center gap-x-3 gap-y-1">

@@ -258,7 +258,7 @@ export function ScoreboardStepsV2({ now, ours, onOurs, targets, picked, order, e
     const sourceKey = SOURCE_OF[key];
     const source = SOURCES.find((item) => item.key === sourceKey);
     return (
-      <tr key={key}>
+      <tr key={key} data-tour="scoreboard-step">
         <th scope="row">
           <StepName
             name={def.label}
@@ -271,12 +271,12 @@ export function ScoreboardStepsV2({ now, ours, onOurs, targets, picked, order, e
             {rateText(key, targets[key])}
           </TargetTip>
         </td>
-        <td className="tgt-num tgt-tight">
+        <td className="tgt-num tgt-tight" data-tour="scoreboard-now">
           <NowInput label={def.label} value={ours[key]} unit={inputUnit(key)} whatif={moved} onChange={(value) => set(key, value)} />
         </td>
         <Diff value={ours[key]} target={targets[key]} keyName={key} />
         <td className="tgt-num tgt-gain tgt-tight">{gain >= 1 ? `+${pounds(gain)}` : ""}</td>
-        <td className="tgt-bar-col">
+        <td className="tgt-bar-col" data-tour="scoreboard-slider">
           <TargetSlider
             label={def.label}
             value={ours[key]}
@@ -391,6 +391,7 @@ export function ScoreboardStepsV2({ now, ours, onOurs, targets, picked, order, e
       <th scope="row" colSpan={COLUMNS}>
         <button
           type="button"
+          data-tour="scoreboard-add-source"
           onClick={onAddExtra}
           disabled={extra.length >= 8}
           className="rounded border border-dashed border-slate-300 px-2 py-1 text-[14px] font-medium text-slate-600 hover:border-slate-400 hover:text-slate-900 disabled:opacity-50"

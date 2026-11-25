@@ -158,7 +158,7 @@ export default function CoachClientsPage() {
       <div className="flex flex-col gap-4">
         <StickyPageHeader
           title="Keep Clients"
-          description="Price and join date live on each row. BOSS Score is the same person, opened from the score."
+          description="Everyone you coach, with their price and join date. Open a client to see their BOSS Score and your work together."
           tabs={<CoachToolsHubTabs hub="coach-clients" />}
         />
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useOptimisticPathname } from "@/hooks/useOptimisticPathname";
@@ -517,7 +517,8 @@ export function DashboardSidebar({
               );
             })}
           </ul>
-          {/* One flat list: no "Tools" heading under the main items. */}
+          {/* "Client Engine" heading over Get Calls, Win Clients, Keep Clients:
+              trial name for the paid level (job 257), not settled. */}
           <div className="mt-0.5">
             <ul className="space-y-0.5">
               {toolsNavItems.map((item) => {
@@ -527,7 +528,19 @@ export function DashboardSidebar({
                 const locked =
                   variant === "coach" && navItemLocked(item.requiredFeature);
                 return (
-                  <li key={item.toolsHub ?? item.href}>
+                  <Fragment key={item.toolsHub ?? item.href}>
+                  {item.toolsHub === "get-clients" ? (
+                    <li aria-hidden={collapsed || undefined}>
+                      {collapsed ? (
+                        <div className="mx-2 my-2 border-t border-white/15" />
+                      ) : (
+                        <p className="mb-1 mt-4 px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-sky-200/55">
+                          Client Engine
+                        </p>
+                      )}
+                    </li>
+                  ) : null}
+                  <li>
                     <Link
                       href={href}
                       data-hint-label={item.label}
@@ -555,6 +568,7 @@ export function DashboardSidebar({
                       {locked && !collapsed ? lockBadge : null}
                     </Link>
                   </li>
+                  </Fragment>
                 );
               })}
             </ul>

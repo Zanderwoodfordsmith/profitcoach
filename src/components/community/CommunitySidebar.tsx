@@ -112,7 +112,7 @@ export function CommunitySidebar({
         .filter(Boolean)
         .join(" ")}
     >
-      <div className={cardClass("plain")}>
+      <div data-tour="community-about" className={cardClass("plain")}>
         <div className="overflow-hidden rounded-t-2xl">
           <div className="relative aspect-[16/9] w-full bg-white">
             <Image

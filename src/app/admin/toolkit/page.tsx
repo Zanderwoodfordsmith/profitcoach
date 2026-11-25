@@ -17,7 +17,7 @@ export default function AdminToolkitPage() {
       header={
         <StickyPageHeader
           title="Get Calls"
-          description="The 90-day brochure from your Blueprint, plus posts, banners and print files with your name and QR code."
+          description="Your 90-day brochure from your Blueprint, plus posts, banners and print files with your name and QR code. Ready to use, nothing to design."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />
       }

@@ -51,6 +51,50 @@ export async function fetchAllSupabasePages<T>(
 }
 
 /**
+ * Like fetchAllSupabasePages, but asks for several pages at once (in waves of
+ * `parallel`) instead of one after another. Same rows, same order; at most
+ * `parallel - 1` empty pages are asked for past the end.
+ */
+export async function fetchAllSupabasePagesParallel<T>(
+  fetchPage: (
+    from: number,
+    to: number
+  ) => PromiseLike<{ data: T[] | null; error: SupabaseLikeError }>,
+  opts?: { pageSize?: number; maxRows?: number; parallel?: number }
+): Promise<{ data: T[]; error: SupabaseLikeError }> {
+  const pageSize = opts?.pageSize ?? 1000;
+  const maxRows = opts?.maxRows ?? 100_000;
+  const parallel = Math.max(1, opts?.parallel ?? 6);
+  const all: T[] = [];
+  // First page alone: most lists fit in one.
+  const first = await fetchPage(0, Math.min(pageSize, maxRows) - 1);
+  if (first.error) return { data: [], error: first.error };
+  all.push(...(first.data ?? []));
+  if ((first.data?.length ?? 0) < pageSize) return { data: all, error: null };
+
+  let from = pageSize;
+  while (from < maxRows) {
+    const starts: number[] = [];
+    for (let i = 0; i < parallel && from + i * pageSize < maxRows; i++) {
+      starts.push(from + i * pageSize);
+    }
+    const pages = await Promise.all(
+      starts.map((start) =>
+        fetchPage(start, Math.min(start + pageSize, maxRows) - 1)
+      )
+    );
+    for (const page of pages) {
+      if (page.error) return { data: [], error: page.error };
+      const rows = page.data ?? [];
+      all.push(...rows);
+      if (rows.length < pageSize) return { data: all, error: null };
+    }
+    from += starts.length * pageSize;
+  }
+  return { data: all, error: null };
+}
+
+/**
  * Tries selecting contacts with `phone`; falls back without it when the column
  * is missing (migration not applied yet).
  */

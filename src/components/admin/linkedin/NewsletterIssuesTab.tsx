@@ -455,6 +455,7 @@ function RichCopyButton({ getContent }: { getContent: () => { html: string; text
   return (
     <button
       type="button"
+      data-tour="newsletter-copy"
       title="Copy the issue, with its pictures"
       onClick={async () => {
         const content = getContent();
@@ -512,7 +513,7 @@ function CopyButton({ text }: { text: () => string | null }) {
 function Cover({ url, busy, onPick, onRemove }: { url: string | null; busy: boolean; onPick?: () => void; onRemove?: () => void }) {
   if (url) {
     return (
-      <div className="group relative mb-8 overflow-hidden rounded-lg bg-slate-100">
+      <div data-tour="newsletter-cover" className="group relative mb-8 overflow-hidden rounded-lg bg-slate-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={url} alt="" className="aspect-video w-full object-cover" />
         {onPick ? (
@@ -533,6 +534,7 @@ function Cover({ url, busy, onPick, onRemove }: { url: string | null; busy: bool
   return (
     <button
       type="button"
+      data-tour="newsletter-cover"
       onClick={onPick}
       disabled={busy}
       className="mb-8 flex h-28 w-full flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 text-slate-500 transition hover:border-slate-400 hover:bg-slate-50 hover:text-slate-700"
@@ -884,7 +886,7 @@ function DraftView({
           <EditorContent editor={issueEditor} />
         </div>
         {postDoc ? (
-          <section className="mt-14 border-t border-slate-200 pt-8">
+          <section data-tour="newsletter-post" className="mt-14 border-t border-slate-200 pt-8">
             <h2 className="text-[1.375rem] font-medium leading-tight tracking-[-0.02em] text-slate-900">Post about this issue</h2>
             <p className="mt-1 text-sm text-slate-500">For the feed, so people open it.</p>
             <div className="nl-editor mt-5">
@@ -1259,7 +1261,7 @@ export function NewsletterIssuesTab({
         </nav>
       </aside>
 
-      <main className={`min-w-0 flex-1 md:block ${openIssueId ? "block" : "hidden"}`}>
+      <main data-tour="newsletter-issue" className={`min-w-0 flex-1 md:block ${openIssueId ? "block" : "hidden"}`}>
         {selected && bar ? (
           selected.kind === "draft" ? (
             <DraftView

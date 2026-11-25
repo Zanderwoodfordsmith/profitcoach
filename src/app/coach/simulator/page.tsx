@@ -11,7 +11,7 @@ export default function ClientSimulatorPage() {
     <div className="flex flex-col">
       <StickyPageHeader
         title="Keep Clients"
-        description="Practise real conversations out loud with AI clients, then get a score and a report."
+        description="Practise hard client talks out loud with an AI client, then get a score and a report. Get better before it counts."
         tabs={<CoachToolsHubTabs hub="coach-clients" />}
       />
       <Suspense fallback={null}>

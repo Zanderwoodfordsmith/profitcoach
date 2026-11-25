@@ -111,14 +111,33 @@ export async function enrichMessagingConversationPeople<
       linkedin_provider_id: string | null;
     }
   >();
+  // Contacts the rows already point at: load alongside the campaign leads.
+  const CONTACT_SELECT =
+    "id, full_name, email, phone, photo_url, linkedin_url, linkedin_provider_id";
+  const rowContactIds = [...contactIds];
+  const rowContactsPromise = rowContactIds.length
+    ? supabaseAdmin.from("contacts").select(CONTACT_SELECT).in("id", rowContactIds)
+    : null;
+  const leadContacts: ContactRow[] = [];
+  // Which channels people replied on: only needs the conversation ids.
+  const inboundPromise = loadInboundMessages(rows);
+
   if (chatIds.length) {
+    // The lead's contact comes in the same query (saves a trip for contacts
+    // only known through the lead).
     const { data: leads } = await supabaseAdmin
       .from("linkedin_campaign_leads")
       .select(
-        "unipile_chat_id, first_name, last_name, contact_id, linkedin_url, linkedin_provider_id"
+        `unipile_chat_id, first_name, last_name, contact_id, linkedin_url, linkedin_provider_id, contact:contacts(${CONTACT_SELECT})`
       )
       .in("unipile_chat_id", chatIds);
     for (const lead of leads ?? []) {
+      const embedded = (lead as { contact?: unknown }).contact;
+      const contactRow = (Array.isArray(embedded) ? embedded[0] : embedded) as
+        | ContactRow
+        | null
+        | undefined;
+      if (contactRow?.id) leadContacts.push(contactRow);
       const chatId = lead.unipile_chat_id as string | null;
       if (!chatId || leadsByChat.has(chatId)) continue;
       leadsByChat.set(chatId, {
@@ -145,13 +164,9 @@ export async function enrichMessagingConversationPeople<
     }
   >();
   if (contactIds.size) {
-    const { data: contacts } = await supabaseAdmin
-      .from("contacts")
-      .select(
-        "id, full_name, email, phone, photo_url, linkedin_url, linkedin_provider_id"
-      )
-      .in("id", [...contactIds]);
-    for (const contact of contacts ?? []) {
+    const rowContacts = await rowContactsPromise;
+    const contacts = [...((rowContacts?.data ?? []) as ContactRow[]), ...leadContacts];
+    for (const contact of contacts) {
       contactsById.set(contact.id as string, {
         full_name: (contact.full_name as string | null) ?? null,
         email: (contact.email as string | null) ?? null,
@@ -385,33 +400,55 @@ export async function enrichMessagingConversationPeople<
     });
   }
 
-  return attachInboundReplyChannels(named);
+  return attachInboundReplyChannels(named, await inboundPromise);
 }
 
-async function attachInboundReplyChannels<T extends ConversationPersonRow>(
-  rows: T[]
-): Promise<(T & { reply_channels: string[] })[]> {
+type ContactRow = {
+  id: string;
+  full_name: string | null;
+  email: string | null;
+  phone: string | null;
+  photo_url: string | null;
+  linkedin_url: string | null;
+  linkedin_provider_id: string | null;
+};
+
+type InboundMessage = {
+  conversation_id: string | null;
+  channel: string | null;
+  created_at: string | null;
+};
+
+async function loadInboundMessages(
+  rows: ConversationPersonRow[]
+): Promise<InboundMessage[]> {
   const ids = rows
     .map((row) => row.id)
     .filter((id): id is string => Boolean(id));
+  if (!ids.length) return [];
+  const { data } = await supabaseAdmin
+    .from("messaging_messages")
+    .select("conversation_id, channel, created_at")
+    .in("conversation_id", ids)
+    .eq("direction", "inbound");
+  return (data ?? []) as InboundMessage[];
+}
+
+function attachInboundReplyChannels<T extends ConversationPersonRow>(
+  rows: T[],
+  messages: InboundMessage[]
+): (T & { reply_channels: string[] })[] {
   const latest = new Map<string, { channel: string; at: number }[]>();
-  if (ids.length) {
-    const { data: messages } = await supabaseAdmin
-      .from("messaging_messages")
-      .select("conversation_id, channel, created_at")
-      .in("conversation_id", ids)
-      .eq("direction", "inbound");
-    for (const message of messages ?? []) {
-      const convId = message.conversation_id as string | null;
-      const channel = (message.channel as string | null) ?? null;
-      if (!convId || !channel) continue;
-      const list = latest.get(convId) ?? [];
-      list.push({
-        channel,
-        at: message.created_at ? new Date(message.created_at).getTime() : 0,
-      });
-      latest.set(convId, list);
-    }
+  for (const message of messages) {
+    const convId = message.conversation_id;
+    const channel = message.channel ?? null;
+    if (!convId || !channel) continue;
+    const list = latest.get(convId) ?? [];
+    list.push({
+      channel,
+      at: message.created_at ? new Date(message.created_at).getTime() : 0,
+    });
+    latest.set(convId, list);
   }
 
   return rows.map((row) => {

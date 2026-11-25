@@ -67,7 +67,7 @@ export function CallsToolbar({
         </label>
 
         <div className="flex shrink-0 items-center gap-1">
-          <div className="relative">
+          <div data-tour="calls-filter" className="relative scroll-mt-20">
             <TableToolbarButton
               label="Filter"
               aria-haspopup="true"
@@ -107,7 +107,8 @@ export function CallsToolbar({
             onMenuChange(null);
             onSettings();
           }}
-          className={buttonClass("second")}
+          className={buttonClass("second", "normal", "scroll-mt-20")}
+          data-tour="calls-settings"
         >
           <SlidersHorizontal
             className="h-3.5 w-3.5 text-slate-500"
@@ -123,7 +124,8 @@ export function CallsToolbar({
             onMenuChange(null);
             onBook();
           }}
-          className={buttonClass("main", "normal", "shrink-0")}
+          className={buttonClass("main", "normal", "shrink-0 scroll-mt-20")}
+          data-tour="calls-add"
         >
           <CalendarPlus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
           Add a call

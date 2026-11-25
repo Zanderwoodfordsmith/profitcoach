@@ -165,16 +165,22 @@ function buildBookingSrc(data: {
 /** Decorative month grid for the locked calendar panel. */
 function CalendarPreview() {
   const days = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
-  const cells = Array.from({ length: 35 }, (_, i) => {
-    const day = i - 2;
-    if (day < 1 || day > 31) return null;
+  // This month, so the preview never shows a month that has gone.
+  const now = new Date();
+  const offset = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+  const monthDays = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const pick = Math.min(now.getDate() + 1, monthDays);
+  const cells = Array.from({ length: Math.ceil((offset + monthDays) / 7) * 7 }, (_, i) => {
+    const day = i - offset + 1;
+    if (day < 1 || day > monthDays) return null;
     return day;
   });
+  const monthLabel = now.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 
   return (
     <div className="start-panel__cal" aria-hidden="true">
       <div className="start-panel__cal-head">
-        <span>July 2026</span>
+        <span suppressHydrationWarning>{monthLabel}</span>
         <span className="start-panel__cal-nav">‹  ›</span>
       </div>
       <div className="start-panel__cal-days">
@@ -187,7 +193,7 @@ function CalendarPreview() {
           <span
             key={i}
             className={
-              day === 30 ? "is-pick" : day === 31 ? "is-soft" : day ? undefined : "is-empty"
+              day === pick ? "is-pick" : day === pick + 1 ? "is-soft" : day ? undefined : "is-empty"
             }
           >
             {day ?? ""}
@@ -281,6 +287,8 @@ export function StartApplyPanel({
   const isSupport = intent === "support";
   const isOwner = intent === "owner";
   const [owner, setOwner] = useState<Record<string, string>>({});
+  /** Owner questions whose "Something else?" box is open. */
+  const [ownerOtherOpen, setOwnerOtherOpen] = useState<Record<string, boolean>>({});
   const ownerNotes = OWNER_QUESTIONS.map((q) => `${q.label} ${owner[q.id] ?? "Not answered"}`).join("\n");
   const seeded = seedFromPrefill(prefillProp);
   const [countryCode, setCountryCode] = useState(seeded.countryCode);
@@ -470,8 +478,10 @@ export function StartApplyPanel({
   useEffect(() => {
     if (expanded && !didExpandFocus.current) {
       didExpandFocus.current = true;
-      // Don’t steal focus when the form arrived already filled from the URL.
-      if (!email.trim()) {
+      // Don’t steal focus when the form arrived already filled from the URL, or while they
+      // are still typing in another box (the form opens on the first letter of the last name).
+      const typing = document.activeElement instanceof HTMLInputElement;
+      if (!email.trim() && !typing) {
         requestAnimationFrame(() => emailRef.current?.focus());
       }
     }
@@ -611,7 +621,7 @@ export function StartApplyPanel({
       return;
     }
     if (isOwner) {
-      const missing = OWNER_QUESTIONS.find((q) => !owner[q.id]);
+      const missing = OWNER_QUESTIONS.find((q) => !owner[q.id]?.trim());
       if (missing) {
         setError(`Choose an answer for: ${missing.label}`);
         return;
@@ -846,11 +856,43 @@ export function StartApplyPanel({
                         </p>
                         <IconChoicePicker
                           value={owner[q.id] ?? ""}
-                          onChange={(v) => setOwner((o) => ({ ...o, [q.id]: v }))}
+                          onChange={(v) => {
+                            setOwner((o) => ({ ...o, [q.id]: v }));
+                            setOwnerOtherOpen((o) => ({ ...o, [q.id]: false }));
+                          }}
                           options={q.options}
                           ariaLabel={q.label}
                           compact
                         />
+                        {q.other && ownerOtherOpen[q.id] ? (
+                          <input
+                            className="start-panel__input start-panel__other-input"
+                            type="text"
+                            autoFocus
+                            maxLength={200}
+                            aria-label={q.other.placeholder}
+                            placeholder={q.other.placeholder}
+                            value={
+                              q.options.some((opt) => opt.value === owner[q.id])
+                                ? ""
+                                : owner[q.id] ?? ""
+                            }
+                            onChange={(e) =>
+                              setOwner((o) => ({ ...o, [q.id]: e.target.value }))
+                            }
+                          />
+                        ) : q.other ? (
+                          <button
+                            type="button"
+                            className="start-panel__other"
+                            onClick={() => {
+                              setOwnerOtherOpen((o) => ({ ...o, [q.id]: true }));
+                              setOwner((o) => ({ ...o, [q.id]: "" }));
+                            }}
+                          >
+                            {q.other.link}
+                          </button>
+                        ) : null}
                       </div>
                     ))}
                   </>

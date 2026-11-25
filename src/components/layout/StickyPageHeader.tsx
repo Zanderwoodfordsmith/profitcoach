@@ -4,6 +4,7 @@ import { useLayoutEffect, type ReactNode, type Ref } from "react";
 import { useDashboardChrome } from "@/contexts/DashboardChromeContext";
 import { DashboardChromeActions } from "./DashboardChromeActions";
 import { PageHeaderDescriptionInfo } from "./PageHeaderDescriptionInfo";
+import { sectionGuide } from "./sectionGuides";
 
 export type PageHeaderDescriptionPlacement = "info" | "below";
 
@@ -102,6 +103,8 @@ export function StickyPageHeader({
       </div>
     ) : null;
 
+  const pitch = sectionGuide(title);
+
   return (
     <div ref={rootRef} className={shell} data-page-header>
       <div
@@ -136,11 +139,11 @@ export function StickyPageHeader({
                   <div className="min-w-0 py-1">{title}</div>
                 )
               ) : null}
-              {description && descriptionPlacement === "info" ? (
+              {(description && descriptionPlacement === "info") || pitch ? (
                 // Hidden on phones: the title needs the room next to the tabs and icons.
                 <span className="max-sm:hidden">
-                  <PageHeaderDescriptionInfo>
-                    {description}
+                  <PageHeaderDescriptionInfo pitch={pitch} title={typeof title === "string" ? title : undefined}>
+                    {descriptionPlacement === "info" ? description : null}
                   </PageHeaderDescriptionInfo>
                 </span>
               ) : null}

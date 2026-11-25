@@ -474,7 +474,7 @@ export function LinkedInSchedulerPanel() {
       >
       {/* Floating tab bar — no enclosing card chrome */}
       <div className="flex flex-wrap items-center gap-2">
-        <nav className="inline-flex flex-wrap gap-1 rounded-full bg-slate-100/90 p-1 shadow-inner">
+        <nav data-tour="content-tabs" className="inline-flex flex-wrap gap-1 rounded-full bg-slate-100/90 p-1 shadow-inner">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = shownTab === t.id;
@@ -488,6 +488,7 @@ export function LinkedInSchedulerPanel() {
               <button
                 key={t.id}
                 type="button"
+                data-tour={`content-tab-${t.id}`}
                 onClick={() => setTab(t.id)}
                 className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold transition ${
                   active

@@ -640,19 +640,24 @@ async function ingestCoachMessage(input: {
  * Catch-up: WhatsApp messages stored before files were copied in still say
  * "Open WhatsApp to see it". Fetch their files now and attach them.
  */
-export async function backfillSupportWhatsAppFiles(): Promise<{ checked: number; fixed: number }> {
+export async function backfillSupportWhatsAppFiles(
+  opts: { sinceIso?: string; limit?: number } = {}
+): Promise<{ checked: number; fixed: number }> {
   let checked = 0;
   let fixed = 0;
   for (const table of ["community_feedback_replies", "community_feedback_reports"] as const) {
     const textCol = table === "community_feedback_replies" ? "body" : "details";
     const ownerCol = "created_by";
-    const { data: rows } = await supabaseAdmin
+    let query = supabaseAdmin
       .from(table)
       .select(`id, ${textCol}, ${ownerCol}, whatsapp_message_id`)
       .like(textCol, `%${FILES_NOTE}%`)
       .not("whatsapp_message_id", "is", null)
-      .is("media", null)
-      .limit(200);
+      .is("media", null);
+    if (opts.sinceIso) query = query.gte("created_at", opts.sinceIso);
+    const { data: rows } = await query
+      .order("created_at", { ascending: false })
+      .limit(opts.limit ?? 200);
     for (const row of (rows ?? []) as unknown as Array<Record<string, unknown>>) {
       checked += 1;
       const got = await unipileFetch<Record<string, unknown>>(

@@ -466,6 +466,7 @@ export function CallsHub({
             </p>
           ) : null}
           <CallsCalendarSettings
+            showPages
             appOrigin={appOrigin}
             callsBasePath={callsBasePath}
             selectedCalendarSlug={selectedCalendarSlug}

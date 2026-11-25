@@ -9,6 +9,7 @@ import {
   shortStepLabel,
 } from "@/components/campaigns/CampaignActivityRows";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { fetchHubJson, invalidateHubJson, peekHubJson } from "@/lib/getClients/cachedHubJson";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { fieldClass } from "@/components/ui/Field";
@@ -18,6 +19,8 @@ import {
 } from "@/lib/campaigns/demoPreview";
 import type { LeadStatusIcon, LeadStatusTone } from "@/lib/unipile/campaignLeadActivity";
 import { campaignContactHref } from "@/lib/prospects/prospectDetailHref";
+
+export const REMIND_PATH = "/api/coach/linkedin-outreach/remind";
 
 type RemindItem = {
   job_id: string;
@@ -83,8 +86,9 @@ export function LinkedInRemindQueue({
 }) {
   const pathname = usePathname() ?? "";
   const isAdmin = pathname.startsWith("/admin");
-  const [items, setItems] = useState<RemindItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cachedQueue = preview ? undefined : peekHubJson<{ queue?: RemindItem[] }>(REMIND_PATH);
+  const [items, setItems] = useState<RemindItem[]>(cachedQueue?.queue ?? []);
+  const [loading, setLoading] = useState(!cachedQueue);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -100,17 +104,13 @@ export function LinkedInRemindQueue({
       setLoading(false);
       return;
     }
-    setItems([]);
-    setLoading(true);
+    // Paint the last answer at once; refresh behind it.
+    const cached = peekHubJson<{ queue?: RemindItem[] }>(REMIND_PATH);
+    setItems(cached?.queue ?? []);
+    setLoading(!cached);
     setError(null);
     try {
-      const headers = await authHeaders();
-      if (!headers) throw new Error("Sign in required.");
-      const res = await fetch("/api/coach/linkedin-outreach/remind", {
-        headers,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body.error || "Could not load due queue.");
+      const body = await fetchHubJson<{ queue?: RemindItem[] }>(REMIND_PATH);
       if (stale()) return;
       setItems(body.queue ?? []);
     } catch (err) {
@@ -152,6 +152,9 @@ export function LinkedInRemindQueue({
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Action failed.");
+      invalidateHubJson(REMIND_PATH);
+      invalidateHubJson("/api/coach/linkedin-outreach/remind?view=counts");
+      invalidateHubJson("/api/coach/linkedin-outreach/activity-feed");
       setEditingId(null);
       await load();
     } catch (err) {

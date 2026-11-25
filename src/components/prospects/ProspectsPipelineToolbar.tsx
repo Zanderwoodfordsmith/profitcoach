@@ -88,7 +88,7 @@ export function ProspectsPipelineToolbar({
         </label>
 
         <div className="flex shrink-0 items-center gap-1">
-          <div className="relative">
+          <div data-tour="pipeline-filter" className="relative">
             <TableToolbarButton
               label="Filter"
               aria-haspopup="true"
@@ -150,6 +150,7 @@ export function ProspectsPipelineToolbar({
           )}
 
           {onImport ? (
+            <span data-tour="pipeline-import" className="inline-flex">
             <TableToolbarButton
               label="Import"
               onClick={() => {
@@ -158,6 +159,7 @@ export function ProspectsPipelineToolbar({
               }}
               icon={<Upload className="h-5 w-5 text-slate-500" aria-hidden />}
             />
+            </span>
           ) : null}
 
           {hideExport ? null : (

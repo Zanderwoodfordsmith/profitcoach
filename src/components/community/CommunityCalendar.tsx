@@ -1108,7 +1108,7 @@ export function CommunityCalendar({
             <p className="mt-8 text-center text-sm text-slate-500">Loading…</p>
           ) : effectiveViewMode === "calendar" ? (
             calendarLayout === "month" ? (
-              <div className="mt-6 max-md:hidden overflow-x-auto lg:overflow-visible">
+              <div data-tour="calendar-grid" className="mt-6 max-md:hidden overflow-x-auto lg:overflow-visible">
                 <div
                   className="grid min-w-[640px] overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm lg:min-w-0 lg:w-full"
                   style={{ gridTemplateColumns: monthGridTemplateColumns }}
@@ -1287,7 +1287,7 @@ export function CommunityCalendar({
                 </div>
               </div>
             ) : (
-              <div className={cardClass("plain", "mt-6 max-lg:overflow-x-auto max-md:hidden")}>
+              <div data-tour="calendar-grid" className={cardClass("plain", "mt-6 max-lg:overflow-x-auto max-md:hidden")}>
                 <div className="min-w-[44rem] lg:min-w-0">
                   <div
                     className={`${WEEK_GRID_BASE_CLASS} items-end border-b border-slate-200 bg-white`}
@@ -1509,7 +1509,7 @@ export function CommunityCalendar({
               </div>
             )
           ) : (
-            <div className="mt-6 space-y-3">
+            <div data-tour="calendar-list" className="mt-6 space-y-3">
               <div
                 className="inline-flex h-10 overflow-hidden rounded-full border border-slate-300 bg-white shadow-sm"
                 role="tablist"
@@ -1532,6 +1532,7 @@ export function CommunityCalendar({
                 <button
                   type="button"
                   role="tab"
+                  data-tour="calendar-previous-tab"
                   aria-selected={listTab === "previous"}
                   onClick={() => setListTab("previous")}
                   className={`px-4 text-sm font-medium transition ${

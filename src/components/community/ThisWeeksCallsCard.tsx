@@ -156,7 +156,7 @@ export function ThisWeeksCallsCard() {
   const tzCity = useMemo(() => formatTimezoneCity(tz), [tz]);
 
   return (
-    <div className={cardClass("plain", "mt-4")}>
+    <div data-tour="community-week-calls" className={cardClass("plain", "mt-4")}>
       <div className="flex items-center gap-2 border-b border-slate-100 px-4 pt-4 pb-3">
         <CalendarDays
           className="h-4 w-4 shrink-0 text-sky-600"

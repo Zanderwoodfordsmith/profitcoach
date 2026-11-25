@@ -31,7 +31,7 @@ export function LeadMagnetSettingsButton({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={buttonClass("second", "small")}>
+      <button type="button" data-tour="magnets-settings" onClick={() => setOpen(true)} className={buttonClass("second", "small")}>
         <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" strokeWidth={2.25} aria-hidden />
         Settings
       </button>

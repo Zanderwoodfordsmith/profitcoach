@@ -34,7 +34,7 @@ export function LeadMagnetsList({ coachSlug, appOrigin }: Props) {
   }
 
   return (
-    <ul>
+    <ul data-tour="magnets-list">
       {LEAD_MAGNETS.map((magnet) => {
         const slug = coachSlug || "your-slug";
         const path = magnet.pathForSlug(slug);
@@ -77,6 +77,7 @@ export function LeadMagnetsList({ coachSlug, appOrigin }: Props) {
                     {slugReady ? (
                       <button
                         type="button"
+                        data-tour="magnets-copy"
                         onClick={() => void copyLink(magnet.id, copyUrl)}
                         className="inline-flex items-center gap-1 font-medium text-slate-600 hover:text-slate-900"
                       >
@@ -86,6 +87,7 @@ export function LeadMagnetsList({ coachSlug, appOrigin }: Props) {
                     ) : null}
                     <Link
                       href={path}
+                      data-tour="magnets-open"
                       target="_blank"
                       rel="noreferrer"
                       className="inline-flex items-center gap-1 font-medium text-sky-700 hover:text-sky-900"

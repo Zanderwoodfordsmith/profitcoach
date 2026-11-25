@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { writeSessionCookie } from "@/lib/auth/sessionCookie";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -15,3 +16,10 @@ export const supabaseClient = createClient(
   supabaseAnonKey || "placeholder-key"
 );
 
+// Mirror the session into a cookie for the server (see sessionCookie.ts).
+// Fires on load (INITIAL_SESSION), sign-in, token refresh and sign-out.
+if (typeof window !== "undefined") {
+  supabaseClient.auth.onAuthStateChange((_event, session) => {
+    writeSessionCookie(session);
+  });
+}

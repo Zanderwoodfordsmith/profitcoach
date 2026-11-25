@@ -12,7 +12,7 @@ import {
 } from "@/components/campaigns/CampaignActivityRows";
 import { LinkedInRemindQueue } from "@/components/campaigns/LinkedInRemindQueue";
 import { demoPreviewActivityFeed } from "@/lib/campaigns/demoPreview";
-import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { fetchHubJson, peekHubJson } from "@/lib/getClients/cachedHubJson";
 import type { CampaignFeedItem } from "@/lib/unipile/campaignActivityFeed";
 import { campaignContactHref } from "@/lib/prospects/prospectDetailHref";
 
@@ -91,17 +91,30 @@ function FeedList({
   );
 }
 
+export const ACTIVITY_FEED_PATH = "/api/coach/linkedin-outreach/activity-feed";
+export const REMIND_COUNTS_PATH = "/api/coach/linkedin-outreach/remind?view=counts";
+type ActivityFeedBody = {
+  sent?: CampaignFeedItem[];
+  planned?: CampaignFeedItem[];
+  waiting?: CampaignFeedItem[];
+};
+type RemindCountsBody = { counts?: { due?: number; overdue?: number } };
+
 export function CampaignActivityPane({ preview = false }: { preview?: boolean }) {
   const pathname = usePathname() ?? "";
   const isAdmin = pathname.startsWith("/admin");
   const tabId = useId();
   const [tab, setTab] = useState<PaneTab>("due");
-  const [loading, setLoading] = useState(true);
+  const cachedFeed = preview ? undefined : peekHubJson<ActivityFeedBody>(ACTIVITY_FEED_PATH);
+  const cachedCounts = preview ? undefined : peekHubJson<RemindCountsBody>(REMIND_COUNTS_PATH);
+  const [loading, setLoading] = useState(!cachedFeed);
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState<CampaignFeedItem[]>([]);
-  const [planned, setPlanned] = useState<CampaignFeedItem[]>([]);
-  const [waiting, setWaiting] = useState<CampaignFeedItem[]>([]);
-  const [dueCount, setDueCount] = useState(0);
+  const [sent, setSent] = useState<CampaignFeedItem[]>(cachedFeed?.sent ?? []);
+  const [planned, setPlanned] = useState<CampaignFeedItem[]>(cachedFeed?.planned ?? []);
+  const [waiting, setWaiting] = useState<CampaignFeedItem[]>(cachedFeed?.waiting ?? []);
+  const [dueCount, setDueCount] = useState(
+    (cachedCounts?.counts?.due ?? 0) + (cachedCounts?.counts?.overdue ?? 0)
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -117,27 +130,15 @@ export function CampaignActivityPane({ preview = false }: { preview?: boolean })
         setLoading(false);
         return;
       }
-      setLoading(true);
+      setLoading(!peekHubJson(ACTIVITY_FEED_PATH));
       setError(null);
       try {
-        const headers = await getCoachAuthHeaders();
-        if (!headers) throw new Error("Sign in required.");
-        const [feedRes, countsRes] = await Promise.all([
-          fetch("/api/coach/linkedin-outreach/activity-feed", { headers }),
-          fetch("/api/coach/linkedin-outreach/remind?view=counts", { headers }),
+        const [feedBody, countsBody] = await Promise.all([
+          fetchHubJson<ActivityFeedBody>(ACTIVITY_FEED_PATH),
+          fetchHubJson<RemindCountsBody>(REMIND_COUNTS_PATH).catch(
+            () => ({}) as RemindCountsBody
+          ),
         ]);
-        const feedBody = (await feedRes.json().catch(() => ({}))) as {
-          error?: string;
-          sent?: CampaignFeedItem[];
-          planned?: CampaignFeedItem[];
-          waiting?: CampaignFeedItem[];
-        };
-        const countsBody = (await countsRes.json().catch(() => ({}))) as {
-          counts?: { due?: number; overdue?: number };
-        };
-        if (!feedRes.ok) {
-          throw new Error(feedBody.error || "Could not load activity.");
-        }
         if (cancelled) return;
         setSent(feedBody.sent ?? []);
         setPlanned(feedBody.planned ?? []);

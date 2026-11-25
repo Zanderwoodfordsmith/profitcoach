@@ -9,6 +9,7 @@ import { UsageTracker } from "@/components/analytics/UsageTracker";
 import { AppPresenceHeartbeat } from "@/components/presence/AppPresenceHeartbeat";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
+import { SectionTour } from "@/components/layout/SectionTour";
 import { DashboardChromeFallback } from "@/components/layout/DashboardChromeFallback";
 import { CoachSetupBar } from "@/components/layout/CoachSetupBar";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
@@ -294,6 +295,7 @@ export default function CoachLayout({
       {/* One panel on the right at a time: Ava or the chat with BCA (18 Nov). */}
       <SupportDockProvider othersOpen={aiPanelOpen} onOpen={() => setAiOpen(false)}>
       <SearchOverlay />
+      <SectionTour />
       <BossWorkshopChromeContext.Provider value={bossWorkshopChromeValue}>
         {!playbooksReader && isMinimalWorkshopChrome && workshopTopRightSlot ? (
           <div className="fixed right-3 top-3 z-[100] flex max-w-[min(22rem,calc(100vw-3rem))] flex-col items-end gap-2 sm:right-6">

@@ -333,7 +333,7 @@ export function ProspectsPipelineBoard({
       {loading && prospects.length === 0 ? (
         <p className="text-sm text-slate-500">Loading pipeline…</p>
       ) : (
-        <div className="-mr-4 min-h-0 min-w-0 flex-1 overflow-x-auto overscroll-x-contain pb-2 md:-mr-8">
+        <div data-tour="pipeline-board" className="-mr-4 min-h-0 min-w-0 flex-1 overflow-x-auto overscroll-x-contain pb-2 md:-mr-8">
           <div className="flex h-full w-max gap-3 pr-4">
           {columns.map((col) =>
             col.collapsible && layout.collapsedIds.includes(col.id) ? (
@@ -636,6 +636,7 @@ function PipelineColumn({
 
   return (
     <div
+      data-tour="pipeline-column"
       className={`flex h-full min-h-0 w-[220px] shrink-0 flex-col rounded-xl bg-slate-100 ${
         colActive ? "ring-2 ring-sky-400" : ""
       }`}
@@ -872,6 +873,7 @@ function PipelineCard({
     <div
       role="button"
       tabIndex={0}
+      data-tour="pipeline-card"
       draggable={draggable}
       onDragStart={(e) => {
         e.dataTransfer.setData(DRAG_TYPE, row.id);

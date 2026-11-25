@@ -22,6 +22,18 @@ import { Cast, QUICK_PACE, Trend, readPace, setPace, subscribePace } from "@/com
 import { formatSimDate, useSimApi, useSimPrefix } from "@/components/simulator/simApi";
 import { cardClass } from "@/components/ui/Card";
 import "@/components/simulator/sim.css";
+import { fetchHubJson, peekHubJson } from "@/lib/getClients/cachedHubJson";
+
+export const CALL_SIM_HOME_PATH = "/api/coach/call-simulator";
+export const SALES_CONTEXT_PATH = "/api/coach/sales-call/context";
+type SalesContext = { price?: string; name?: string };
+/** The coach's price (Blueprint) and first name, for the script panel's fill-ins. */
+function mineFrom(ctx: SalesContext | undefined): { price: string; me: string } {
+  return {
+    price: typeof ctx?.price === "string" ? ctx.price : "",
+    me: ctx?.name?.trim().split(/\s+/)[0] ?? "",
+  };
+}
 
 type HomeData = { configured: boolean; sessions: CallSessionSummary[]; minutes: { used: number; limit: number | null } };
 
@@ -37,7 +49,9 @@ export function CallSimHome() {
   const prefix = useSimPrefix();
   const router = useRouter();
   const params = useSearchParams();
-  const [data, setData] = useState<HomeData | null>(null);
+  const [data, setData] = useState<HomeData | null>(
+    () => peekHubJson<HomeData>(CALL_SIM_HOME_PATH) ?? null
+  );
   const [loadError, setLoadError] = useState<string | null>(null);
   const [index, setIndex] = useState(() => Math.max(0, PROSPECTS.findIndex((c) => c.id === params.get("prospect"))));
   const [callId, setCallId] = useState<CallId>(() => callById(params.get("call") ?? "")?.id ?? "review");
@@ -54,30 +68,35 @@ export function CallSimHome() {
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [live, setLive] = useState<SimCallSetup | null>(null);
-  // The coach's price (Blueprint) and first name, for the script panel's fill-ins.
-  const [mine, setMine] = useState({ price: "", me: "" });
+  const [mine, setMine] = useState(() => mineFrom(peekHubJson<SalesContext>(SALES_CONTEXT_PATH)));
 
   async function load() {
-    const res = await api<HomeData>("/api/coach/call-simulator");
-    if (res.ok) setData(res.data);
-    else setLoadError(res.error);
+    try {
+      setData(await fetchHubJson<HomeData>(CALL_SIM_HOME_PATH, { force: true }));
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Something went wrong.");
+    }
   }
 
   useEffect(() => {
     let cancelled = false;
-    void (async () => {
-      const res = await api<HomeData>("/api/coach/call-simulator");
-      if (cancelled) return;
-      if (res.ok) setData(res.data);
-      else setLoadError(res.error);
-      const ctx = await api<{ price?: string; name?: string }>("/api/coach/sales-call/context");
-      if (cancelled || !ctx.ok) return;
-      setMine({ price: typeof ctx.data.price === "string" ? ctx.data.price : "", me: ctx.data.name?.trim().split(/\s+/)[0] ?? "" });
-    })();
+    // Both at once; the page paints from the last answer (or the tab warm-up).
+    void fetchHubJson<HomeData>(CALL_SIM_HOME_PATH)
+      .then((home) => {
+        if (!cancelled) setData(home);
+      })
+      .catch((err) => {
+        if (!cancelled) setLoadError(err instanceof Error ? err.message : "Something went wrong.");
+      });
+    void fetchHubJson<SalesContext>(SALES_CONTEXT_PATH)
+      .then((ctx) => {
+        if (!cancelled) setMine(mineFrom(ctx));
+      })
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [api]);
+  }, []);
 
   const prospect = PROSPECTS[index];
   const call = callById(callId)!;
@@ -163,7 +182,7 @@ export function CallSimHome() {
           <Link href={`${prefix}/script`} className="inline-flex items-center gap-1.5 text-sm font-medium tracking-[0.02em] text-[var(--sim-cream-soft)] hover:text-[var(--sim-cream)]">
             <ArrowLeft className="h-4 w-4" aria-hidden /> Call simulator
           </Link>
-          <button type="button" className="sim-pill sim-pill-solid" onClick={surprise}>
+          <button type="button" data-tour="callsim-surprise" className="sim-pill sim-pill-solid" onClick={surprise}>
             <Shuffle className="h-4 w-4" aria-hidden />
             Surprise me
           </button>
@@ -174,7 +193,7 @@ export function CallSimHome() {
         {/* Above the faces (z 10), so the call menu opens over them. */}
         <div className="relative z-[30] mt-2 border-t border-[var(--sim-cream-line)] pt-7">
           <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto_1fr]">
-            <div className="min-w-0">
+            <div data-tour="callsim-brief" className="min-w-0">
               <p className="text-sm font-medium text-[var(--sim-cream-soft)]">
                 {prospect.name}, {prospect.age} · {prospect.business}, {prospect.place} · {prospect.personality}
               </p>
@@ -199,7 +218,7 @@ export function CallSimHome() {
             </div>
 
             <div className="flex flex-col items-center gap-3">
-              <div className="sim-start-wrap">
+              <div data-tour="callsim-start" className="sim-start-wrap">
                 <span className="sim-orbit" aria-hidden />
                 <button type="button" className="sim-start" disabled={starting || !data?.configured || Boolean(blocked)} onClick={() => void start()}>
                   {starting ? <Loader2 className="mx-auto h-5 w-5 animate-spin" aria-label="Starting" /> : "Start"}
@@ -307,7 +326,7 @@ function CallMenu({ value, onChange }: { value: CallId; onChange: (id: CallId) =
   }, [open]);
 
   return (
-    <div ref={ref} className="relative w-full max-w-sm">
+    <div ref={ref} data-tour="callsim-call" className="relative w-full max-w-sm">
       <button
         type="button"
         className="sim-pill sim-pill-line w-full justify-between !py-3 text-left"
@@ -400,7 +419,7 @@ function History({ sessions, prefix }: { sessions: CallSessionSummary[] | null; 
   const done = (sessions ?? []).filter((s) => s.status === "scored" || s.status === "scoring");
   const scores = done.filter((s) => s.score !== null).slice(0, 12).reverse().map((s) => s.score ?? 0);
   return (
-    <section>
+    <section data-tour="callsim-history">
       <div className="flex items-end justify-between gap-4">
         <h2 className="text-xl font-semibold tracking-tight text-slate-900">Your calls</h2>
         {scores.length > 1 ? <Trend scores={scores} range={[40, 80]} /> : null}

@@ -753,6 +753,7 @@ export function ProspectsHub({
                 <button
                   type="button"
                   onClick={onAddClick}
+                  data-tour="pipeline-add"
                   aria-pressed={addActive}
                   className={buttonClass("main", "normal", `shrink-0 ${addActive ? "bg-[#0a4578]" : ""}`)}
                 >

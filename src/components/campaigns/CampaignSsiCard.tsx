@@ -2,10 +2,12 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { ChevronDown, CircleHelp } from "lucide-react";
-import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { fetchHubJson, peekHubJson } from "@/lib/getClients/cachedHubJson";
 import { cardClass } from "@/components/ui/Card";
 import { DEMO_PREVIEW_SSI } from "@/lib/campaigns/demoPreview";
 import { BOSS_PRO_RING_TRACK } from "@/lib/bossProDialGradients";
+
+export const SSI_PATH = "/api/coach/linkedin-outreach/ssi";
 
 type SsiPillar = {
   id: string;
@@ -204,7 +206,7 @@ export function CampaignSsiCard({
 }) {
   const [breakdownOpen, setBreakdownOpen] = useState(false);
   const [ssi, setSsi] = useState<SsiResponse | null>(
-    preview ? DEMO_PREVIEW_SSI : null
+    preview ? DEMO_PREVIEW_SSI : peekHubJson<SsiResponse>(SSI_PATH) ?? null
   );
 
   useEffect(() => {
@@ -216,26 +218,26 @@ export function CampaignSsiCard({
       setSsi(
         linkedInConnected === false
           ? { available: false, reason: "not_connected" }
-          : null
+          : peekHubJson<SsiResponse>(SSI_PATH) ?? null
       );
       return;
     }
     let cancelled = false;
+    const cached = peekHubJson<SsiResponse>(SSI_PATH);
+    if (cached) setSsi(cached);
     void (async () => {
-      const headers = await getCoachAuthHeaders();
-      if (!headers || cancelled) return;
-      const res = await fetch("/api/coach/linkedin-outreach/ssi", { headers });
-      const body = (await res.json().catch(() => ({}))) as SsiResponse;
-      if (cancelled) return;
-      if (!res.ok) {
+      try {
+        // SSI changes slowly; a minute-old answer is fine.
+        const body = await fetchHubJson<SsiResponse>(SSI_PATH, { staleMs: 60_000 });
+        if (!cancelled) setSsi(body);
+      } catch {
+        if (cancelled || cached) return;
         setSsi({
           available: false,
           reason: "unavailable",
           message: "Couldn't load SSI right now.",
         });
-        return;
       }
-      setSsi(body);
     })();
     return () => {
       cancelled = true;
@@ -254,7 +256,7 @@ export function CampaignSsiCard({
     pillars.length > 0 && !unavailable && !loading && !disconnected;
 
   return (
-    <section className={cardClass("plain", "relative z-10 shrink-0 overflow-visible")}>
+    <section data-tour="campaigns-ssi" className={cardClass("plain", "relative z-10 shrink-0 overflow-visible")}>
       <div className="flex items-center gap-4 py-4 pl-5 pr-5">
         <div className="min-w-0 flex-1">
           <h2 className="min-w-0 text-lg font-semibold leading-snug tracking-tight text-slate-900">

@@ -67,6 +67,23 @@ async function loadPoolPhoneKeys(
   return found;
 }
 
+/** A coach's pool list id never changes once made: remember it per server instance. */
+const poolIdByCoach = new Map<string, string>();
+
+async function coachPoolListId(coachId: string): Promise<string | null> {
+  const known = poolIdByCoach.get(coachId);
+  if (known) return known;
+  const { data: pool } = await supabaseAdmin
+    .from("coach_lead_lists")
+    .select("id")
+    .eq("coach_id", coachId)
+    .eq("kind", "pool")
+    .maybeSingle();
+  const poolId = (pool?.id as string | undefined) ?? null;
+  if (poolId) poolIdByCoach.set(coachId, poolId);
+  return poolId;
+}
+
 async function loadPoolMatches(
   coachId: string,
   input: {
@@ -82,13 +99,7 @@ async function loadPoolMatches(
     linkedinUrls: new Set(),
     phones: new Set(),
   };
-  const { data: pool } = await supabaseAdmin
-    .from("coach_lead_lists")
-    .select("id")
-    .eq("coach_id", coachId)
-    .eq("kind", "pool")
-    .maybeSingle();
-  const poolId = (pool?.id as string | undefined) ?? null;
+  const poolId = await coachPoolListId(coachId);
   if (!poolId) return matches;
 
   const lookups: Array<{
@@ -117,6 +128,10 @@ async function loadPoolMatches(
     },
   ];
 
+  // Phone matches run alongside the other lookups.
+  const phonesPromise = input.phones.length
+    ? loadPoolPhoneKeys(poolId, new Set(input.phones))
+    : null;
   await Promise.all(
     lookups.flatMap((lookup) =>
       chunks(lookup.values).map(async (chunk) => {
@@ -141,9 +156,7 @@ async function loadPoolMatches(
       })
     )
   );
-  if (input.phones.length && poolId) {
-    matches.phones = await loadPoolPhoneKeys(poolId, new Set(input.phones));
-  }
+  if (phonesPromise) matches.phones = await phonesPromise;
   return matches;
 }
 

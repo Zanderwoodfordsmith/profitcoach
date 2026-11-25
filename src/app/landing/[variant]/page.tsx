@@ -114,8 +114,11 @@ export default function LandingVariantPage() {
   const coachSlug = coachSlugFromUrl || getPrimaryCoachSlug();
   const isEmbedded = isEmbeddedRequest(searchParams);
   useEmbedAutoResize(isEmbedded);
-  // ?edit=1: the coach (or an admin) changes the hero wording on the page itself.
-  const wantsEdit = searchParams.get("edit") === "1" && Boolean(coachSlugFromUrl);
+  // The coach (or an admin), signed in, changes the hero wording on the page itself, like the
+  // booking and directory pages. ?edit=1 still opens straight in edit; ?view=live never edits.
+  const explicitEdit = searchParams.get("edit") === "1" && Boolean(coachSlugFromUrl);
+  const wantsEdit =
+    Boolean(coachSlugFromUrl) && !isEmbedded && searchParams.get("view") !== "live";
 
   const router = useRouter();
   const [coach, setCoach] = useState<CoachInfo | null>(null);
@@ -150,7 +153,7 @@ export default function LandingVariantPage() {
   }, []);
 
   useEffect(() => {
-    if (!validVariant || wantsEdit) return;
+    if (!validVariant || explicitEdit) return;
     const sessionId = getOrSetSessionId();
     if (viewTracked.current) return;
     viewTracked.current = true;
@@ -164,7 +167,7 @@ export default function LandingVariantPage() {
         session_id: sessionId,
       }),
     }).catch(() => {});
-  }, [validVariant, wantsEdit, trackVariant, trackCoachSlug]);
+  }, [validVariant, explicitEdit, trackVariant, trackCoachSlug]);
 
   useEffect(() => {
     if (!wantsEdit) return;
@@ -185,11 +188,13 @@ export default function LandingVariantPage() {
       };
       setLandingOverrides(body.overrides);
       setEditAccess({ ownerName: body.actingAsAdmin ? body.name : null });
+      // Coaches land ready to edit; admins see the page as owners do unless they asked to edit.
+      setEditMode(body.actingAsAdmin && !explicitEdit ? "live" : "edit");
     })();
     return () => {
       cancelled = true;
     };
-  }, [wantsEdit, coachSlugFromUrl]);
+  }, [wantsEdit, explicitEdit, coachSlugFromUrl]);
 
   function saveOverrides(patch: Partial<Record<LandingCopyOverrideKey, string | null>>) {
     setLandingOverrides((prev) => {

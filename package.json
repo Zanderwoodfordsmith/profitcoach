@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "perf:hubs": "npx tsx --env-file=.env.local scripts/perf-hubs.ts",
     "dev": "next dev",
     "dev:webpack": "next dev --webpack",
     "dev:clean": "rm -rf .next node_modules/.cache && next dev",

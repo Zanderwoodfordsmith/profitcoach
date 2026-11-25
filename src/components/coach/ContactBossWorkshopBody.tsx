@@ -804,7 +804,9 @@ export function ContactBossWorkshopBody({
 
   const workshopContent = !loading && !error && (
     <>
-      <BossScoreDialStrip totalScore={displayPremiumTotal} pillarStats={pillarDialStats} />
+      <div data-tour="boss-dials">
+        <BossScoreDialStrip totalScore={displayPremiumTotal} pillarStats={pillarDialStats} />
+      </div>
 
       {showCharts && (
         <section className={cardClass("plain", "p-4 sm:p-6")}>
@@ -833,7 +835,7 @@ export function ContactBossWorkshopBody({
           </label>
         </div>
       ) : null}
-      <section className="relative mt-3">
+      <section data-tour="boss-grid" className="relative mt-3">
         <BossGridTransposed
                 answers={matrixAnswers}
                 glass
@@ -862,6 +864,7 @@ export function ContactBossWorkshopBody({
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
             <section
               ref={ownerLevelsCardRef}
+              data-tour="boss-owner-levels"
               className={`${WORKSHOP_CARD_SHELL} flex flex-col`}
             >
               <div className={WORKSHOP_CARD_HEADER}>Owner level completeness</div>
@@ -871,6 +874,7 @@ export function ContactBossWorkshopBody({
             </section>
 
             <section
+              data-tour="boss-wheel"
               className={`${WORKSHOP_CARD_SHELL} flex min-h-0 flex-col overflow-hidden max-lg:h-auto`}
               style={
                 ownerLevelsCardHeight != null ? { height: ownerLevelsCardHeight } : undefined
@@ -910,7 +914,7 @@ export function ContactBossWorkshopBody({
             />
 
             {contactId ? (
-              <section className={WORKSHOP_CARD_SHELL}>
+              <section data-tour="boss-insights" className={WORKSHOP_CARD_SHELL}>
                 <div className={`${WORKSHOP_CARD_HEADER} flex items-center justify-between gap-3`}>
                   <span>Insights</span>
                   <button

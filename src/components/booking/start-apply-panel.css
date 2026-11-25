@@ -673,3 +673,27 @@ button.start-panel__step {
     margin-top: 1px;
   }
 }
+
+/* "Something else?" under an owner question, and the box it opens */
+.start-panel__other {
+  justify-self: start;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(117, 193, 255, 0.95);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.start-panel__other:hover {
+  color: #fff;
+}
+
+.start-panel__other-input {
+  margin-top: 2px;
+}

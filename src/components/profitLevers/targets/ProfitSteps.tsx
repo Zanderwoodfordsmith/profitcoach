@@ -200,7 +200,7 @@ export function ProfitSteps({ now, ours, mode, onNow, onOurs, targets, defaults,
     const year = YEAR_OF[key];
     const unit = unitOf(key);
     return (
-      <tr key={key}>
+      <tr key={key} data-tour="levers-step">
         <th scope="row">
           <StepName name={def.label} why={def.why} />
         </th>
@@ -216,7 +216,7 @@ export function ProfitSteps({ now, ours, mode, onNow, onOurs, targets, defaults,
         </td>
         <Diff value={ours[key]} target={targets[key]} keyName={key} />
         <td className="tgt-num tgt-gain tgt-tight">{gain !== undefined && gain >= 1 ? `+${pounds(gain)}` : ""}</td>
-        <td className="tgt-bar-col">
+        <td className="tgt-bar-col" data-tour="levers-slider">
           <TargetSlider
             label={def.label}
             value={ours[key]}

@@ -195,7 +195,7 @@ export function BlueprintHome() {
 
   // Like the pages: left-aligned, rows on hairlines.
   const renderCleanGroup = (group: (typeof groups)[number]) => (
-    <section key={group.label}>
+    <section key={group.label} data-tour={group.yours ? "blueprint-yours" : undefined}>
       <h2 className="text-[1.0625rem] font-semibold tracking-[-0.01em] text-slate-900">
         {group.label}
       </h2>
@@ -271,7 +271,7 @@ export function BlueprintHome() {
               {yours.map(renderCleanGroup)}
               {later.length ? (
                 <div>
-                  <div className={`space-y-10${quiet ? " bp-home-quiet" : ""}`}>
+                  <div data-tour="blueprint-bca-pages" className={`space-y-10${quiet ? " bp-home-quiet" : ""}`}>
                     {later.map(renderCleanGroup)}
                   </div>
                 </div>

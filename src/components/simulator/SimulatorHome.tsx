@@ -264,7 +264,7 @@ export function SimulatorHome() {
               </button>
             ) : (
               <>
-                <button type="button" className="sim-pill sim-pill-line" onClick={() => setCreating("new")}>
+                <button type="button" data-tour="clientsim-create" className="sim-pill sim-pill-line" onClick={() => setCreating("new")}>
                   <Plus className="h-4 w-4" aria-hidden />
                   Create your own
                 </button>
@@ -282,7 +282,7 @@ export function SimulatorHome() {
         {/* Above the faces (z 10), so the session menu opens over them. */}
         <div className="relative z-[30] mt-2 border-t border-[var(--sim-cream-line)] pt-7">
           <div className="grid items-center gap-8 lg:grid-cols-[1fr_auto_1fr]">
-            <div className="min-w-0">
+            <div data-tour="clientsim-brief" className="min-w-0">
               {client.custom ? (
                 <p className="mb-2 flex flex-wrap gap-1.5">
                   <span className="sim-chip is-on">{client.custom.mine ? "Your client" : `Shared by ${client.custom.ownerName ?? "a coach"}`}</span>
@@ -321,7 +321,7 @@ export function SimulatorHome() {
             </div>
 
             <div className="flex flex-col items-center gap-3">
-              <div className="sim-start-wrap">
+              <div data-tour="clientsim-start" className="sim-start-wrap">
                 <span className="sim-orbit" aria-hidden />
                 <button
                   type="button"
@@ -491,7 +491,7 @@ function SharedClients({ clients, onPick }: { clients: SimClient[]; onPick: (c: 
 
 function WeakSpotCard({ spot, client, onPractise }: { spot: WeakSpot; client: SimClient | null; onPractise: (w: WeakSpot) => void }) {
   return (
-    <section className="sim-room rounded-2xl p-6">
+    <section data-tour="clientsim-weak-spot" className="sim-room rounded-2xl p-6">
       <div className="relative z-[2]">
         <p className="flex items-center gap-2 text-kicker font-semibold uppercase text-[var(--sim-cream-faint)]">
           <Target className="h-4 w-4" aria-hidden /> Your weak spot
@@ -644,7 +644,7 @@ function SituationMenu({
   }, [open]);
 
   return (
-    <div ref={ref} className="relative w-full max-w-sm">
+    <div ref={ref} data-tour="clientsim-situation" className="relative w-full max-w-sm">
       <button
         type="button"
         className="sim-pill sim-pill-line w-full justify-between !py-3 text-left"
@@ -725,7 +725,7 @@ function History({ sessions, prefix, who }: { sessions: Summary[] | null; prefix
   const done = (sessions ?? []).filter((s) => s.status === "scored" || s.status === "scoring");
   const scores = done.filter((s) => s.score !== null).slice(0, 12).reverse().map((s) => s.reviewed_score ?? s.score ?? 0);
   return (
-    <section>
+    <section data-tour="clientsim-history">
       <div className="flex items-end justify-between gap-4">
         <h2 className="text-subhead font-semibold tracking-tight text-slate-900">Your sessions</h2>
         {scores.length > 1 ? <Trend scores={scores} /> : null}
@@ -817,7 +817,7 @@ function Certification({
   const pass = data?.passMark ?? 30;
   const done = (a?.sessions ?? []).filter((s) => s.status === "scored");
   return (
-    <section className={cardClass("plain", "h-max p-6")}>
+    <section data-tour="clientsim-cert" className={cardClass("plain", "h-max p-6")}>
       <p className="flex items-center gap-2 text-kicker font-semibold uppercase text-[#0c5290]">
         <Trophy className="h-4 w-4" aria-hidden /> Certification
       </p>

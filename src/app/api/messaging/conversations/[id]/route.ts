@@ -110,11 +110,13 @@ export async function GET(
 
   const isSide = part === "side";
   const isOlderPage = Boolean(before);
+  /** Loaded ahead of time (peek=1): the coach hasn't opened it, so don't mark it read. */
+  const isPeek = url.searchParams.get("peek") === "1";
 
-  // Opening the thread marks it read. Older pages and the side panel do not.
+  // Opening the thread marks it read. Older pages, the side panel and peeks do not.
   // Runs alongside the message load; awaited before responding.
   let markRead: PromiseLike<unknown> | null = null;
-  if (!isSide && !isOlderPage && (conversation.unread_count as number) > 0) {
+  if (!isSide && !isOlderPage && !isPeek && (conversation.unread_count as number) > 0) {
     // Promise.resolve starts the query now (builders only run when awaited).
     markRead = Promise.resolve(
       supabaseAdmin

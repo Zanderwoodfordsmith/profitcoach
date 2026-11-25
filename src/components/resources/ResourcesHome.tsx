@@ -41,7 +41,7 @@ export function ResourcesHome() {
 
   return (
     <article>
-      <header className="bp-cover px-6 pb-9 pt-12 text-white @2xl:px-12 @2xl:pb-10 @2xl:pt-16">
+      <header data-tour="resources-header" className="bp-cover px-6 pb-9 pt-12 text-white @2xl:px-12 @2xl:pb-10 @2xl:pt-16">
         <h1 className="bp-display text-[2.75rem] font-medium leading-[0.98] tracking-[-0.035em] @2xl:text-[3.75rem]">
           The Resource
           <br />
@@ -59,7 +59,7 @@ export function ResourcesHome() {
 
       <div className="mx-auto w-full max-w-[52rem] px-3 pb-14 pt-8 md:px-8">
         <div className="space-y-3">
-          <label className="relative block">
+          <label data-tour="resources-search" className="relative block">
             <span className="sr-only">Search inside resources</span>
             <Search className="pointer-events-none absolute left-4 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-[var(--bp-faint)]" aria-hidden />
             <input
@@ -116,7 +116,7 @@ export function ResourcesHome() {
             )}
           </section>
         ) : (
-          <div className="mt-10 space-y-3">
+          <div data-tour="resources-sections" className="mt-10 space-y-3">
             {SECTIONS.map((section) => {
               const groups = groupsIn(section.title);
               if (groups.length === 0) return null;
@@ -148,7 +148,7 @@ export function ResourcesHome() {
                     </button>
                   </h2>
                   {isOpen ? (
-                    <div className="border-t border-[var(--bp-rule)] bg-white/50 px-4 pb-5 pt-4 md:px-5">
+                    <div data-tour="resources-open-section" className="border-t border-[var(--bp-rule)] bg-white/50 px-4 pb-5 pt-4 md:px-5">
                       {section.title === "Profit System" ? (
                         <PillarBoard groups={groups} base={base} />
                       ) : (

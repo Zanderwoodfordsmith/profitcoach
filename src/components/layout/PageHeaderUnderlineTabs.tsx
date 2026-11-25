@@ -235,6 +235,7 @@ function TabItem({ item }: { item: PageHeaderUnderlineTabItem }) {
         className={cls}
         aria-current={item.active ? "page" : undefined}
         data-tab-active={item.active ? "" : undefined}
+        data-tab-label={typeof item.label === "string" ? item.label : undefined}
         {...hint}
       >
         {item.label}
@@ -242,7 +243,15 @@ function TabItem({ item }: { item: PageHeaderUnderlineTabItem }) {
     );
   }
   return (
-    <button type="button" onClick={item.onClick} className={cls} data-tab-active={item.active ? "" : undefined} {...hint}>
+    <button
+      type="button"
+      onClick={item.onClick}
+      className={cls}
+      data-tab-active={item.active ? "" : undefined}
+      data-tab-label={typeof item.label === "string" ? item.label : undefined}
+      data-tab-id={item.id}
+      {...hint}
+    >
       {item.label}
     </button>
   );

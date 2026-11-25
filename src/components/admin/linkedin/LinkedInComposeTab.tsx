@@ -772,7 +772,7 @@ export function LinkedInComposeTab({
             </button>
           </div>
         ) : null}
-        <div className={cardClass("plain", "overflow-hidden")}>
+        <div data-tour="content-composer" className={cardClass("plain", "overflow-hidden")}>
           <div className="flex items-start gap-3 px-4 pt-4">
             <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full bg-slate-200">
               {profile.photoUrl ? (
@@ -1247,7 +1247,7 @@ export function LinkedInComposeTab({
             </div>
           ) : null}
 
-          <div className="flex flex-wrap items-center gap-1 border-t border-slate-100 px-2 py-2">
+          <div data-tour="content-media" className="flex flex-wrap items-center gap-1 border-t border-slate-100 px-2 py-2">
             <button
               type="button"
               disabled={
@@ -1373,7 +1373,7 @@ export function LinkedInComposeTab({
               <option key={c} value={c} />
             ))}
           </datalist>
-          <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          <div data-tour="content-send" className="ml-auto flex flex-wrap items-center justify-end gap-2">
             {editingId ? (
               <button
                 type="button"

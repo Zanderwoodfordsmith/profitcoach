@@ -39,7 +39,7 @@ export function LandingEditBar({
 }: BarProps) {
   const segClass = (on: boolean) =>
     `rounded-full px-3 py-1 text-sm font-medium transition-colors ${
-      on ? "bg-white text-[#031a2e]" : "text-white/75 hover:text-white"
+      on ? "bg-sky-600 text-white" : "text-white/75 hover:text-white"
     }`;
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex flex-col items-center gap-2 px-4">

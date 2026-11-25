@@ -16,6 +16,9 @@ import {
   PENDING_PAUSE_AT,
   PENDING_SLOW_DAILY_INVITES,
 } from "@/lib/unipile/pendingInviteDial";
+import { fetchHubJson, invalidateHubJson, peekHubJson } from "@/lib/getClients/cachedHubJson";
+
+const INVITES_PATH = "/api/coach/linkedin-outreach/invitations";
 
 const LINKEDIN_SENT_INVITES =
   "https://www.linkedin.com/mynetwork/invitation-manager/sent/";
@@ -32,6 +35,20 @@ type InvitesResponse = {
   has_more?: boolean;
   withdraw?: InviteWithdrawPolicy;
 };
+
+function snapFromInvites(body: InvitesResponse | undefined): Snapshot | null {
+  if (!body) return null;
+  return {
+    total: Number(body.total ?? 0),
+    hasMore: Boolean(body.has_more),
+    policy: body.withdraw ?? {
+      mode: "cap",
+      value: DEFAULT_KEEP_UNDER,
+      ranOn: null,
+      ranCount: 0,
+    },
+  };
+}
 
 async function readInvitesJson(res: Response): Promise<InvitesResponse | null> {
   const body = (await res.json().catch(() => null)) as InvitesResponse | null;
@@ -136,32 +153,17 @@ export function CampaignInvitesRailCard({
             ranCount: 0,
           },
         }
-      : null
+      : snapFromInvites(peekHubJson<InvitesResponse>(INVITES_PATH))
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (force = false) => {
     if (preview || linkedInConnected !== true) return;
     try {
-      const headers = await getCoachAuthHeaders();
-      if (!headers) return;
-      const res = await fetch("/api/coach/linkedin-outreach/invitations", {
-        headers,
-      });
-      const body = await readInvitesJson(res);
-      if (!body) throw new Error("Could not load invites.");
-      if (!res.ok) throw new Error(body.error || "Could not load invites.");
-      setSnap({
-        total: Number(body.total ?? 0),
-        hasMore: Boolean(body.has_more),
-        policy: body.withdraw ?? {
-          mode: "cap",
-          value: DEFAULT_KEEP_UNDER,
-          ranOn: null,
-          ranCount: 0,
-        },
-      });
+      // Paint the last answer at once (fetchHubJson answers from it while fresh).
+      const body = await fetchHubJson<InvitesResponse>(INVITES_PATH, { force });
+      setSnap(snapFromInvites(body));
       setError(typeof body.error === "string" && body.error ? body.error : null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load.");
@@ -218,6 +220,7 @@ export function CampaignInvitesRailCard({
       const body = await readInvitesJson(res);
       if (!body) throw new Error("Could not save.");
       if (!res.ok) throw new Error(body.error || "Could not save.");
+      invalidateHubJson(INVITES_PATH);
       if (body.withdraw) {
         setSnap((current) =>
           current ? { ...current, policy: body.withdraw! } : current
@@ -225,7 +228,7 @@ export function CampaignInvitesRailCard({
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save.");
-      await load();
+      await load(true);
     } finally {
       setSaving(false);
     }
@@ -235,7 +238,7 @@ export function CampaignInvitesRailCard({
   const autoOn = snap?.policy.mode !== "off" && snap != null;
 
   return (
-    <section className={cardClass("plain", "relative z-20 shrink-0 overflow-visible")}>
+    <section data-tour="campaigns-invites" className={cardClass("plain", "relative z-20 shrink-0 overflow-visible")}>
       <div className="flex items-center gap-4 py-3 pl-4 pr-5">
         <div className="min-w-0 flex-1">
           <h2 className="text-base font-semibold tracking-tight text-slate-900">

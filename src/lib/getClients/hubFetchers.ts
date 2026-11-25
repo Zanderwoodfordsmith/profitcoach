@@ -7,6 +7,9 @@ import type { ProspectRow } from "@/lib/prospectRow";
 import type { ShareHubPayload } from "@/lib/shareLinks/types";
 import { fetchHubQuery, invalidateHubQuery, isHubQueryFresh, peekHubQuery, writeHubQuery } from "@/lib/getClients/hubQueryCache";
 import { hubQueryKey } from "@/lib/getClients/hubKeys";
+import { prefetchHubJson } from "@/lib/getClients/cachedHubJson";
+import { prefetchTopThread } from "@/lib/messaging/topConversation";
+import { prefetchLinkedInHistory } from "@/components/admin/linkedin/useLinkedInHistory";
 
 export type CampaignsHubAccount = {
   id: string;
@@ -469,7 +472,18 @@ export function prefetchShareHub() {
 }
 
 export function prefetchConversationsHub() {
-  warm(hubQueryKey("conversations"), loadConversationsHubPayload);
+  const key = hubQueryKey("conversations");
+  if (isHubQueryFresh(key, WARM_SKIP_MS)) return;
+  void fetchHubQuery(key, loadConversationsHubPayload)
+    .then((payload) => {
+      // The inbox opens the top conversation: have its messages ready too
+      // (loaded without marking it read).
+      const top = payload.conversations[0]?.id;
+      if (typeof top === "string") prefetchTopThread(top);
+    })
+    .catch(() => {
+      /* prefetch is best-effort */
+    });
 }
 
 export function prefetchContentHub() {
@@ -520,10 +534,25 @@ export function prefetchCallsHub(admin: boolean, coachId?: string | null) {
 export function prefetchGetClientsHref(href: string): void {
   const path = (href.split("?")[0] ?? href).replace(/\/$/, "");
   const admin = path.startsWith("/admin");
-  if (path.endsWith("/campaigns")) prefetchCampaignsHub();
+  if (path.endsWith("/campaigns")) {
+    prefetchCampaignsHub();
+    // The Campaigns tab's chart and to-do pane, so the click paints at once.
+    prefetchHubJson("/api/coach/linkedin-outreach/overview?range=quarter&offset=0");
+    prefetchHubJson("/api/coach/linkedin-outreach/activity-feed");
+    prefetchHubJson("/api/coach/linkedin-outreach/remind?view=counts");
+    prefetchHubJson("/api/coach/linkedin-outreach/remind");
+    prefetchHubJson("/api/coach/linkedin-outreach/invitations");
+    prefetchHubJson("/api/coach/linkedin-outreach/ssi");
+  }
   else if (path.endsWith("/conversations")) prefetchConversationsHub();
   else if (path.endsWith("/calls")) prefetchCallsHub(admin);
   else if (path.endsWith("/prospects")) prefetchProspectsHub(admin ? "admin" : "coach");
   else if (path.endsWith("/linkedin")) prefetchContentHub();
+  else if (path.endsWith("/newsletters")) prefetchLinkedInHistory();
+  else if (path.endsWith("/script/simulator")) {
+    // Same paths CallSimHome reads (kept here so this file doesn't pull in the page).
+    prefetchHubJson("/api/coach/call-simulator");
+    prefetchHubJson("/api/coach/sales-call/context");
+  }
   else if (path.endsWith("/share")) prefetchShareHub();
 }

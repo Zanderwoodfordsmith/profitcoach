@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { fetchHubJson, peekHubJson } from "@/lib/getClients/cachedHubJson";
 import { cardClass } from "@/components/ui/Card";
 import { buildDemoCampaignOverview } from "@/lib/campaigns/demoPreview";
 import {
@@ -561,8 +561,12 @@ export function CampaignOverviewHero({
 }) {
   const [range, setRange] = useState<OverviewRange>("quarter");
   const [offset, setOffset] = useState(0);
-  const [data, setData] = useState<OverviewResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const overviewPath = (r: OverviewRange, o: number) =>
+    `/api/coach/linkedin-outreach/overview?range=${r}&offset=${o}`;
+  const [data, setData] = useState<OverviewResponse | null>(() =>
+    preview ? null : peekHubJson<OverviewResponse>(overviewPath("quarter", 0)) ?? null
+  );
+  const [loading, setLoading] = useState(() => data == null);
   const [error, setError] = useState<string | null>(null);
   const [hoverKey, setHoverKey] = useState<string | null>(null);
 
@@ -574,23 +578,15 @@ export function CampaignOverviewHero({
       return;
     }
     let cancelled = false;
-    setLoading(true);
+    const path = overviewPath(range, offset);
+    const cached = peekHubJson<OverviewResponse>(path);
+    if (cached) setData(cached);
+    setLoading(!cached);
     setError(null);
     void (async () => {
       try {
-        const headers = await getCoachAuthHeaders();
-        if (!headers || cancelled) return;
-        const res = await fetch(
-          `/api/coach/linkedin-outreach/overview?range=${range}&offset=${offset}`,
-          { headers }
-        );
-        const body = (await res.json().catch(() => ({}))) as OverviewResponse & {
-          error?: string;
-        };
+        const body = await fetchHubJson<OverviewResponse>(path);
         if (cancelled) return;
-        if (!res.ok) {
-          throw new Error(body.error || "Could not load overview.");
-        }
         setData(body);
       } catch (err) {
         if (!cancelled) {

@@ -89,6 +89,7 @@ export function ClassroomCourseOverviewCard({
   return (
     <Link
       href={href}
+      data-tour={`classroom-course-${courseId}`}
       className="group flex h-full flex-col overflow-hidden rounded-xl border border-white/80 bg-white/35 shadow-[0_16px_44px_rgba(15,23,42,0.14),0_3px_10px_rgba(15,23,42,0.06)] backdrop-blur-xl ring-1 ring-inset ring-white/55 transition duration-300 hover:bg-white/45 hover:shadow-[0_28px_56px_rgba(15,23,42,0.24),0_8px_18px_rgba(15,23,42,0.1),0_0_0_1px_rgba(12,82,144,0.12),0_0_22px_rgba(12,82,144,0.18)] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400"
     >
       <div
@@ -130,7 +131,7 @@ export function ClassroomCourseOverviewCard({
         <p className="mt-1.5 line-clamp-2 text-sm leading-relaxed text-slate-600">
           {description || " "}
         </p>
-        <div className="mt-auto pt-4">
+        <div data-tour="classroom-progress" className="mt-auto pt-4">
           <ClassroomCardProgress value={progressValue} label={progressLabel} />
         </div>
       </div>

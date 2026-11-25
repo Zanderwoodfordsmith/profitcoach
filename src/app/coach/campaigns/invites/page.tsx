@@ -11,7 +11,7 @@ export default function CoachCampaignInvitesPage() {
       header={
         <StickyPageHeader
           title="Get Calls"
-          description="Withdraw pending LinkedIn connection requests, by hand or on a schedule."
+          description="Withdraw old LinkedIn connection requests, by hand or on a schedule, so your new invites keep going out."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />
       }

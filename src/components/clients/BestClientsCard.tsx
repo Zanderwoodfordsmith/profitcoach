@@ -46,7 +46,7 @@ export function BestClientsCard({ authHeaders, refreshKey }: { authHeaders: () =
 
   if (!data || data.clients === 0) return null;
   return (
-    <section className={cardClass("plain", "p-4")}>
+    <section data-tour="clients-best" className={cardClass("plain", "scroll-mt-20 p-4")}>
       <h3 className="text-sm font-semibold text-slate-900">Your best clients</h3>
       <p className="mt-1 text-sm text-slate-700">
         {data.summary ?? "Add sector, turnover, team size and how they found you to see who your best clients are."}

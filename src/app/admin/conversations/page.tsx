@@ -20,7 +20,7 @@ export default function AdminConversationsPage() {
           bleedInset="px-4 md:px-6"
           className="shrink-0"
           title="Get Calls"
-          description="Inbox for LinkedIn, WhatsApp, email and booked-call messages. Sync pulls new threads from connected channels."
+          description="Every reply from LinkedIn, WhatsApp and email in one inbox, so no owner waits and no lead slips away."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />
       }

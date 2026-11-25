@@ -1,5 +1,6 @@
 "use client";
 
+import { YourPagesCard } from "@/components/shareLinks/YourPagesCard";
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -199,6 +200,8 @@ type Props = {
   selectedCalendarSlug?: string | null;
   /** Right-column content above weekly hours (e.g. integrations). */
   sidebarTop?: ReactNode;
+  /** The coach's own Calls settings: show "Your pages" (booking, Constraint Call, BOSS Score) on top. */
+  showPages?: boolean;
   /** Right-column content below weekly hours (e.g. calendar provider). */
   sidebarBottom?: ReactNode;
 };
@@ -215,6 +218,7 @@ export function CallsCalendarSettings({
   hoursHint,
   selectedCalendarSlug = null,
   sidebarTop = null,
+  showPages = false,
   sidebarBottom = null,
 }: Props) {
   const router = useRouter();
@@ -531,6 +535,8 @@ export function CallsCalendarSettings({
   return (
     <div className="space-y-4">
       {error ? <p className="text-sm text-rose-600">{error}</p> : null}
+
+      {showPages && slug ? <YourPagesCard slug={slug} appOrigin={appOrigin} /> : null}
 
       <div
         className={

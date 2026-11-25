@@ -10,7 +10,7 @@ export default function CoachLinkedInContentPage() {
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         title="Get Calls"
-        description="Compose, schedule, and publish LinkedIn content."
+        description="Plan and write LinkedIn posts that keep you in front of owners, so they think of you when they are ready to talk."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
       <Suspense

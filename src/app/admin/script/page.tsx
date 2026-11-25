@@ -11,7 +11,7 @@ export default function AdminScriptsPage() {
     <div className="flex flex-col">
       <StickyPageHeader
         title="Win Clients"
-        description="Every script for your conversations with owners, from first contact to the close."
+        description="Every script for your talks with owners, from first message to the close. Use words that already work instead of making them up."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
       <Suspense fallback={null}>

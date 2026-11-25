@@ -23,7 +23,7 @@ export default function CoachProspectsPage() {
           className="shrink-0"
           rootRef={page.pageHeaderRef}
           title="Win Clients"
-          description="Add prospects and share your assessment link, or view those who have completed assessments."
+          description="Everyone you are talking to and where they are up to, so you know who to follow up next. Add an owner and send them your assessment link."
           tabs={<CoachToolsHubTabs hub="get-clients" />}
         />
       }

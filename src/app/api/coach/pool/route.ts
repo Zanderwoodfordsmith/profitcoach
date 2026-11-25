@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireCoachRequest } from "@/lib/requireCoachRequest";
-import { fetchAllSupabasePages } from "@/lib/contactsSchemaSafeSelect";
+import { fetchAllSupabasePagesParallel } from "@/lib/contactsSchemaSafeSelect";
 import {
   campaignPersonKey,
   copyMatchingPoolItemsOntoList,
@@ -34,9 +34,22 @@ import { normalizeProspectTags } from "@/lib/prospects/tags";
 import { asFitLabel } from "@/lib/pool/fit";
 
 const POOL_ITEM_SELECT =
-  "id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, website, place_id, source, created_at, tags, raw, contact_id, team_size, industry, location, source_rank, source_ranked_at, open_profile, linkedin_premium, fit, fit_why, fit_by";
+  "id, full_name, first_name, last_name, job_title, company, linkedin_url, email, phone, website, place_id, source, created_at, tags, maps_address:raw->google_maps->>address, maps_category:raw->google_maps->>category, contact_id, team_size, industry, location, source_rank, source_ranked_at, open_profile, linkedin_premium, fit, fit_why, fit_by";
 
 const POOL_PREVIEW_MAX = 50;
+
+/**
+ * The list only needs two Google Maps fields from an item's import record, so
+ * the select picks them out (maps_address, maps_category) instead of sending
+ * the whole record. Rebuild the shape the raw helpers read.
+ */
+function poolItemRaw(item: Record<string, unknown>): unknown {
+  if (item.raw !== undefined) return item.raw;
+  const address = item.maps_address;
+  const category = item.maps_category;
+  if (address == null && category == null) return null;
+  return { google_maps: { address, category } };
+}
 
 type CampaignMembership = {
   byUrl: Map<string, string[]>;
@@ -77,7 +90,8 @@ function mapPoolItem(
   const whatsappCampaignable = Boolean(
     normalizePoolPhone(typeof item.phone === "string" ? item.phone : null)
   );
-  const address = poolAddressFromRaw(item.raw);
+  const raw = poolItemRaw(item);
+  const address = poolAddressFromRaw(raw);
   const location =
     typeof item.location === "string" && item.location.trim()
       ? item.location.trim()
@@ -113,7 +127,7 @@ function mapPoolItem(
           : null,
     industry: poolIndustryFromSources(
       typeof item.industry === "string" ? item.industry : null,
-      item.raw
+      raw
     ),
     place_id: placeId,
     source: String(item.source ?? "manual"),
@@ -145,18 +159,18 @@ function mapPoolItem(
 async function loadPoolCampaignMembership(
   coachId: string
 ): Promise<CampaignMembership> {
-  const page = await fetchAllSupabasePages<{
+  const page = await fetchAllSupabasePagesParallel<{
     campaign_id: string | null;
     linkedin_url: string | null;
     contact_id: string | null;
-    metadata: unknown;
+    meta_email: string | null;
     first_name: string | null;
     last_name: string | null;
     company: string | null;
   }>(async (from, to) =>
     supabaseAdmin
       .from("linkedin_campaign_leads")
-      .select("campaign_id, linkedin_url, contact_id, metadata, first_name, last_name, company")
+      .select("campaign_id, linkedin_url, contact_id, meta_email:metadata->>email, first_name, last_name, company")
       .eq("coach_id", coachId)
       .order("created_at", { ascending: true })
       .range(from, to)
@@ -183,12 +197,8 @@ async function loadPoolCampaignMembership(
     if (url) add(byUrl, url, campaignId);
     const personKey = campaignPersonKey(row);
     if (personKey) add(byPerson, personKey, campaignId);
-    const meta =
-      row.metadata && typeof row.metadata === "object"
-        ? (row.metadata as Record<string, unknown>)
-        : {};
     const fromMeta = normalizePoolEmail(
-      typeof meta.email === "string" ? meta.email : null
+      typeof row.meta_email === "string" ? row.meta_email : null
     );
     if (fromMeta) add(byEmail, fromMeta, campaignId);
     if (typeof row.contact_id === "string" && row.contact_id) {
@@ -197,25 +207,37 @@ async function loadPoolCampaignMembership(
   }
 
   const contactIds = [...contactCampaigns.keys()];
+  const chunks: string[][] = [];
   for (let i = 0; i < contactIds.length; i += 200) {
-    const chunk = contactIds.slice(i, i + 200);
-    const { data, error } = await supabaseAdmin
-      .from("contacts")
-      .select("id, email")
-      .eq("coach_id", coachId)
-      .in("id", chunk);
-    if (error) throw new Error(error.message);
-    for (const contact of data ?? []) {
-      const email = normalizePoolEmail(
-        typeof contact.email === "string" ? contact.email : null
-      );
-      const campaigns =
-        typeof contact.id === "string"
-          ? contactCampaigns.get(contact.id)
-          : undefined;
-      if (!email || !campaigns) continue;
-      for (const campaignId of campaigns) add(byEmail, email, campaignId);
+    chunks.push(contactIds.slice(i, i + 200));
+  }
+  // Six lookups at a time rather than one after another.
+  const contactRows: Array<{ id: unknown; email: unknown }> = [];
+  for (let i = 0; i < chunks.length; i += 6) {
+    const results = await Promise.all(
+      chunks.slice(i, i + 6).map((chunk) =>
+        supabaseAdmin
+          .from("contacts")
+          .select("id, email")
+          .eq("coach_id", coachId)
+          .in("id", chunk)
+      )
+    );
+    for (const { data, error } of results) {
+      if (error) throw new Error(error.message);
+      contactRows.push(...(data ?? []));
     }
+  }
+  for (const contact of contactRows) {
+    const email = normalizePoolEmail(
+      typeof contact.email === "string" ? contact.email : null
+    );
+    const campaigns =
+      typeof contact.id === "string"
+        ? contactCampaigns.get(contact.id)
+        : undefined;
+    if (!email || !campaigns) continue;
+    for (const campaignId of campaigns) add(byEmail, email, campaignId);
   }
 
   const freeze = (map: Map<string, Set<string>>) => {
@@ -313,7 +335,7 @@ export async function GET(request: Request) {
       blacklisted,
       blacklistedEmails,
     ] = await Promise.all([
-      fetchAllSupabasePages(async (from, to) =>
+      fetchAllSupabasePagesParallel(async (from, to) =>
         supabaseAdmin
           .from("coach_lead_list_items")
           .select(POOL_ITEM_SELECT)

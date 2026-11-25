@@ -120,9 +120,9 @@ export function PlaybooksLibrary({
       {error && <p className="text-sm text-rose-600">{error}</p>}
 
       {!loading && !error && viewMode === "grid" && (
-        <div className="flex flex-col gap-10">
+        <div data-tour="playbooks-library" className="flex scroll-mt-20 flex-col gap-10">
           {grouped.map(({ area, items }) => (
-            <section key={area.id} className="space-y-4">
+            <section key={area.id} data-tour="playbooks-area" className="scroll-mt-20 space-y-4">
               <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-500">
                 {area.name}
               </h2>

@@ -2,8 +2,40 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { LinkedInHistoryPayload } from "@/lib/linkedinHistory/loadHistory";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { fetchHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
 
 type Headers = () => Promise<Record<string, string> | null>;
+
+/** Paint-cache key: whose history these headers ask for. */
+function historyKey(headers: Record<string, string>): string {
+  return `linkedin-history:${headers["x-impersonate-coach-id"] || "self"}`;
+}
+
+function fetchHistory(
+  headers: Record<string, string>,
+  opts?: { force?: boolean }
+): Promise<LinkedInHistoryPayload> {
+  return fetchHubQuery(
+    historyKey(headers),
+    async () => {
+      const res = await fetch("/api/linkedin/history", { headers });
+      const body = (await res.json().catch(() => null)) as
+        | (LinkedInHistoryPayload & { error?: string })
+        | null;
+      if (!res.ok || !body) throw new Error(body?.error || "Could not load LinkedIn history.");
+      return body;
+    },
+    opts
+  );
+}
+
+/** Warm the Newsletter tab from the other Get Calls tabs. */
+export function prefetchLinkedInHistory(): void {
+  void getCoachAuthHeaders()
+    .then((headers) => (headers ? fetchHistory(headers) : undefined))
+    .catch(() => undefined);
+}
 
 /**
  * A coach's imported LinkedIn posts, newsletter issues and BCA's drafts.
@@ -16,25 +48,34 @@ export function useLinkedInHistory(getHeaders: Headers) {
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const reload = useCallback(async () => {
-    try {
-      const headers = await getHeaders();
-      if (!headers) throw new Error("Please sign in again.");
-      const res = await fetch("/api/linkedin/history", { headers });
-      const body = (await res.json().catch(() => null)) as (LinkedInHistoryPayload & { error?: string }) | null;
-      if (!res.ok || !body) throw new Error(body?.error || "Could not load LinkedIn history.");
-      setData(body);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load LinkedIn history.");
-    } finally {
-      setLoading(false);
-    }
-  }, [getHeaders]);
+  const load = useCallback(
+    async (force: boolean) => {
+      try {
+        const headers = await getHeaders();
+        if (!headers) throw new Error("Please sign in again.");
+        // Paint the last answer at once, then refresh behind it.
+        const cached = peekHubQuery<LinkedInHistoryPayload>(historyKey(headers));
+        if (cached && !force) {
+          setData(cached);
+          setLoading(false);
+        }
+        setData(await fetchHistory(headers, { force }));
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not load LinkedIn history.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getHeaders]
+  );
+
+  /** After a change: always ask the server again. */
+  const reload = useCallback(() => load(true), [load]);
 
   useEffect(() => {
-    void reload();
-  }, [reload]);
+    void load(false);
+  }, [load]);
 
   const runImport = useCallback(async (): Promise<string | null> => {
     setImporting(true);

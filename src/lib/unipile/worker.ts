@@ -12,7 +12,7 @@ import {
 } from "@/lib/unipile/client";
 import { buildMessageBody } from "@/lib/unipile/campaigns";
 import { consumeNonOutboundSteps, processExpiredInviteTimeouts } from "@/lib/unipile/sequenceAdvance";
-import { sendCampaignLinkedInMessage } from "@/lib/unipile/campaignLinkedInSend";
+import { leadHasWrittenInChat, sendCampaignLinkedInMessage } from "@/lib/unipile/campaignLinkedInSend";
 import {
   campaignStepCreatesJob,
   inviteNoConnectFrom,
@@ -1137,6 +1137,27 @@ export async function processOutreachJobsTick(options?: {
             .eq("id", lead.id);
         }
       } else if (step.step_type === "message") {
+        // Already talking (e.g. replied before this campaign was imported):
+        // a sequence message would read as a cold, repeated message. Stop here.
+        if (
+          campaign.stop_on_reply !== false &&
+          (await leadHasWrittenInChat({
+            chatId: (lead.unipile_chat_id as string | null) ?? null,
+            providerId,
+            accountId,
+          }))
+        ) {
+          await supabaseAdmin
+            .from("linkedin_campaign_leads")
+            .update({ status: "replied", next_action_at: null })
+            .eq("id", lead.id);
+          const { cancelOpenSendJobs } = await import("@/lib/unipile/remindQueue");
+          await cancelOpenSendJobs(
+            lead.id as string,
+            "Not sent: this person has already written to the coach on LinkedIn."
+          );
+          return;
+        }
         const { text, variant } = await renderedStepBody();
         const sent = await sendCampaignLinkedInMessage({
           coachId: job.coach_id,

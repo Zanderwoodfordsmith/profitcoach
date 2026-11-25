@@ -34,6 +34,8 @@ export type PrefetchedThreadPage = {
   messages: ThreadMessage[];
   has_older: boolean;
   scheduled: unknown[];
+  /** Loaded ahead of time without marking the thread read. */
+  peeked?: boolean;
 };
 
 export type ProspectFeedPayload = {
@@ -117,7 +119,7 @@ function threadMessages(value: unknown): ThreadMessage[] {
 export function fetchThreadPage(
   conversationId: string,
   headers: Record<string, string>,
-  opts?: { fresh?: boolean }
+  opts?: { fresh?: boolean; peek?: boolean }
 ): Promise<PrefetchedThreadPage> {
   const id = conversationId.trim();
   const existing = threadInflight.get(id);
@@ -129,7 +131,7 @@ export function fetchThreadPage(
 
   const request = (async (): Promise<PrefetchedThreadPage> => {
     const res = await fetch(
-      `/api/messaging/conversations/${encodeURIComponent(id)}?limit=${THREAD_MESSAGE_PAGE_SIZE}`,
+      `/api/messaging/conversations/${encodeURIComponent(id)}?limit=${THREAD_MESSAGE_PAGE_SIZE}${opts?.peek ? "&peek=1" : ""}`,
       { headers }
     );
     const body = (await res.json().catch(() => ({}))) as {
@@ -147,6 +149,7 @@ export function fetchThreadPage(
       messages: threadMessages(body.messages),
       has_older: Boolean(body.has_older),
       scheduled: Array.isArray(body.scheduled) ? body.scheduled : [],
+      peeked: Boolean(opts?.peek),
     };
     if (page.ok) {
       writeThreadCache(id, page.messages, page.has_older, "replace");
@@ -182,7 +185,7 @@ export function prefetchProspectThread(
   void (async () => {
     const headers = await getCoachAuthHeaders(impersonate);
     if (!headers) return;
-    await fetchThreadPage(id, headers);
+    await fetchThreadPage(id, headers, { peek: true });
   })();
 }
 

@@ -89,6 +89,11 @@ import {
   readThreadCache,
   writeThreadCache,
 } from "@/lib/messaging/threadCache";
+import {
+  prefetchTopThread,
+  recallTopConversation,
+  rememberTopConversation,
+} from "@/lib/messaging/topConversation";
 import { fetchHubQuery, peekHubQuery, writeHubQuery } from "@/lib/getClients/hubQueryCache";
 import { hubQueryKey } from "@/lib/getClients/hubKeys";
 import {
@@ -162,6 +167,7 @@ import {
   prospectStatusBadgeClass,
 } from "@/lib/prospectStatus";
 import "./prospectViewTransition.css";
+import { useTourExamples } from "@/lib/tour/tourExamples";
 
 type InboxTab = "unread" | "all" | "recent" | "starred";
 type ChannelFilter = InboxChannelFilter;
@@ -1345,6 +1351,8 @@ export function MessagingInbox({
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
   const [tab, setTab] = useState<InboxTab>("all");
+  // Section guide running: an empty inbox shows example rows to point at.
+  const tourExamples = useTourExamples();
   const [inboxFilters, setInboxFilters] = useState<InboxFilters>(() =>
     campaignQuery
       ? { ...EMPTY_INBOX_FILTERS, campaignId: campaignQuery }
@@ -1829,6 +1837,7 @@ export function MessagingInbox({
           writeHubQuery(conversationsCacheKey, { conversations: list });
         }
         setConversations(list);
+        rememberTopConversation(list[0]?.id, impersonatingCoachId);
         const pending = peekMessagingComposeDraft();
         const prev = selectedIdRef.current;
         let next = prev;
@@ -1862,7 +1871,14 @@ export function MessagingInbox({
         }
       }
     },
-    [authHeaders, contactId, conversationsCacheKey, openConversation, prospectMode]
+    [
+      authHeaders,
+      contactId,
+      conversationsCacheKey,
+      impersonatingCoachId,
+      openConversation,
+      prospectMode,
+    ]
   );
 
   const loadInboxAccounts = useCallback(async () => {
@@ -2073,6 +2089,8 @@ export function MessagingInbox({
       const run = (async () => {
         const isActive = () =>
           selectedIdRef.current === id && paneGenRef.current === gen;
+        const wasUnread =
+          (conversationsRef.current.find((c) => c.id === id)?.unread_count ?? 0) > 0;
         const cached = readThreadCache<MessageRow>(id);
         if (!prefetch && isActive()) {
           if (cached) {
@@ -2102,7 +2120,19 @@ export function MessagingInbox({
           const headers = await authHeaders();
           if (!headers) return;
           if (!prefetch && isActive()) void loadThreadSide(id);
-          const page = await fetchThreadPage(id, headers, { fresh: silent });
+          const page = await fetchThreadPage(id, headers, {
+            fresh: silent,
+            // Loading ahead must not mark a thread read the coach hasn't opened.
+            peek: prefetch,
+          });
+          // Opened from a page loaded ahead: mark it read now.
+          if (!prefetch && page.ok && page.peeked && wasUnread) {
+            void fetch(`/api/messaging/conversations/${encodeURIComponent(id)}`, {
+              method: "PATCH",
+              headers,
+              body: JSON.stringify({ unread_count: 0 }),
+            }).catch(() => undefined);
+          }
           const body = {
             error: page.error,
             conversation: page.conversation
@@ -3232,6 +3262,13 @@ export function MessagingInbox({
     async function boot() {
       // Paint the first page of conversations; do not wait for Unipile import.
       const cached = peekHubQuery<ConversationsHubPayload>(conversationsCacheKey);
+      // Fresh load: ask for last time's top thread alongside the list.
+      if (!cached) {
+        prefetchTopThread(
+          recallTopConversation(impersonatingCoachId),
+          impersonatingCoachId
+        );
+      }
       await loadList({
         silent: Boolean(cached),
         limit: THREAD_LIST_FAST_LIMIT,
@@ -3243,7 +3280,7 @@ export function MessagingInbox({
     return () => {
       cancelled = true;
     };
-  }, [contactId, loadList]);
+  }, [contactId, impersonatingCoachId, loadList]);
 
   useEffect(() => {
     if (contactId || loading || liSoftSyncAttempted.current) return;
@@ -4924,7 +4961,7 @@ export function MessagingInbox({
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-1.5">
+          <div data-tour="inbox-sync" className="flex items-center justify-between gap-2 border-b border-slate-100 px-3 py-1.5">
             <p
               className={`min-w-0 truncate text-caption ${
                 liSyncNote && liSyncNeedsAction
@@ -4972,7 +5009,7 @@ export function MessagingInbox({
             )}
           </div>
 
-          <div className="grid grid-cols-4 border-b border-slate-100">
+          <div data-tour="inbox-tabs" className="grid grid-cols-4 border-b border-slate-100">
             {TABS.map((item) => {
               const active = tab === item.id;
               const Icon = item.icon;
@@ -5149,7 +5186,7 @@ export function MessagingInbox({
             action={{ label: "Connect a channel", href: settingsIntegrationsHref }}
             details="Pick the channels you use in Settings. LinkedIn also runs your campaigns. Gmail or Outlook also sends your booking emails. WhatsApp only brings in chats with people already in your pool, prospects or clients."
           >
-          <ul className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">
+          <ul data-tour="inbox-list" className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain">
             {inboxLocked
               ? SAMPLE_INBOX_ROWS.map((row) => (
                   <li key={row.name} className="px-2.5 py-0.5">
@@ -5180,7 +5217,39 @@ export function MessagingInbox({
                 Loading conversations…
               </li>
             ) : null}
-            {filtered.length === 0 && !loading && !inboxLocked ? (
+            {conversations.length === 0 &&
+            !loading &&
+            !inboxLocked &&
+            tourExamples ? (
+              <>
+                <li className="mx-2.5 my-2 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  Examples for the tour. These aren&apos;t real people.
+                </li>
+                {SAMPLE_INBOX_ROWS.slice(0, 3).map((row, i) => (
+                  <li key={row.name} className="px-2.5 py-0.5" aria-hidden>
+                    <div className="flex items-start gap-2.5 rounded-lg px-2 py-2">
+                      <AvatarWithChannels name={row.name} size="md" channels={[row.channel]} />
+                      <span className="min-w-0 flex-1">
+                        <span
+                          className={`block truncate text-sm text-slate-900 ${
+                            i === 0 ? "font-semibold" : "font-medium"
+                          }`}
+                        >
+                          {row.name}
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs text-slate-500">
+                          {row.preview}
+                        </span>
+                      </span>
+                      <span className="flex shrink-0 flex-col items-end gap-1">
+                        <span className="text-caption text-slate-400">{row.when}</span>
+                        {i === 0 ? <span className="h-2 w-2 rounded-full bg-sky-600" /> : null}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </>
+            ) : filtered.length === 0 && !loading && !inboxLocked ? (
               <li className="px-4 py-8 text-sm text-slate-500">
                 {inboxEmptyCopy(
                   tab,
@@ -5239,6 +5308,7 @@ export function MessagingInbox({
                       <button
                         type="button"
                         onClick={() => selectConversation(c.id)}
+                        data-tour-row={unread ? "unread" : "read"}
                         className="min-w-0 flex-1 text-left"
                       >
                         <div className="flex items-start gap-2.5">
@@ -5339,6 +5409,7 @@ export function MessagingInbox({
 
         {/* Center: thread + composer. Files dropped anywhere here go into the reply. */}
         <FileDropZone
+          data-tour="inbox-thread"
           onFiles={selected && mediaComposerEnabled ? dropIntoReply : undefined}
           className={`flex min-h-0 min-w-0 flex-col overflow-hidden max-lg:h-[min(70dvh,36rem)] lg:min-h-0 lg:border-b-0 xl:border-b-0 [view-transition-name:inbox-prospect-thread] ${
             prospectMode ? "max-lg:order-1 lg:order-2" : ""
@@ -6095,6 +6166,7 @@ export function MessagingInbox({
                       </button>
                       <button
                         type="button"
+                        data-tour="inbox-reply-open"
                         onClick={() => {
                           setComposerOpen(true);
                           setChannelMenuOpen(false);
@@ -6315,6 +6387,7 @@ export function MessagingInbox({
                       />
                     ) : null}
                     <div
+                      data-tour="inbox-composer"
                       className={`relative flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white focus-within:border-sky-400 ${
                         composerExpanded ? "flex-1" : ""
                       }`}
@@ -6493,6 +6566,7 @@ export function MessagingInbox({
 
         {/* Contact / prospect details — right in inbox, left on the prospect page */}
         <aside
+          data-tour="inbox-details"
           className={`min-h-0 min-w-0 flex-col overflow-hidden border-slate-200 bg-white [view-transition-name:inbox-prospect-details] ${
             prospectMode
               ? "flex max-lg:order-2 max-lg:max-h-[40vh] max-lg:border-t lg:order-1 lg:border-r lg:border-t-0"

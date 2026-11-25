@@ -89,7 +89,7 @@ export default function CoachCallsPage() {
     <div className="flex flex-col gap-4">
       <StickyPageHeader
         title="Win Clients"
-        description="Booked calls from native calendars and GoHighLevel."
+        description="Every booked sales call in one calendar, so you walk in ready and can look back at what was said."
         tabs={<CoachToolsHubTabs hub="get-clients" />}
       />
 
