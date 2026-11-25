@@ -63,9 +63,16 @@ import {
   type OutreachSendSafetyDecision,
 } from "@/lib/unipile/outreachSendSafety";
 import { normalizeUnipileProvider } from "@/lib/unipile/providers";
+import { coachNames, raiseOutreachAlert } from "@/lib/unipile/outreachAlerts";
 
-/** Global jobs claimed per cron tick (across coaches). */
-const MAX_JOBS_PER_TICK = 8;
+/** Jobs claimed per cron tick, one per coach, run side by side. */
+const MAX_JOBS_PER_TICK = 40;
+/** A running campaign's due job waiting longer than this is stuck: alert. */
+const STUCK_ALERT_MS = 2 * 3600_000;
+
+function errText(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
 /** A claimed job still "running" after this died mid-send (functions stop at 60s). */
 const STALE_RUNNING_MS = 15 * 60_000;
 /** A safety deferral further out than this is a limit or closed hours, not pacing. */
@@ -98,7 +105,11 @@ async function loadOldestDueJobPerRunningCampaign(
         .lte("scheduled_for", now)
         .order("scheduled_for", { ascending: true })
         .limit(1);
-      if (jobErr) throw new Error(jobErr.message);
+      // One campaign's read failing must not stop everyone else's sends.
+      if (jobErr) {
+        console.error("outreach candidates:", c.id, jobErr.message);
+        return undefined;
+      }
       return (data ?? [])[0] as Record<string, unknown> | undefined;
     })
   );
@@ -127,7 +138,7 @@ async function loadJobsById(
  */
 async function releaseStaleRunningJobs(): Promise<void> {
   const cutoff = new Date(Date.now() - STALE_RUNNING_MS).toISOString();
-  await supabaseAdmin
+  const { data: released } = await supabaseAdmin
     .from("linkedin_send_jobs")
     .update({
       status: "failed",
@@ -135,34 +146,103 @@ async function releaseStaleRunningJobs(): Promise<void> {
         "Stopped part-way through sending. Check LinkedIn to see if it went before sending again.",
     })
     .eq("status", "running")
-    .lt("updated_at", cutoff);
+    .lt("updated_at", cutoff)
+    .select("coach_id");
+  if (!released?.length) return;
+  const counts = new Map<string, number>();
+  for (const r of released) {
+    const id = String(r.coach_id);
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  const names = await coachNames([...counts.keys()]);
+  for (const [coachId, n] of counts) {
+    const name = names.get(coachId) ?? "A coach";
+    await raiseOutreachAlert({
+      title: `Sales Robot: a send stopped part-way for ${name}`,
+      details: `${n} send${n === 1 ? "" : "s"} for ${name} stopped mid-way and ${n === 1 ? "was" : "were"} marked failed. It may or may not have reached LinkedIn, so it was not sent again. Check their LinkedIn and the campaign's failed leads.`,
+    });
+  }
 }
 
 /**
- * A limit or closed hours holds every due job of this kind in the campaign,
- * not just this one. Move them all together so the queue does not re-check
- * them one per tick.
+ * Any running campaign whose oldest due job has waited over 2 hours is not
+ * being worked: tell BCA, once per coach until the ticket is resolved.
+ * Limits and closed hours move jobs forward, so they never look stuck.
  */
-async function deferCampaignStepTypeJobs(input: {
+async function alertStuckCampaigns(
+  candidates: Array<Record<string, unknown>>,
+  pickedIds: Set<string>
+): Promise<void> {
+  const cutoff = Date.now() - STUCK_ALERT_MS;
+  // A coach who got a turn this run is being worked; their campaigns take turns.
+  const workedCoaches = new Set(
+    candidates.filter((j) => pickedIds.has(String(j.id))).map((j) => String(j.coach_id))
+  );
+  const stuck = candidates.filter(
+    (j) =>
+      !workedCoaches.has(String(j.coach_id)) &&
+      new Date(String(j.scheduled_for)).getTime() < cutoff
+  );
+  if (!stuck.length) return;
+  const byCoach = new Map<string, Array<Record<string, unknown>>>();
+  for (const j of stuck) {
+    const id = String(j.coach_id);
+    byCoach.set(id, [...(byCoach.get(id) ?? []), j]);
+  }
+  const { data: campaigns } = await supabaseAdmin
+    .from("linkedin_campaigns")
+    .select("id, name")
+    .in("id", stuck.map((j) => String(j.campaign_id)));
+  const campaignName = new Map(
+    (campaigns ?? []).map((c) => [c.id as string, (c.name as string) || "Campaign"])
+  );
+  const names = await coachNames([...byCoach.keys()]);
+  for (const [coachId, jobs] of byCoach) {
+    const name = names.get(coachId) ?? "A coach";
+    const lines = jobs.map((j) => {
+      const hours = Math.round(
+        (Date.now() - new Date(String(j.scheduled_for)).getTime()) / 3600_000
+      );
+      return `- ${campaignName.get(String(j.campaign_id)) ?? "Campaign"}: waiting ${hours} hours`;
+    });
+    await raiseOutreachAlert({
+      title: `Sales Robot: ${name}'s sends are stuck`,
+      details: `These campaigns have sends due that the Sales Robot has not picked up:\n${lines.join("\n")}\n\nOther coaches keep sending. Check the campaign and their LinkedIn connection.`,
+    });
+  }
+}
+
+/**
+ * A limit or closed hours holds more than this one job. Move every due job it
+ * holds together so the queue does not re-check them one per tick:
+ * - scope "campaign": closed hours or a rate limit, nothing in it can send
+ * - stepType: a limit for that kind of send
+ * - stepId: just that step (an Open Profile InMail at its message limit)
+ */
+async function deferCampaignJobs(input: {
   campaignId: string;
-  stepType: string;
   deferUntil: Date;
   reason: string;
+  scope: "campaign" | { stepType: string } | { stepId: string };
 }): Promise<void> {
-  const { data: steps } = await supabaseAdmin
-    .from("linkedin_campaign_steps")
-    .select("id, config")
-    .eq("campaign_id", input.campaignId)
-    .eq("step_type", input.stepType);
-  // Invite steps that fall back to Open Profile InMail use the message quota,
-  // so an invite limit must not hold them.
-  const stepIds = (steps ?? [])
-    .filter(
-      (s) => input.stepType !== "invite" || !inviteOpenProfileInmailFrom(s.config)
-    )
-    .map((s) => s.id as string);
-  if (!stepIds.length) return;
-  await supabaseAdmin
+  let stepIds: string[] | null = null;
+  if (input.scope !== "campaign" && "stepId" in input.scope) {
+    stepIds = [input.scope.stepId];
+  } else if (input.scope !== "campaign") {
+    const stepType = input.scope.stepType;
+    const { data: steps } = await supabaseAdmin
+      .from("linkedin_campaign_steps")
+      .select("id, config")
+      .eq("campaign_id", input.campaignId)
+      .eq("step_type", stepType);
+    // Invite steps that fall back to Open Profile InMail use the message
+    // quota, so an invite limit must not hold them.
+    stepIds = (steps ?? [])
+      .filter((s) => stepType !== "invite" || !inviteOpenProfileInmailFrom(s.config))
+      .map((s) => s.id as string);
+    if (!stepIds.length) return;
+  }
+  let query = supabaseAdmin
     .from("linkedin_send_jobs")
     .update({
       scheduled_for: input.deferUntil.toISOString(),
@@ -170,8 +250,18 @@ async function deferCampaignStepTypeJobs(input: {
     })
     .eq("campaign_id", input.campaignId)
     .eq("status", "pending")
-    .in("step_id", stepIds)
     .lt("scheduled_for", input.deferUntil.toISOString());
+  if (stepIds) query = query.in("step_id", stepIds);
+  await query;
+}
+
+/** Reasons from the safety check that stop every kind of send, InMail included. */
+function blocksWholeCampaign(reason: string): boolean {
+  return /^Outside sending hours|^Account rate-limited/.test(reason);
+}
+
+function isFarDefer(deferUntil: Date): boolean {
+  return deferUntil.getTime() - Date.now() > BULK_DEFER_AFTER_MS;
 }
 
 function isCannotResendYet(err: unknown): boolean {
@@ -220,9 +310,11 @@ async function pickJobsOnePerAccount(
     if (picked.length >= MAX_JOBS_PER_TICK) break;
     const campaign = byId.get(String(job.campaign_id));
     if (!campaign || campaign.status !== "running") continue;
-    const accountKey =
-      (campaign.outreach_account_id as string | null) ||
-      `coach:${String(job.coach_id)}`;
+    // One slot per coach per run. Jobs run side by side, and a campaign wired
+    // to a mail row is swapped to the coach's LinkedIn mid-run, so per-account
+    // keys could send twice from one LinkedIn within seconds. Per coach, no
+    // coach can ever take another coach's turn.
+    const accountKey = `coach:${String(job.coach_id)}`;
     if (seenAccounts.has(accountKey)) continue;
     seenAccounts.add(accountKey);
     picked.push(job);
@@ -475,11 +567,28 @@ export async function processOutreachJobsTick(options?: {
   errors: string[];
 }> {
   const only = options?.onlyJobIds?.length ? options.onlyJobIds : null;
-  const { processRemindFallbacks } = await import("@/lib/unipile/remindQueue");
-  const fallback = only ? { processed: 0, succeeded: 0, failed: 0, errors: [] as string[] } : await processRemindFallbacks();
-  if (!only) await processExpiredInviteTimeouts();
-
-  if (!only) await releaseStaleRunningJobs();
+  // Each side queue is fenced off: if one throws, sends still run.
+  let fallback = { processed: 0, succeeded: 0, failed: 0, errors: [] as string[] };
+  if (!only) {
+    try {
+      const { processRemindFallbacks } = await import("@/lib/unipile/remindQueue");
+      fallback = await processRemindFallbacks();
+    } catch (err) {
+      await raiseOutreachAlert({
+        title: "Sales Robot: reminder fallback sends failed",
+        details: `Reminders that should auto-send after their wait did not run.\n\nError: ${errText(err)}`,
+      });
+    }
+    try {
+      await processExpiredInviteTimeouts();
+    } catch (err) {
+      await raiseOutreachAlert({
+        title: "Sales Robot: moving unaccepted invites failed",
+        details: `Leads who didn't accept an invite were not moved to their next campaign.\n\nError: ${errText(err)}`,
+      });
+    }
+    await releaseStaleRunningJobs();
+  }
 
   const now = new Date().toISOString();
   const candidates = only
@@ -493,7 +602,9 @@ export async function processOutreachJobsTick(options?: {
   let failed = 0;
   const errors: string[] = [];
 
-  for (const rawJob of jobs) {
+  // One job per coach, all at once: a slow or broken account can't use up
+  // the run's 60 seconds and leave other coaches unsent.
+  await Promise.allSettled(jobs.map(async (rawJob) => {
     processed += 1;
     const job = {
       ...rawJob,
@@ -511,7 +622,7 @@ export async function processOutreachJobsTick(options?: {
       .eq("status", "pending")
       .select("id")
       .maybeSingle();
-    if (!claim.data) continue;
+    if (!claim.data) return;
 
     try {
       const { data: campaign } = await supabaseAdmin
@@ -527,7 +638,7 @@ export async function processOutreachJobsTick(options?: {
           .from("linkedin_send_jobs")
           .update({ status: "cancelled", last_error: "Campaign not running" })
           .eq("id", job.id);
-        continue;
+        return;
       }
 
       const { data: step } = await supabaseAdmin
@@ -555,7 +666,7 @@ export async function processOutreachJobsTick(options?: {
             last_error: null,
           })
           .eq("id", job.id);
-        continue;
+        return;
       }
 
       // Email campaigns (BOSS Score report and follow-ups) send from the coach's
@@ -572,7 +683,7 @@ export async function processOutreachJobsTick(options?: {
               last_error: "Connect Gmail or Outlook in Settings before this step can send.",
             })
             .eq("id", job.id);
-          continue;
+          return;
         }
       }
 
@@ -588,6 +699,24 @@ export async function processOutreachJobsTick(options?: {
         sendAccount = await loadAccountSendSettings(
           campaign.outreach_account_id as string
         );
+      }
+
+      // Never send from, or use up the limits of, another coach's account.
+      if (sendAccount?.coach_id && sendAccount.coach_id !== job.coach_id) {
+        await supabaseAdmin
+          .from("linkedin_send_jobs")
+          .update({
+            status: "pending",
+            scheduled_for: new Date(Date.now() + 6 * 3600_000).toISOString(),
+            last_error: "This campaign is set to send from another coach's account.",
+          })
+          .eq("id", job.id);
+        const names = await coachNames([job.coach_id, sendAccount.coach_id]);
+        await raiseOutreachAlert({
+          title: `Sales Robot: ${names.get(job.coach_id) ?? "A coach"}'s campaign uses another coach's account`,
+          details: `The campaign "${String(campaign.name ?? "")}" for ${names.get(job.coach_id) ?? "this coach"} is set to send from ${names.get(sendAccount.coach_id) ?? "another coach"}'s account. Nothing was sent. Pick the coach's own account in the campaign settings.`,
+        });
+        return;
       }
 
       const stepType = step.step_type as string;
@@ -611,6 +740,25 @@ export async function processOutreachJobsTick(options?: {
         sendAccount,
       });
       sendAccount = safety.sendAccount;
+      if (!safety.result.ok && blocksWholeCampaign(safety.result.reason)) {
+        await supabaseAdmin
+          .from("linkedin_send_jobs")
+          .update({
+            status: "pending",
+            scheduled_for: safety.result.deferUntil.toISOString(),
+            last_error: safety.result.reason,
+          })
+          .eq("id", job.id);
+        if (isFarDefer(safety.result.deferUntil)) {
+          await deferCampaignJobs({
+            campaignId: job.campaign_id,
+            deferUntil: safety.result.deferUntil,
+            reason: safety.result.reason,
+            scope: "campaign",
+          });
+        }
+        return;
+      }
       if (!safety.result.ok) {
         // Invite quota is full — still try Open Profile InMail (message quota).
         if (
@@ -627,18 +775,15 @@ export async function processOutreachJobsTick(options?: {
               last_error: safety.result.reason,
             })
             .eq("id", job.id);
-          if (
-            safety.result.deferUntil.getTime() - Date.now() >
-            BULK_DEFER_AFTER_MS
-          ) {
-            await deferCampaignStepTypeJobs({
+          if (isFarDefer(safety.result.deferUntil)) {
+            await deferCampaignJobs({
               campaignId: job.campaign_id,
-              stepType,
               deferUntil: safety.result.deferUntil,
               reason: safety.result.reason,
+              scope: { stepType },
             });
           }
-          continue;
+          return;
         }
       }
 
@@ -676,7 +821,13 @@ export async function processOutreachJobsTick(options?: {
             last_error: "LinkedIn account missing or disconnected.",
           })
           .eq("id", job.id);
-        continue;
+        const names = await coachNames([job.coach_id]);
+        const name = names.get(job.coach_id) ?? "A coach";
+        await raiseOutreachAlert({
+          title: `Sales Robot: ${name}'s LinkedIn is disconnected`,
+          details: `${name} has a running campaign ("${String(campaign.name ?? "")}") but their LinkedIn account is missing or needs signing in again, so nothing can send. They need to reconnect LinkedIn in Settings.`,
+        });
+        return;
       }
       const accountId = sendAccount?.unipile_account_id ?? "";
 
@@ -700,7 +851,7 @@ export async function processOutreachJobsTick(options?: {
             last_error: `Lead status ${lead.status}`,
           })
           .eq("id", job.id);
-        continue;
+        return;
       }
 
       let providerId: string | null = lead.linkedin_provider_id as string | null;
@@ -745,7 +896,7 @@ export async function processOutreachJobsTick(options?: {
             .from("linkedin_campaign_leads")
             .update({ last_error: "Could not resolve LinkedIn provider id." })
             .eq("id", lead.id);
-          continue;
+          return;
         }
         leadForMessage = { ...lead, ...resolved.lead };
       }
@@ -878,7 +1029,15 @@ export async function processOutreachJobsTick(options?: {
                 last_error: messageSafety.result.reason,
               })
               .eq("id", job.id);
-            continue;
+            if (isFarDefer(messageSafety.result.deferUntil)) {
+              await deferCampaignJobs({
+                campaignId: job.campaign_id,
+                deferUntil: messageSafety.result.deferUntil,
+                reason: messageSafety.result.reason,
+                scope: { stepId: String(step.id) },
+              });
+            }
+            return;
           }
           const res = await startUnipileChat({
             account_id: accountId,
@@ -926,7 +1085,7 @@ export async function processOutreachJobsTick(options?: {
                 last_error: inviteSafetyFail.reason,
               })
               .eq("id", job.id);
-            continue;
+            return;
           }
           const res = await sendUnipileInvitation({
             account_id: accountId,
@@ -951,7 +1110,7 @@ export async function processOutreachJobsTick(options?: {
                 .update({ status: "succeeded", provider_ref: "already_connected" })
                 .eq("id", job.id);
               succeeded += 1;
-              continue;
+              return;
             }
             throw new Error(res.error || "Invite failed");
           }
@@ -1131,7 +1290,7 @@ export async function processOutreachJobsTick(options?: {
             })
             .eq("id", job.id);
           succeeded += 1;
-          continue;
+          return;
         }
         await advanceLeadAfterStep({
           lead,
@@ -1173,7 +1332,7 @@ export async function processOutreachJobsTick(options?: {
             })
             .eq("id", job.id);
           succeeded += 1;
-          continue;
+          return;
         }
         await advanceLeadAfterStep({
           lead,
@@ -1251,7 +1410,7 @@ export async function processOutreachJobsTick(options?: {
             last_error: null,
           })
           .eq("id", job.id);
-        continue;
+        return;
       } else {
         throw new Error(`Unsupported step type ${step.step_type}`);
       }
@@ -1306,7 +1465,7 @@ export async function processOutreachJobsTick(options?: {
               last_error: "LinkedIn invite limit; paused 24h.",
             })
             .eq("id", job.id);
-          continue;
+          return;
         }
         if (accId && isHttp429(err)) {
           const until = new Date(
@@ -1321,7 +1480,7 @@ export async function processOutreachJobsTick(options?: {
               last_error: "Rate limited; backing off.",
             })
             .eq("id", job.id);
-          continue;
+          return;
         }
       } catch {
         /* fall through to fail the job */
@@ -1337,6 +1496,13 @@ export async function processOutreachJobsTick(options?: {
         .update({ status: "failed", last_error: message })
         .eq("id", job.lead_id);
     }
+  }));
+
+  if (!only) {
+    await alertStuckCampaigns(
+      candidates,
+      new Set(jobs.map((j) => String(j.id)))
+    );
   }
 
   return {

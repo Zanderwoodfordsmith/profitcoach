@@ -39,6 +39,10 @@
       "schedule": "*/5 * * * *"
     },
     {
+      "path": "/api/cron/linkedin-outreach-watch",
+      "schedule": "*/30 * * * *"
+    },
+    {
       "path": "/api/cron/linkedin-inbox-sync",
       "schedule": "0 * * * *"
     },

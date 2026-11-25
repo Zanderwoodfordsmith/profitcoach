@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isCronRequest } from "@/lib/cronAuth";
 import { requireAdmin } from "@/lib/requireAdmin";
 import { processOutreachJobsTick } from "@/lib/unipile/worker";
+import { raiseOutreachAlert } from "@/lib/unipile/outreachAlerts";
 
 export const maxDuration = 60;
 
@@ -17,6 +18,12 @@ export async function GET(request: Request) {
     const result = await processOutreachJobsTick();
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
+    if (cron) {
+      await raiseOutreachAlert({
+        title: "Sales Robot stopped: the send run failed",
+        details: `The 5-minute send run crashed, so no coach's campaigns are sending until it's fixed.\n\nError: ${err instanceof Error ? err.message : String(err)}`,
+      });
+    }
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Worker failed." },
       { status: 500 }
