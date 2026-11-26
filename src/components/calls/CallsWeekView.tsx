@@ -559,7 +559,7 @@ export function CallsWeekView({
             title="Connect your calendar"
             description="See your Google or Outlook events next to your calls, so your whole week is in one place."
             action={{ label: "Connect calendar", href: settingsHref }}
-            details="Your bookings work either way. Connecting also keeps busy times off your booking page and adds meeting links to new calls. You can disconnect it any time in Settings."
+            details="Your bookings work either way. Connecting also keeps busy times off your booking page and adds meeting links to new calls. You can disconnect it any time in Booking pages."
           />
         </div>
       ) : null}
@@ -573,7 +573,7 @@ export function CallsWeekView({
                 href={settingsHref}
                 className="font-medium text-amber-950 underline decoration-amber-400 underline-offset-2 hover:text-amber-800"
               >
-                Reconnect in Settings
+                Reconnect in Booking pages
               </Link>
             </p>
           ) : null}

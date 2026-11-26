@@ -156,7 +156,7 @@ export function CallsManageView({
                     href={settingsHref}
                     className="font-medium text-sky-700 hover:underline"
                   >
-                    Add one in Settings
+                    Add one in Booking pages
                   </Link>
                 </>
               ) : null}

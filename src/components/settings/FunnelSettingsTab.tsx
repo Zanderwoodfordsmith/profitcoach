@@ -549,7 +549,7 @@ function CrmLeadCaptureFields({
           Prospects book on <span className="font-medium">Profit Coach calendars</span>.
           Switch back to CRM calendars or manage availability under{" "}
           <Link href={calendarsHref} className="font-medium text-sky-800 hover:underline">
-            Calls → Settings
+            Calls → Booking pages
           </Link>
           .
         </p>

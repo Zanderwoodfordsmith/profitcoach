@@ -42,7 +42,7 @@ export const WIN_CLIENTS_TOURS: Record<string, PageTourStep[]> = {
     {
       selector: '[data-tour="calls-settings"]',
       title: "Set up your booking pages",
-      body: "Settings holds the booking pages owners use to pick a time. Connect your Google or Outlook calendar here, so they can only book when you're free.",
+      body: "Booking pages holds the pages owners use to pick a time. Open one to change its words. Connect your Google or Outlook calendar here too, so they can only book when you're free.",
     },
   ],
   "win-clients/Pipeline": [

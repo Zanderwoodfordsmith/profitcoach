@@ -50,7 +50,7 @@ const siteToolsLinks = [
   {
     href: "/zander",
     label: "My public book page (/zander)",
-    hint: "Enable Native discovery booking in Calls → Settings, then share this URL.",
+    hint: "Enable Native discovery booking in Calls → Booking pages, then share this URL.",
   },
 ] as const;
 

@@ -274,7 +274,7 @@ function CalendarPrefsPanel({
 }
 
 /**
- * Calls → Settings integrations: Unipile Google, Unipile Outlook, Zoom.
+ * Calls → Booking pages integrations: Unipile Google, Unipile Outlook, Zoom.
  */
 export function GoogleCalendarBookingCard({
   forSlug = null,

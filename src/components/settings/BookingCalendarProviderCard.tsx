@@ -20,7 +20,7 @@ type Props = {
   onProviderChange?: (provider: BookingCalendarProvider) => void;
   /** When true, Google is connected (soft nudge only). */
   googleConnected?: boolean | null;
-  /** Compact select for the Calls settings sidebar. */
+  /** Compact select for the Calls → Booking pages sidebar. */
   compact?: boolean;
 };
 

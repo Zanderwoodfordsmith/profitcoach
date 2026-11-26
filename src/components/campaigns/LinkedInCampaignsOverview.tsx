@@ -486,9 +486,11 @@ function CampaignTableRow({
           onChange={onToggle}
         />
       </td>
-      <td className="min-w-0 px-3 py-3.5 align-middle" style={cellStyle}>
+      {/* w-full + max-w-0: the name column takes the spare room and long names
+          end in "…" instead of stretching the table past the row menu. */}
+      <td className="w-full max-w-0 px-3 py-3.5 align-middle" style={cellStyle}>
         <div className="flex min-w-0 max-w-full items-center gap-2 text-left">
-          <span className="truncate text-ui font-semibold tracking-tight text-slate-900 group-hover:text-[#0c5290]">
+          <span title={c.name} className="truncate text-ui font-semibold tracking-tight text-slate-900 group-hover:text-[#0c5290]">
             {c.name}
           </span>
           {statusLabel ? (
@@ -535,7 +537,10 @@ function CampaignTableRow({
           other={replies.other}
         />
       </td>
-      <td className="px-3 py-3.5 align-middle" style={cellStyle}>
+      <td
+        className="sticky right-0 bg-white py-3.5 pl-2 pr-3 align-middle group-hover:bg-slate-50"
+        style={cellStyle}
+      >
         <RowMenu
           open={menuOpen}
           onOpenChange={onMenuOpenChange}
@@ -1070,6 +1075,33 @@ export function LinkedInCampaignsOverview() {
           actions={
             magnetsTab ? (
               <LeadMagnetSettingsButton impersonatingCoachId={impersonatingCoachId} prefix={prefix} />
+            ) : campaignsTab ? (
+              <>
+                {preview || okLinkedInAccount ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowSending(true)}
+                    aria-label="Sending settings"
+                    className={buttonClass("second", "small")}
+                  >
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" strokeWidth={2.25} aria-hidden />
+                    Sending settings
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  data-tour="campaigns-new"
+                  disabled={busy}
+                  onClick={() => {
+                    setError(null);
+                    setShowCreate(true);
+                  }}
+                  className={buttonClass("main", "small")}
+                >
+                  <Plus className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+                  New Campaign
+                </button>
+              </>
             ) : undefined
           }
         />
@@ -1166,34 +1198,8 @@ export function LinkedInCampaignsOverview() {
                             >
                               Replies
                             </th>
-                            <th scope="col" className="w-12 whitespace-nowrap py-1.5 pl-2 pr-4 text-right normal-case">
+                            <th scope="col" className="sticky right-0 w-12 bg-white py-3 pl-2 pr-3">
                               <span className="sr-only">Actions</span>
-                              <div className="inline-flex items-center gap-1">
-                                {preview || okLinkedInAccount ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowSending(true)}
-                                    title="Sending settings"
-                                    aria-label="Sending settings"
-                                    className="inline-flex h-7 w-7 items-center justify-center rounded-md text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                                  >
-                                    <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={2.25} aria-hidden />
-                                  </button>
-                                ) : null}
-                                <button
-                                  type="button"
-                                  data-tour="campaigns-new"
-                                  disabled={busy}
-                                  onClick={() => {
-                                    setError(null);
-                                    setShowCreate(true);
-                                  }}
-                                  className="inline-flex h-7 items-center gap-1.5 rounded-full bg-sky-600 px-3 text-caption font-medium text-white transition-colors hover:bg-sky-700 disabled:opacity-50"
-                                >
-                                  <Plus className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
-                                  New Campaign
-                                </button>
-                              </div>
                             </th>
                           </tr>
                         </thead>

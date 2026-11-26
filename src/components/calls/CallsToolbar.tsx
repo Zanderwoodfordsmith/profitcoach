@@ -115,7 +115,7 @@ export function CallsToolbar({
             strokeWidth={2.25}
             aria-hidden
           />
-          Settings
+          Booking pages
         </button>
         <CallsViewSwitcher view={view} onChange={onViewChange} />
         <button

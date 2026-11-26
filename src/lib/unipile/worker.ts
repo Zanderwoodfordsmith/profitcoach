@@ -255,6 +255,39 @@ async function deferCampaignJobs(input: {
   await query;
 }
 
+/**
+ * Invites are held but the step can still send Open Profile InMails, so its
+ * jobs can't all move together. Those whose lead is known not to be Open
+ * Profile can't send at all: move them in one go. Until 26 Nov they were
+ * re-checked one per run (SUP-0700: 81 of Paul's invites sat hours late and
+ * his follow-up messages waited behind them).
+ */
+async function deferClosedProfileInvites(input: {
+  campaignId: string;
+  stepId: string;
+  deferUntil: Date;
+  reason: string;
+}): Promise<void> {
+  const until = input.deferUntil.toISOString();
+  const { data } = await supabaseAdmin
+    .from("linkedin_send_jobs")
+    .select("id, linkedin_campaign_leads!inner(open_profile)")
+    .eq("campaign_id", input.campaignId)
+    .eq("step_id", input.stepId)
+    .eq("status", "pending")
+    .lt("scheduled_for", until)
+    .eq("linkedin_campaign_leads.open_profile", false)
+    .limit(1000);
+  const ids = (data ?? []).map((j) => j.id as string);
+  for (let i = 0; i < ids.length; i += 200) {
+    await supabaseAdmin
+      .from("linkedin_send_jobs")
+      .update({ scheduled_for: until, last_error: input.reason })
+      .in("id", ids.slice(i, i + 200))
+      .eq("status", "pending");
+  }
+}
+
 /** Reasons from the safety check that stop every kind of send, InMail included. */
 function blocksWholeCampaign(reason: string): boolean {
   return /^Outside sending hours|^Account rate-limited/.test(reason);
@@ -766,6 +799,14 @@ export async function processOutreachJobsTick(options?: {
           inviteOpenProfileInmailFrom(step.config)
         ) {
           inviteSafetyFail = safety.result;
+          if (isFarDefer(safety.result.deferUntil)) {
+            await deferClosedProfileInvites({
+              campaignId: job.campaign_id,
+              stepId: String(step.id),
+              deferUntil: safety.result.deferUntil,
+              reason: safety.result.reason,
+            });
+          }
         } else {
           await supabaseAdmin
             .from("linkedin_send_jobs")

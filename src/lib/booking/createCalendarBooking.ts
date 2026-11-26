@@ -231,7 +231,7 @@ export async function createCalendarBooking(
         ok: false,
         status: 400,
         error:
-          "This calendar uses Zoom. Connect Zoom in Calls → Settings, then try again.",
+          "This calendar uses Zoom. Connect Zoom in Calls → Booking pages, then try again.",
       };
     }
     meetingJoinUrl = zoom.joinUrl;

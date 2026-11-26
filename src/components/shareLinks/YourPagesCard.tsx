@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Check, Copy, Gauge, PencilLine, Target, type LucideIcon } from "lucide-react";
+import { Check, Copy, Gauge, PencilLine, Target, type LucideIcon } from "lucide-react";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { callPagesLive } from "@/lib/callPage/live";
@@ -16,19 +16,13 @@ type PageRow = {
 
 /**
  * The coach's public pages in one place: open one to change its words on the page itself,
- * or copy its link. Shown in Win Clients → Calls → Settings and Get Calls → Toolkit → Links.
+ * or copy its link. Shown in Win Clients → Calls → Booking pages and Get Calls → Toolkit → Links.
+ * Each calendar's booking page is edited from its own row there (CalendarPageButtons).
  */
 export function YourPagesCard({ slug, appOrigin }: { slug: string; appOrigin: string }) {
   const [copied, setCopied] = useState<string | null>(null);
   const s = encodeURIComponent(slug);
   const rows: PageRow[] = [
-    {
-      key: "booking",
-      icon: CalendarDays,
-      title: "Booking page",
-      detail: "Where owners pick a time for your first call.",
-      path: `/book/${s}/discovery`,
-    },
     ...(callPagesLive()
       ? [
           {

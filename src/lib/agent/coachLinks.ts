@@ -25,7 +25,7 @@ export async function coachLinkLines(coachId: string): Promise<string[]> {
 
   return [
     `## Their links`,
-    `Booking link (${call?.name ?? "Constraint Call"}): ${booking || "none yet. Write [calendar link] and tell them to tick Public book link in Win Clients → Calls → Settings."}`,
+    `Booking link (${call?.name ?? "Constraint Call"}): ${booking || "none yet. Write [calendar link] and tell them to tick Public book link in Win Clients → Calls → Booking pages."}`,
     `BOSS Score link: ${score || "none yet (no public URL set on the Links page)."}`,
     `Newsletter link: ${newsletter || "none saved under Your links on the Links page."}`,
   ];

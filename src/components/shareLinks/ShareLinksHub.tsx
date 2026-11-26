@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { PublicSlugEditor } from "@/components/leadMagnets/PublicSlugEditor";
+import { CalendarPageButtons } from "@/components/shareLinks/CalendarPageButtons";
 import { TaggedLinkMaker } from "@/components/shareLinks/TaggedLinkMaker";
 import { YourPagesCard } from "@/components/shareLinks/YourPagesCard";
 import {
@@ -113,6 +114,7 @@ function LinkRow({
   disabled,
   disabledHint,
   trailing,
+  pages,
 }: {
   icon: LucideIcon;
   title: string;
@@ -125,9 +127,13 @@ function LinkRow({
   disabled?: boolean;
   disabledHint?: string;
   trailing?: ReactNode;
+  /** Edit-page buttons: their own line under the name on phones, inline from sm up. */
+  pages?: ReactNode;
 }) {
   return (
-    <li className="group flex items-center gap-3 px-4 py-2.5 sm:px-5">
+    <li
+      className={`group flex items-center gap-3 px-4 py-2.5 sm:px-5 ${pages ? "flex-wrap sm:flex-nowrap" : ""}`}
+    >
       <Icon className="h-4 w-4 shrink-0 text-slate-400" aria-hidden />
       <div className="min-w-0 flex-1 sm:grid sm:grid-cols-[13rem_minmax(0,1fr)] sm:items-center sm:gap-6 lg:grid-cols-[13rem_minmax(0,1fr)_minmax(0,17rem)]">
         <p className="truncate text-ui font-medium text-slate-900">{title}</p>
@@ -136,6 +142,9 @@ function LinkRow({
           {displayUrl ? prettyUrl(displayUrl) : null}
         </p>
       </div>
+      {pages ? (
+        <div className="order-last w-full pl-7 sm:order-none sm:w-auto sm:shrink-0 sm:pl-0">{pages}</div>
+      ) : null}
       <div className="flex shrink-0 items-center gap-0.5">
         {trailing}
         {onCopy ? (
@@ -528,6 +537,15 @@ export function ShareLinksHub() {
                     `${calendar.meeting_duration_minutes} minutes`
                   }
                   displayUrl={displayUrl}
+                  pages={
+                    slugReady ? (
+                      <CalendarPageButtons
+                        coachSlug={slug}
+                        calendarSlug={calendar.slug}
+                        calendarName={calendar.name}
+                      />
+                    ) : null
+                  }
                   copied={copiedKey === `cal-${calendar.id}`}
                   onCopy={() => void copy(`cal-${calendar.id}`, copyUrl)}
                   onShare={() =>

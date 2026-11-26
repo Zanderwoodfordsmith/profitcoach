@@ -18,6 +18,7 @@ import type { CoachCalendarRow } from "@/lib/booking/coachCalendars";
 import { DEFAULT_WEEKDAY_AVAILABILITY } from "@/lib/booking/computeBookingSlots";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { CalendarPageButtons } from "@/components/shareLinks/CalendarPageButtons";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 import { fieldClass } from "@/components/ui/Field";
@@ -200,7 +201,7 @@ type Props = {
   selectedCalendarSlug?: string | null;
   /** Right-column content above weekly hours (e.g. integrations). */
   sidebarTop?: ReactNode;
-  /** The coach's own Calls settings: show "Your pages" (booking, Constraint Call, BOSS Score) on top. */
+  /** The coach's own Calls → Booking pages: show "Your pages" (Constraint Call, BOSS Score) on top. */
   showPages?: boolean;
   /** Right-column content below weekly hours (e.g. calendar provider). */
   sidebarBottom?: ReactNode;
@@ -589,7 +590,7 @@ export function CallsCalendarSettings({
             ) : null}
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[28rem] border-collapse text-left">
+              <table className="w-full min-w-[40rem] border-collapse text-left">
                 <thead>
                   <tr className="border-b border-slate-100 text-kicker font-semibold uppercase text-slate-400">
                     <th scope="col" className="w-14 px-4 py-3 font-semibold">
@@ -603,6 +604,9 @@ export function CallsCalendarSettings({
                       className="w-24 px-3 py-3 font-semibold"
                     >
                       Duration
+                    </th>
+                    <th scope="col" className="px-1 py-3 font-semibold">
+                      <span className="sr-only">Edit pages</span>
                     </th>
                     <th scope="col" className="w-10 px-1 py-3 font-semibold">
                       <span className="sr-only">Share link</span>
@@ -636,6 +640,15 @@ export function CallsCalendarSettings({
                       </td>
                       <td className="whitespace-nowrap px-3 py-3.5 align-middle text-sm text-slate-600">
                         {cal.meeting_duration_minutes} min
+                      </td>
+                      <td className="whitespace-nowrap px-1 py-3.5 text-right align-middle">
+                        {slug ? (
+                          <CalendarPageButtons
+                            coachSlug={slug}
+                            calendarSlug={cal.slug}
+                            calendarName={cal.name}
+                          />
+                        ) : null}
                       </td>
                       <td className="px-1 py-3.5 align-middle">
                         <button

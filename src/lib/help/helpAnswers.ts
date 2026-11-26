@@ -883,8 +883,8 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "calls",
     question: "How do I change my booking page, or rename the Constraint Call?",
     answer:
-      "Open [Calls settings](/coach/calls?tab=settings) and click the calendar name. Constraint Call is the one your BOSS Score report books into. Change the name, the length, the notice you need and how the call happens, then click Save calendar.\n\nThe name shows on your booking page and in your BOSS Score emails, so one change covers both.\n\nTo share a booking page, click the share icon on that calendar's row. It copies the link.",
-    aliases: ["constraint call", "rename my call", "change call name", "booking link", "where is my booking page", "call length"],
+      "Open [Calls → Booking pages](/coach/calls?tab=settings) and click the calendar name. Constraint Call is the one your BOSS Score report books into. Change the name, the length, the notice you need and how the call happens, then click Save calendar.\n\nThe name shows on your booking page and in your BOSS Score emails, so one change covers both.\n\nTo change the words on a booking page, click Booking page on that calendar's row. The page opens in a new tab, and you type straight onto it. Changes save as you go.\n\nTo share a booking page, click the share icon on that calendar's row. It copies the link.",
+    aliases: ["constraint call", "rename my call", "change call name", "booking link", "where is my booking page", "call length", "edit booking page words"],
     sources: ["app"],
   },
   {
@@ -894,7 +894,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     fix: true,
     question: "My booking page shows no available times. Where do I set my hours?",
     answer:
-      "Open [Calls](/coach/calls) and click Settings at the top right. Set the days and hours you take calls and how much notice you need.\n\nIf a day you expect to be free shows nothing, check your own calendar. A busy event there blocks that time.",
+      "Open [Calls](/coach/calls) and click Booking pages at the top right. Set the days and hours you take calls and how much notice you need.\n\nIf a day you expect to be free shows nothing, check your own calendar. A busy event there blocks that time.",
     aliases: ["set availability", "calendar hours", "nothing available to book"],
     sources: ["SUP-573", "community 10 Jun"],
   },
@@ -905,7 +905,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     fix: true,
     question: "My booking confirmation has no Zoom or meeting link. Why?",
     answer:
-      "The calendar has no meeting link set. To add one:\n\n1. Open [Calls settings](/coach/calls?tab=settings) and click the calendar name.\n2. Under How the call happens, choose Google Meet if your Google account is connected, or Custom and paste your own Zoom link.\n3. Click Save calendar.\n4. Book a test call to yourself. The link should be in the email and the calendar entry.\n\nChoose Zoom only once Zoom shows Connected in [Settings](/coach/settings?tab=integrations). Until then a Zoom calendar cannot take bookings.",
+      "The calendar has no meeting link set. To add one:\n\n1. Open [Calls → Booking pages](/coach/calls?tab=settings) and click the calendar name.\n2. Under How the call happens, choose Google Meet if your Google account is connected, or Custom and paste your own Zoom link.\n3. Click Save calendar.\n4. Book a test call to yourself. The link should be in the email and the calendar entry.\n\nChoose Zoom only once Zoom shows Connected in [Settings](/coach/settings?tab=integrations). Until then a Zoom calendar cannot take bookings.",
     aliases: ["no meeting link", "zoom link missing", "boss review booking"],
     sources: ["SUP-483", "SUP-494", "app"],
   },
@@ -915,7 +915,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "calls",
     question: "How do I connect Zoom? The Connect button is greyed out.",
     answer:
-      "Zoom does not connect yet for any coach. We are finishing the set-up, and the Connect button next to Zoom stays grey until then. We tell you in Support when it works.\n\nMeanwhile, put your own Zoom link on your booking calendar:\n\n1. Open [Calls settings](/coach/calls?tab=settings) and click the calendar name.\n2. Under How the call happens, choose Custom.\n3. Paste your personal Zoom meeting link and click Save calendar.\n\nEvery booking then carries that link. If your Google account is connected, Google Meet works too and makes a new link for each call. Choose Zoom only once it shows Connected in [Settings](/coach/settings?tab=integrations). Until then a Zoom calendar cannot take bookings.",
+      "Zoom does not connect yet for any coach. We are finishing the set-up, and the Connect button next to Zoom stays grey until then. We tell you in Support when it works.\n\nMeanwhile, put your own Zoom link on your booking calendar:\n\n1. Open [Calls → Booking pages](/coach/calls?tab=settings) and click the calendar name.\n2. Under How the call happens, choose Custom.\n3. Paste your personal Zoom meeting link and click Save calendar.\n\nEvery booking then carries that link. If your Google account is connected, Google Meet works too and makes a new link for each call. Choose Zoom only once it shows Connected in [Settings](/coach/settings?tab=integrations). Until then a Zoom calendar cannot take bookings.",
     aliases: ["zoom button greyed out", "connect zoom", "zoom integration", "add my zoom link", "zoom not working", "manually add call link"],
     sources: ["ticket 18 Nov", "app"],
   },
@@ -925,7 +925,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "calls",
     question: "Zoom says Scheduler Basic has ended. Does that affect me?",
     answer:
-      "Only if you used Zoom's own scheduler for bookings. Your booking page here does not need it.\n\nYou still need a way to make meeting links. Google Meet is free, or paste your own Zoom link. Open [Calls settings](/coach/calls?tab=settings), click the calendar name and choose under How the call happens.",
+      "Only if you used Zoom's own scheduler for bookings. Your booking page here does not need it.\n\nYou still need a way to make meeting links. Google Meet is free, or paste your own Zoom link. Open [Calls → Booking pages](/coach/calls?tab=settings), click the calendar name and choose under How the call happens.",
     aliases: ["zoom scheduler", "zoom paid plan", "google meet"],
     sources: ["SUP-503", "playbook"],
   },
@@ -947,7 +947,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     fix: true,
     question: "Why don't my own Google or Outlook events show in Calls?",
     answer:
-      "Calls shows the calls people book with you, plus calls from your old CRM calendar. Your other events stay in your own calendar. They still block those times, so nobody can book over them.\n\nTo choose which calendars block your times, open [Calls settings](/coach/calls?tab=settings), use Calendars that block availability and click Save preferences. Calendar for new bookings sets where new calls land.\n\nIf a call someone booked is missing, send us their name in Support.",
+      "Calls shows the calls people book with you, plus calls from your old CRM calendar. Your other events stay in your own calendar. They still block those times, so nobody can book over them.\n\nTo choose which calendars block your times, open [Calls → Booking pages](/coach/calls?tab=settings), use Calendars that block availability and click Save preferences. Calendar for new bookings sets where new calls land.\n\nIf a call someone booked is missing, send us their name in Support.",
     aliases: ["calendar shows no events", "my calendar is empty", "events not showing", "calendar not syncing"],
     sources: ["ticket 7 Sep", "app"],
   },

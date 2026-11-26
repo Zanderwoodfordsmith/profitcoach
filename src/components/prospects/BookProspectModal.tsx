@@ -218,7 +218,7 @@ export function BookProspectModal({ prospect, onClose, onBooked }: Props) {
                 href={callsCalendarsHref(isAdmin)}
                 className="font-medium text-sky-700 hover:text-sky-900"
               >
-                Turn one on in Calls → Settings
+                Turn one on in Calls → Booking pages
               </Link>
               .
             </p>

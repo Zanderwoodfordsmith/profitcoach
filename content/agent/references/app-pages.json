@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-26T06:26:56.936Z",
+  "generatedAt": "2026-11-26T16:13:52.732Z",
   "model": "claude-sonnet-5-5",
   "pages": [
     {
@@ -310,77 +310,75 @@
     {
       "path": "/coach/calls",
       "adminPath": "/admin/calls",
-      "hash": "39e3e5635ee48019",
+      "hash": "5040ed4d9ee2a75b",
       "coachVisible": true,
       "title": "Calls",
       "where": "Win Clients → Calls",
-      "summary": "See every booked sales call in a calendar or list, add a call for a prospect, mark how each call went, and set up your booking calendars.",
+      "summary": "See every booked sales call in a calendar or list, mark how each call went, add a call for a prospect, and manage your booking pages.",
       "tabs": [
         {
-          "label": "Calendar",
+          "label": "Calendar view",
           "path": "/coach/calls"
         },
         {
-          "label": "List",
+          "label": "List view",
           "path": "/coach/calls?tab=list"
         },
         {
-          "label": "Settings",
+          "label": "Booking pages",
           "path": "/coach/calls?tab=settings"
         }
       ],
       "controls": [
-        "**Search calls…** box at the top",
-        "**Filter** button (in Calendar view: Calendars and Type; in List view: Timing and Call status)",
-        "**Sort** button (List view only): Sort by Call time, Date added, Prospect or Call status",
-        "**Settings** button opens booking calendars, weekly hours and your pages",
-        "Calendar view and List view switch (two icon buttons)",
-        "**Add a call** button: pick a prospect in the **Search prospects…** box, choose a calendar, pick a time, then **Confirm**",
-        "**Today**, previous and next arrows, and **Day** / **Week** / **Month** buttons above the calendar",
-        "Click a call in the calendar to open its box with **Join meeting**, **Watch recording**, the status buttons and **Open contact** or **Close**",
-        "List columns: Prospect, Contact info, Date added, Call time, Calendar, Call status (choose Confirmed, Completed, No-show or Cancelled)",
-        "In Settings: **Your pages** card with **Edit page** and copy link buttons for the Booking page, BOSS Score page and Constraint Call page",
-        "In Settings: **Booking calendars** list with on/off switch, copy booking link button, **New calendar** and the three-dot menu (Edit, Delete)",
-        "In a calendar's editor: Name, Duration (min), Buffer (min), Min notice (hours), Open days (rolling), Enabled, Public book link, How the call happens (Google Meet, Zoom, Phone, Custom), reminders, **Save calendar**",
-        "In Settings: **Weekly hours** box with Timezone and **Save hours**, plus Google calendar and calendar provider cards",
-        "**Connect calendar** prompt in the calendar to show your Google or Outlook events"
+        "**Search calls…** box at the top left",
+        "**Filter** button (in calendar view: Calendars and Type; in list view: Timing and Call status)",
+        "**Sort** button (list view only): Sort by Call time, Date added, Prospect or Call status, plus Order",
+        "**Booking pages** button opens your booking calendars, weekly hours and calendar connections",
+        "**Calendar view** and **List view** icon buttons switch the layout",
+        "**Add a call** button: pick a prospect in the **Add a call** pop-up, then choose a calendar and time and press **Confirm**",
+        "**Today**, previous and next arrows, and **Day** / **Week** / **Month** buttons move around the calendar",
+        "Click a call in the calendar for its pop-up: **Join meeting**, **Watch recording**, status buttons (Confirmed, Completed, No-show, Cancelled), and **Open contact** or **Close**",
+        "**Call status** drop-down on each row in list view changes the outcome",
+        "**Connect calendar** banner shows Google or Outlook events next to your calls",
+        "In Booking pages: **Your pages** card with **Edit page** and a copy-link button, and **Booking calendars** with **New calendar**, an on/off switch, **Call page** and **Booking page** edit buttons, and a copy link button",
+        "In Booking pages: **Weekly hours** with **Timezone** and **Save hours**, and a **Calls** back link"
       ],
-      "notes": "Bookings work without a connected calendar, but connecting one shows your busy times and adds meeting links. In list view, calls from a connected calendar can only be marked Completed or No-show. Clicking a call row opens the client's page only if the coach has client hub access.}"
+      "notes": "Clicking a call row opens the client's page only if you have access to Keep Clients. The Coach filter and Coach column are never shown to coaches. Connecting Google or Outlook is optional; bookings work without it. The Call page button only shows when call pages are live."
     },
     {
       "path": "/coach/campaigns",
       "adminPath": "/admin/campaigns",
-      "hash": "c8fecde2dc413e46",
+      "hash": "90d4208646ccaf6e",
       "coachVisible": true,
       "title": "Campaigns",
       "where": "Get Calls → Campaigns",
-      "summary": "See how your campaigns are doing, turn them on or off, and create new ones that message people for you.",
+      "summary": "See how your outreach campaigns are doing, switch them on or off, and create or open a campaign.",
       "tabs": [],
       "controls": [
-        "**Activity this …** chart at the top, with **Previous period** and **Next period** arrows and a range dropdown (**Activity range**)",
-        "Four boxes under the chart: **People reached**, **Planned remaining**, **Connect rate**, **Replies**",
-        "On/off switch at the start of each campaign row (**Turn campaign on** / **Turn campaign off**)",
-        "Campaign table with columns **Campaign**, **Via**, **Connect**, **Replies**; click a row to open that campaign",
-        "Drag handle on each row (**Reorder**) to change the order",
-        "**New Campaign** button at the top right of the table (or **Create campaign** when you have none)",
-        "Sending settings icon (**Sending settings**) next to New Campaign, shown once LinkedIn is connected",
-        "Three-dot menu on each row (**Campaign actions**): **Edit**, **Duplicate**, **Archive**, **Delete**",
-        "**Archived** bar under the table to show archived campaigns, with **Unarchive** in their menu",
-        "**Create campaign** pop-up: **Name**, **Channel** (**LinkedIn**, **Email**, **WhatsApp**), then **Blank** or **Templates** (Templates only for LinkedIn)",
-        "Right side: to-do activity list, plus **Social Selling Index** and pending invites cards",
-        "**Connect LinkedIn** button on the right side cards",
-        "Delete and Archive ask you to confirm (**Delete campaign** / **Archive campaign**, or **Cancel**)"
+        "**New Campaign** button at the top right (opens a pop-up: **Name**, **Channel** LinkedIn, Email or WhatsApp, then **Blank** or **Templates**)",
+        "**Create campaign** button when you have no campaigns yet",
+        "**Sending settings** button at the top right (shows once LinkedIn is connected)",
+        "**Activity this** chart with arrows (**Previous period**, **Next period**) and a range drop-down (**Activity range**)",
+        "Four tiles under the chart: **People reached**, **Planned remaining**, **Connect rate**, **Replies**",
+        "Campaign list with columns **Campaign**, **Via**, **Connect**, **Replies**",
+        "On/off switch (**On** or **Off**) at the start of each campaign row",
+        "Grip handle on each row to drag campaigns into a new order",
+        "Three-dot **Campaign actions** menu on each row: **Edit**, **Duplicate**, **Archive** (or **Unarchive**), **Delete**",
+        "**Archived** bar at the bottom of the list that opens or closes archived campaigns",
+        "Click a campaign row to open that campaign",
+        "Right-hand side: to-do and activity list, plus **Social Selling Index** and **pending invites** cards",
+        "**Connect LinkedIn** button on the right-hand cards if LinkedIn is not connected"
       ],
-      "notes": "Connect LinkedIn first (button on the right side) before turning on a LinkedIn campaign; email campaigns need Gmail or Outlook connected and WhatsApp campaigns need WhatsApp connected. The Lead Lists and Lead Magnets tabs sit on this same page but are separate tabs in the Get Calls row. A floating Sample data switch appears only for staff and the demo coach, so never offer it to other coaches."
+      "notes": "LinkedIn must be connected before a LinkedIn campaign can be switched on. Email campaigns need Gmail or Outlook connected, and WhatsApp campaigns need WhatsApp connected. A floating **Sample data** switch is only for staff and the demo coach, so never offer it to other coaches."
     },
     {
       "path": "/coach/campaigns/[id]",
       "adminPath": "/admin/campaigns/[id]",
-      "hash": "2b4e31ec6afc9a75",
+      "hash": "1b3cd9b8eb1dcc66",
       "coachVisible": true,
       "title": "One campaign",
       "where": "Get Calls → Campaigns, then click a campaign",
-      "summary": "Set up, run and watch one LinkedIn campaign: turn it on or off, add people, write the steps and see how it is doing.",
+      "summary": "Run one LinkedIn (or email/WhatsApp) campaign: turn it on or off, add people, write the steps and watch results.",
       "tabs": [
         {
           "label": "Overview",
@@ -398,19 +396,18 @@
       "controls": [
         "**← Campaigns** link at the top, back to the campaigns list",
         "**On/Off switch** next to the campaign name, turns the campaign on or off",
-        "**Pencil (Edit campaign name)** next to the name, rename the campaign",
+        "**Edit campaign name** pencil next to the name",
         "**Settings** button at the top right, opens campaign settings (including archive and delete)",
-        "**By status** card on Overview, click a status to see the people in it, **View all** goes to Prospects",
-        "**Add prospects** button on Overview, add people to this campaign",
-        "**Conversion** card on Overview, shows rates such as Connect rate, Interest rate or Reply rate",
-        "**Daily activity** chart on Overview, shows Invites sent, Accepted, Messages and Engagement",
-        "**Set up steps** / **Review steps** button on an empty Overview, opens the Steps tab",
-        "**Already in the system**, **Add one person**, **Sales Navigator**, **Google Maps**, **Google Search**, **Upload CSV** choices when adding people",
-        "**Choose a template** pop-up in Steps, fills in the steps from a ready-made template",
-        "**Before you launch** box (shown as \"Fix N things before this can go live\" or \"N things likely to cost you replies\") with a Show/Hide link",
-        "**Join a BCA group test** box with **Join this test** and **Leave test** buttons"
+        "**Before you launch** box (shows \"Fix … before this can go live\" or \"… likely to cost you replies\") with **Show/Hide**",
+        "**Join a BCA group test** box with **Show/Hide**, **Test** dropdown and **Join this test** button; **Leave test** once joined",
+        "Overview: **By status** chart with **View all** and **Add prospects** buttons",
+        "Overview: **Conversion** rings and **Daily activity** chart",
+        "Overview when empty: **Set up steps** / **Review steps** button and **Add people** options: **Already in the system**, **Add one person**, **Sales Navigator**, **Google Maps**, **Google Search**, **Upload CSV**",
+        "Prospects tab: list of people in the campaign, with add, pause, resume, move and delete options and a link to replies in Conversations",
+        "Steps tab: build the message sequence, add, copy, delete or reorder steps, and a **Choose a template** pop-up",
+        "Click a status or step count to open a side list of the people there, with a **Close** button"
       ],
-      "notes": "The On switch only works once a matching account is connected (LinkedIn, email or WhatsApp, depending on the campaign), and it is locked for archived campaigns. The group test box does not show for email campaigns, and the launch check box does not show for archived ones. Campaigns made from a lead magnet open on the lead magnet page instead.}"
+      "notes": "The On switch only works once the right account (LinkedIn, email or WhatsApp) is connected, and is disabled for archived campaigns. The group test box is hidden for email campaigns and archived campaigns. Lead magnet campaigns open automatically on their own magnet page instead."
     },
     {
       "path": "/coach/campaigns/invites",
@@ -837,36 +834,29 @@
     {
       "path": "/coach/prospects",
       "adminPath": "/admin/prospects",
-      "hash": "247f50b1ded38c45",
+      "hash": "b825870cba65adc5",
       "coachVisible": true,
       "title": "Pipeline",
       "where": "Win Clients → Pipeline",
-      "summary": "See everyone you are talking to and where they are up to, add prospects, import a list, and open a prospect to follow up.",
-      "tabs": [
-        {
-          "label": "Pipeline view",
-          "path": null
-        },
-        {
-          "label": "List view",
-          "path": null
-        }
-      ],
+      "summary": "See everyone you are talking to, move them through stages, add or import prospects, and open one to work on them.",
+      "tabs": [],
       "controls": [
-        "**Search prospects…** box at the top left",
+        "**Search prospects…** box in the top bar",
         "**Filter** button: Status, Tags, Exclude tags, Assessment, Next call",
         "**Sort** button: Sort by (Name, Company, Date created, Last assessed, BOSS score, Next call) and Order",
         "**Group** button (list view only): Group by and Group order",
-        "**Cards** button (pipeline view): tick what shows on cards, plus **Customize pipeline** to rename, reorder, show or hide columns and sections",
-        "**Columns** button (list view): tick, hide and drag columns to reorder them",
+        "**Cards** button (pipeline view): Show on cards tick boxes and **Customize pipeline**",
+        "**Columns** button (list view): tick, hide or drag columns",
         "**Import** button: pop-up with **Choose CSV**, **Download template**, column matching, then **Import**",
-        "**Export** button: **Shown columns** or **All columns** as a CSV file",
-        "Switch between **Pipeline view** and **List view** with the two icon buttons",
-        "**Add prospect** button: form with Prospect name, Email (optional), Business name (optional), a tick box to copy your assessment link, then **Create prospect**",
-        "Saved view tabs above the list (list view only) with **+ View** to add your own; the built-in ones cannot be renamed or deleted",
-        "Click a prospect to open their page; in the list you can also edit their status and next action (**Add next action**), and delete prospects"
+        "**Export** button: Shown columns or All columns as a CSV file",
+        "**Pipeline view** and **List view** switch buttons",
+        "**Add prospect** button: opens a box with Prospect name, Email (optional), Business name (optional), a tick box to copy your assessment link, then **Create prospect**",
+        "Saved view tabs in list view, with **+ View** to add one and a menu to rename, duplicate or delete",
+        "**Customize pipeline** side panel: rename, reorder, show or hide columns and sections, **Add column**",
+        "Status badge in list view: click to change it or choose Use auto",
+        "**Add next action** in the list: type an action and due date"
       ],
-      "notes": "Page heading on screen is Win Clients. The Save view tabs, Group and Columns only show in list view; Cards and Customize pipeline only show in pipeline view. The Coach column and coach filter are not shown to coaches."
+      "notes": "The page heading on screen is Win Clients. Clicking a prospect opens their own page. Other pop-ups here: Edit contact, Book a call (needs a calendar switched on under Calls → Booking pages), and delete confirmation. The Coach filter and Coach column are admin-only, so never offer them."
     },
     {
       "path": "/coach/prospects/[id]",
@@ -1104,11 +1094,11 @@
     {
       "path": "/coach/share",
       "adminPath": "/admin/share",
-      "hash": "a6bd62abbc4b56f7",
+      "hash": "0817c7c167137ad9",
       "coachVisible": true,
-      "title": "Links",
-      "where": "Get Calls → Toolkit → Links",
-      "summary": "Copy or send your BOSS Score, booking and profile links, tag a link to see where people come from, and add your own links.",
+      "title": "Toolkit: Links",
+      "where": "Get Calls → Toolkit (then the Links tab)",
+      "summary": "Copy or send your public links, such as BOSS Score pages, booking pages, reports and social profiles, so an owner can start with you in one click.",
       "tabs": [
         {
           "label": "Links",
@@ -1136,17 +1126,17 @@
         }
       ],
       "controls": [
-        "**Public URL** field at the top right, with **Save**, sets the web address your links use",
-        "**Your pages** card (shows once a public URL is set): **Edit page** and a copy button for Booking page, Constraint Call page and BOSS Score page",
-        "**Scorecards** section: Boss Score and Boss Score Pro, each with a copy button and a share button",
-        "**Book a call** section: your public calendars with copy and share buttons, plus **Manage in Calls**",
-        "**Reports** section: Boss Score report and Boss Score Pro dashboard, each with a share button",
-        "**Profiles** section: **Add** your LinkedIn, website or other socials, then **Save**",
-        "**Your links** section: **Add** a link with Title, URL and Description (optional); **Edit** and **Delete** appear on each link when you hover",
-        "**Tag a link, see where people come from** card: pick a **Link**, choose **Where you'll use it**, optionally **Name it (optional)**, then **Copy link**",
-        "Share pop-up: **Anyone** or **One person** switch, **Search prospects**, **Message** box, channel buttons (WhatsApp, LinkedIn, Email, SMS), **Copy link**, **Copy** and **Send**"
+        "**Public URL** field with **Save** at the top right (your theprofitcoach.com/ name)",
+        "**Your pages** card with **Edit page** and a copy-link icon for the Constraint Call page and the BOSS Score page",
+        "**Scorecards** section: Boss Score and Boss Score Pro, each with a copy icon and a share icon",
+        "**Book a call** section: your public calendars with **Call page** and **Booking page** edit buttons, copy and share icons, and a **Manage in Calls** link",
+        "**Reports** section: Boss Score report and Boss Score Pro dashboard, each with a share icon",
+        "**Profiles** section with **Add** to pick LinkedIn, website or other socials, paste the URL, then **Save**",
+        "**Your links** section with **Add** for a **Title**, **URL** and **Description (optional)**, plus **Edit** and **Delete** on each link",
+        "Share pop-up with **Anyone** and **One person** switch, **Search prospects**, **Message** box, channel buttons (WhatsApp, LinkedIn, Email, SMS), **Copy link**, **Copy** and **Send**",
+        "**Tag a link, see where people come from** box: choose a **Link**, pick **Where you'll use it**, optionally **Name it (optional)**, then **Copy link**"
       ],
-      "notes": "Set your public URL first. Until then the copy and share buttons are off, and the Your pages and tag cards stay hidden. Choosing One person and pressing Send opens a conversation in Get Calls → Conversations with the message ready. The Constraint Call page row only shows when call pages are switched on."
+      "notes": "Set your public URL first: until then the copy and share icons are off and the Your pages card and the tag box stay hidden. Sending to one person opens a conversation in Conversations with the message ready. The Constraint Call page row and button only show when call pages are live."
     },
     {
       "path": "/coach/simulator",

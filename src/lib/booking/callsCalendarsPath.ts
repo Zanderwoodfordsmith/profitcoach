@@ -1,4 +1,4 @@
-/** Booking calendar + reminder editor lives on Calls → Settings. */
+/** Booking calendar + reminder editor lives on Calls → Booking pages. */
 export function callsCalendarsHref(admin: boolean): string {
   return admin ? "/admin/calls?tab=settings" : "/coach/calls?tab=settings";
 }

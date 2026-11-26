@@ -118,6 +118,6 @@ export const adminExtraNavLinks: AdminExtraNavLink[] = [
   {
     href: "/zander",
     label: "My public book page (/zander)",
-    hint: "Enable booking under Calls → Settings first, then share this URL.",
+    hint: "Enable booking under Calls → Booking pages first, then share this URL.",
   },
 ];
