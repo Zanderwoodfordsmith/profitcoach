@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { TabOverflowMenu } from "@/components/table/TabOverflowMenu";
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
+  ChartColumn,
   ChevronDown,
   CircleAlert,
   Clock,
@@ -68,6 +70,7 @@ import {
 } from "@/lib/unipile/waitDuration";
 import {
   abMetricForStep,
+  AB_FAIR_READ,
   abRatePercent,
   abWinningKey,
   type AbVariantStats,
@@ -539,44 +542,36 @@ function InviteFunnelBar({
 
 type SequenceVariant = NonNullable<SequenceStep["variants"]>[number];
 
-function AbTestToggle({
+/** Off: "+ Add test". On: a quiet link that ends the test and keeps the version on screen. */
+function AbTestButton({
   on,
+  keepKey,
   onChange,
 }: {
   on: boolean;
+  keepKey: string;
   onChange: (on: boolean) => void;
 }) {
   return (
-    <div className="flex shrink-0 items-center gap-2">
-      <span className="text-xs font-medium text-slate-500">A/B</span>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={on}
-        aria-label="A/B testing"
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={() => onChange(!on)}
-        className={`relative h-6 w-12 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
-          on
-            ? "bg-emerald-700 focus-visible:ring-emerald-700/40"
-            : "bg-rose-800 focus-visible:ring-rose-800/40"
-        }`}
-      >
-        <span
-          className={`pointer-events-none absolute top-1/2 -translate-y-1/2 text-caption font-bold tracking-wide text-white ${
-            on ? "left-[6px]" : "right-[6px]"
-          }`}
-          aria-hidden
-        >
-          {on ? "On" : "Off"}
-        </span>
-        <span
-          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
-            on ? "translate-x-6" : ""
-          }`}
-        />
-      </button>
-    </div>
+    <button
+      type="button"
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={() => onChange(!on)}
+      className={
+        on
+          ? "shrink-0 text-xs font-medium text-slate-500 hover:text-rose-700 hover:underline"
+          : "inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-[#0c5290] hover:border-sky-300 hover:bg-sky-50"
+      }
+    >
+      {on ? (
+        `Keep ${keepKey} only`
+      ) : (
+        <>
+          <Plus className="h-3.5 w-3.5" aria-hidden />
+          Add test
+        </>
+      )}
+    </button>
   );
 }
 
@@ -1326,6 +1321,8 @@ function AbVariantPane({
   placeholder,
   picker,
   limit,
+  tabs,
+  header,
   onChange,
   onCommit,
 }: {
@@ -1333,6 +1330,8 @@ function AbVariantPane({
   placeholder?: string;
   picker: MergeFieldPickerContext;
   limit?: { max: number; noun: string };
+  tabs?: ReactNode;
+  header?: ReactNode;
   onChange: (patch: { label?: string; body?: string }) => void;
   onCommit: () => void;
 }) {
@@ -1344,9 +1343,105 @@ function AbVariantPane({
       placeholder={placeholder}
       picker={picker}
       limit={limit}
+      tabs={tabs}
+      header={header}
       onChange={(body) => onChange({ body })}
       onCommit={onCommit}
     />
+  );
+}
+
+
+function AbResultsTable({
+  variants,
+  stats,
+  stepType,
+}: {
+  variants: Array<{ key: string; label?: string }>;
+  stats: Record<string, AbVariantStats> | undefined;
+  stepType: string;
+}) {
+  const rows: Array<{ label: string; value: (s: AbVariantStats) => number }> = [
+    {
+      label: stepType === "invite" ? "Requests sent" : "Sent",
+      value: (s) => s.assigned,
+    },
+    ...(stepType === "invite"
+      ? [{ label: "Accepted", value: (s: AbVariantStats) => s.connected }]
+      : []),
+    { label: "Replied", value: (s) => s.replied },
+    { label: "Positive", value: (s) => s.interested },
+    { label: "Call booked", value: (s) => s.booked },
+    { label: "Became a client", value: (s) => s.won ?? 0 },
+  ];
+  const empty: AbVariantStats = {
+    assigned: 0,
+    interested: 0,
+    replied: 0,
+    connected: 0,
+    booked: 0,
+    won: 0,
+  };
+  const cols = variants.map((v) => ({
+    key: v.key,
+    name: v.label?.trim() || v.key,
+    s: stats?.[v.key] ?? empty,
+  }));
+  const fair = cols.every((c) => c.s.assigned >= AB_FAIR_READ);
+  return (
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+      <table className="w-full text-ui">
+        <thead className="bg-slate-50 text-xs text-slate-500">
+          <tr>
+            <th className="px-3 py-2 text-left font-medium">Result</th>
+            {cols.map((c) => (
+              <th key={c.key} className="px-3 py-2 text-right font-semibold text-slate-700">
+                {c.name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {rows.map((row, i) => {
+            const rates = cols.map((c) =>
+              c.s.assigned > 0 ? row.value(c.s) / c.s.assigned : 0
+            );
+            const top = Math.max(...rates);
+            const ahead =
+              fair && i > 0 && top > 0 && rates.filter((r) => r === top).length === 1;
+            return (
+              <tr key={row.label}>
+                <td className="px-3 py-2 text-slate-600">{row.label}</td>
+                {cols.map((c, ci) => {
+                  const n = row.value(c.s);
+                  const lead = ahead && rates[ci] === top;
+                  return (
+                    <td
+                      key={c.key}
+                      className={`px-3 py-2 text-right tabular-nums ${
+                        lead ? "font-semibold text-emerald-700" : "text-slate-800"
+                      }`}
+                    >
+                      {n}
+                      {i > 0 && c.s.assigned > 0 ? (
+                        <span className="ml-1.5 text-xs font-normal text-slate-400">
+                          {Math.round(rates[ci] * 100)}%
+                        </span>
+                      ) : null}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="border-t border-slate-100 px-3 py-2 text-caption leading-relaxed text-slate-500">
+        {fair
+          ? "Percentages are of the people each version was sent to. Green is ahead."
+          : `Too early to call. Wait until each version has gone to ${AB_FAIR_READ} people.`}
+      </p>
+    </div>
   );
 }
 
@@ -1385,6 +1480,9 @@ export function StepInlineEditor({
   const [activeVariantKey, setActiveVariantKey] = useState(
     variants[0]?.key ?? "A"
   );
+  const [renamingKey, setRenamingKey] = useState<string | null>(null);
+  const [showResults, setShowResults] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
   const activeVariant =
     variants.find((item) => item.key === activeVariantKey) ?? variants[0];
   const activeIndex = activeVariant
@@ -1435,7 +1533,7 @@ export function StepInlineEditor({
     });
   }
 
-  function setAbEnabled(on: boolean) {
+  function setAbEnabled(on: boolean, keepKey?: string) {
     if (on === hasAb) return;
     if (on) {
       const body = step.body || "";
@@ -1464,7 +1562,11 @@ export function StepInlineEditor({
       onCommit();
       return;
     }
-    const source = activeVariant ?? variants[0];
+    const source =
+      variants.find((item) => item.key === keepKey) ??
+      activeVariant ??
+      variants[0];
+    setActiveVariantKey("A");
     onChange({
       variants: null,
       body: source?.body ?? step.body ?? "",
@@ -1483,7 +1585,11 @@ export function StepInlineEditor({
   }
 
   const abToggle = allowsAb ? (
-    <AbTestToggle on={hasAb} onChange={setAbEnabled} />
+    <AbTestButton
+      on={hasAb}
+      keepKey={activeVariant?.key ?? "A"}
+      onChange={setAbEnabled}
+    />
   ) : null;
 
   if (step.step_type === "react") {
@@ -1678,7 +1784,154 @@ export function StepInlineEditor({
         </p>
       ) : null}
 
-      {(hasAb || levelBranch) && activeVariant ? (
+      {hasAb && activeVariant ? (
+        <div>
+          <AbVariantPane
+            variant={activeVariant}
+            placeholder={messageCopyPlaceholder(
+              step.config,
+              activeVariant.media_kind
+            )}
+            picker={picker}
+            limit={noteLimit}
+            tabs={[...variants.map((variant) => {
+              const selected = variant.key === activeVariant.key;
+              const rate = abRatePercent(stepStats?.[variant.key], metric.key);
+              const isBest = winner === variant.key;
+              const KindIcon =
+                variant.media_kind === "voice"
+                  ? Mic
+                  : variant.media_kind === "video"
+                    ? Video
+                    : MessageSquare;
+              const name = variant.label?.trim() || variant.key;
+              const surface = `rounded-t-lg border border-b-0 transition duration-150 ${
+                selected
+                  ? "border-slate-300 bg-white pb-0.5 text-[#0c5290]"
+                  : "border-slate-200 bg-slate-100 text-slate-500 hover:bg-slate-200/70 hover:text-slate-700"
+              }`;
+              if (renamingKey === variant.key) {
+                const finish = () => {
+                  const trimmed = renameValue.trim().slice(0, 120);
+                  setRenamingKey(null);
+                  if (trimmed && trimmed !== name) {
+                    const next = variants.map((item) =>
+                      item.key === variant.key ? { ...item, label: trimmed } : item
+                    );
+                    onChange({ variants: keepAbPair(next) });
+                    onCommit();
+                  }
+                };
+                return (
+                  <form
+                    key={variant.key}
+                    className={`flex items-center px-1.5 py-1 ${surface}`}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      finish();
+                    }}
+                  >
+                    <input
+                      autoFocus
+                      type="text"
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onBlur={finish}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") setRenamingKey(null);
+                      }}
+                      aria-label={`Rename version ${variant.key}`}
+                      className={fieldClass("input", "small", "w-32!")}
+                    />
+                  </form>
+                );
+              }
+              return (
+                <div
+                  key={variant.key}
+                  className={`relative flex items-stretch ${surface}`}
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    title={name}
+                    onClick={() => setActiveVariantKey(variant.key)}
+                    className="inline-flex min-w-[4.5rem] max-w-[14rem] items-center justify-center gap-1 py-1.5 pl-4 pr-7 text-ui font-semibold leading-tight"
+                  >
+                    {step.step_type === "message" ? (
+                      <KindIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    ) : null}
+                    <span className="min-w-0 truncate">{name}</span>
+                    {isBest || rate != null ? (
+                      <span className="shrink-0 text-caption font-medium tabular-nums text-slate-400">
+                        {isBest ? "Best " : ""}
+                        {rate != null ? `${rate}%` : ""}
+                      </span>
+                    ) : null}
+                  </button>
+                  <div className="absolute right-0.5 top-1/2 -translate-y-1/2">
+                    <TabOverflowMenu
+                      label={name}
+                      canRename
+                      canDelete={variant.key !== "A"}
+                      onRename={() => {
+                        setRenamingKey(variant.key);
+                        setRenameValue(name);
+                      }}
+                      onDelete={() => setAbEnabled(false, "A")}
+                    />
+                  </div>
+                </div>
+              );
+            }),
+            <button
+              key="results"
+              type="button"
+              aria-pressed={showResults}
+              aria-label="Compare results"
+              title="Compare results"
+              onClick={() => setShowResults((v) => !v)}
+              className={`mb-1 ml-1 self-center rounded-md p-1.5 transition duration-150 ${
+                showResults
+                  ? "bg-sky-600 text-white"
+                  : "text-slate-400 hover:bg-slate-200/70 hover:text-slate-700"
+              }`}
+            >
+              <ChartColumn className="h-4 w-4" aria-hidden />
+            </button>,
+            abToggle ? (
+              <div key="ab" className="ml-auto self-center pb-1">
+                {abToggle}
+              </div>
+            ) : null]}
+            header={
+              step.step_type === "message" ? (
+                <MessageStepMedia
+                  campaignId={campaignId}
+                  uploadUrl={uploadUrl}
+                  slot={activeVariant.key}
+                  mediaKind={activeVariant.media_kind ?? null}
+                  media={activeVariant.media ?? null}
+                  onChange={patchActiveVariant}
+                  onCommit={onCommit}
+                />
+              ) : undefined
+            }
+            onChange={patchActiveVariant}
+            onCommit={onCommit}
+          />
+          {showResults ? (
+            <div className="mt-3">
+              <AbResultsTable
+                variants={variants}
+                stats={stepStats}
+                stepType={step.step_type}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : levelBranch && activeVariant ? (
         <div className="space-y-3">
           <div className="flex w-full items-center justify-between gap-3">
             <div
@@ -1794,7 +2047,7 @@ export function StepInlineEditor({
       ) : null}
 
       {step.step_type === "invite" ? (
-        <div className="space-y-3">
+        <div className="divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200 bg-white">
           <InviteOpenProfileInmail
             config={step.config}
             picker={picker}
@@ -2528,7 +2781,20 @@ export function CampaignSequenceBuilder({
                         >
                           <GripVertical className="h-4 w-4" aria-hidden />
                         </button>
-                        <div className="min-w-0 flex-1 py-3 pr-3">
+                        <div
+                          className="min-w-0 flex-1 cursor-pointer py-3 pr-3"
+                          onClick={(event) => {
+                            // The buttons and switches on the card keep their own job.
+                            if (
+                              (event.target as HTMLElement).closest(
+                                'button, a, input, select, textarea, [role="switch"], [role="tooltip"]'
+                              )
+                            ) {
+                              return;
+                            }
+                            toggle(idx);
+                          }}
+                        >
                           <div className="flex items-center gap-3">
                             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600">
                               <Icon className="h-3.5 w-3.5" aria-hidden />
@@ -2637,7 +2903,7 @@ export function CampaignSequenceBuilder({
                                   type="button"
                                   aria-expanded={open}
                                   onClick={() => toggle(idx)}
-                                  className="min-w-0 flex-1 text-left text-ui leading-relaxed text-slate-600 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
+                                  className="min-w-0 flex-1 text-left text-read leading-relaxed text-slate-700 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40"
                                 >
                                   <span className="line-clamp-3 max-w-prose">
                                     {step.step_type === "react" ||
@@ -2680,8 +2946,8 @@ export function CampaignSequenceBuilder({
                       ) : null}
                       {open ? (
                         <div
-                          className={`space-y-3 px-4 py-4 sm:px-5 ${
-                            people.invite && !library ? "" : "border-t border-slate-100"
+                          className={`space-y-3 rounded-b-2xl bg-slate-50 px-4 py-4 sm:px-5 ${
+                            people.invite && !library ? "" : "border-t border-slate-200"
                           }`}
                         >
                           <StepInlineEditor

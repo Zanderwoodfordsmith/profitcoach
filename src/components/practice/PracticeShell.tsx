@@ -658,7 +658,7 @@ export function PracticeShell({
                     {page.title}
                   </h1>
                   {ready ? (
-                    <div data-tour="blueprint-status" className="bp-no-print flex shrink-0 items-center gap-2">
+                    <div className="bp-no-print flex shrink-0 items-center gap-2">
                       {page.open ? <OpenInApp link={page.open} to={href} /> : null}
                       <PageStatusControl page={page} />
                     </div>
@@ -781,7 +781,7 @@ function CleanTopBar({
       <div className="ml-auto flex shrink-0 items-center gap-1">
         {onePage && side !== "comments" ? <CleanChatButton pageSlug={page.slug} onOpen={() => onSide("comments")} className={quiet} /> : null}
         {index >= 0 ? (
-          <span data-tour="blueprint-page-arrows" className="ml-1 flex items-center gap-0.5 border-l border-slate-200 pl-2">
+          <span className="ml-1 flex items-center gap-0.5 border-l border-slate-200 pl-2">
             <span className="hidden pr-1 text-caption tabular-nums text-slate-400 sm:inline">
               {index + 1} of {pages.length}
             </span>
@@ -835,7 +835,7 @@ function CleanChatButton({ pageSlug, onOpen, className }: { pageSlug: string; on
   if (!comments?.side) return null;
   const unread = Object.entries(comments.threads).reduce((n, [key, t]) => n + (commentPage(key) === pageSlug ? t.unread : 0), 0);
   return (
-    <button type="button" data-tour="blueprint-chat-button" onClick={onOpen} className={className}>
+    <button type="button" onClick={onOpen} className={className}>
       <MessageSquare className="h-4 w-4" aria-hidden />
       Chat
       {unread ? (
@@ -890,7 +890,6 @@ function OpenInApp({ link, to }: { link: { href: string; label: string }; to: (p
   return (
     <Link
       href={to(link.href)}
-      data-tour="blueprint-open-in-app"
       className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-sky-700 hover:border-slate-300 hover:text-sky-800"
     >
       {link.label}

@@ -1,9 +1,17 @@
+/**
+ * People each version must reach before one is called ahead. Still well short
+ * of statistical significance; a practical floor so flukes don't win.
+ */
+export const AB_FAIR_READ = 250;
+
 export type AbVariantStats = {
   assigned: number;
   interested: number;
   replied: number;
   connected: number;
   booked: number;
+  /** Became a client: on the client list, or Won in the pipeline. */
+  won?: number;
 };
 
 export function abMetricForStep(stepType: string): {
@@ -31,7 +39,7 @@ export function abWinningKey(
   const scored = variants
     .map((v) => {
       const stats = statsByKey[v.key];
-      if (!stats || stats.assigned < 5) return null;
+      if (!stats || stats.assigned < AB_FAIR_READ) return null;
       return { key: v.key, rate: stats[metric] / stats.assigned };
     })
     .filter((row): row is { key: string; rate: number } => row != null);

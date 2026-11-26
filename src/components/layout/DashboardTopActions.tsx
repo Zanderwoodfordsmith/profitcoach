@@ -306,6 +306,8 @@ export function DashboardTopActions({
             `
                 )
                 .eq("post_scope", "lesson_qa")
+                // Private lesson asks already arrive as Support tickets.
+                .eq("visibility", "public")
                 .neq("author_id", uid)
                 .order("created_at", { ascending: false })
                 .limit(NOTIFICATION_ITEMS_MAX)

@@ -41,7 +41,10 @@ type Step = {
   count: number;
 };
 
-type TourState = { step: number; sub: number | null } | null;
+/** A one-off guide with its own steps, not an area guide (the About You questions left). */
+type CustomTour = { title: string; steps: PageTourStep[] };
+
+type TourState = { step: number; sub: number | null; custom?: CustomTour } | null;
 
 function readState(): TourState {
   try {
@@ -102,6 +105,14 @@ export function startSectionTour(guideKey: string) {
   const prefix = window.location.pathname.startsWith("/admin") ? "/admin" : "/coach";
   const first = buildSteps(prefix).findIndex((step) => step.guideKey === guideKey);
   writeState({ step: Math.max(0, first), sub: null });
+}
+
+/**
+ * Walk the coach through these steps, one part of the page at a time. Used by
+ * the top bar's "Finish About You" to point at each question still empty.
+ */
+export function startCustomTour(title: string, steps: PageTourStep[]) {
+  if (steps.length) writeState({ step: 0, sub: 0, custom: { title, steps } });
 }
 
 /** A tab already open: links say aria-current, buttons carry data-tab-active. */
@@ -190,9 +201,22 @@ export function SectionTour() {
     return () => window.removeEventListener(CHANGE_EVENT, onChange);
   }, []);
 
+  const custom = state?.custom ?? null;
   const stepIndex = state?.step ?? null;
-  const step = stepIndex != null ? steps[stepIndex] ?? null : null;
-  const pageSteps = step?.kind === "tab" ? PAGE_TOURS[`${step.guideKey}/${step.label}`] ?? null : null;
+  // A custom guide stands alone: a made-up step with nothing to open or follow on.
+  const customStep = useMemo<Step | null>(
+    () =>
+      custom
+        ? { kind: "tab", guideKey: "custom", hubTitle: custom.title, group: "custom", headline: custom.title, body: "", anchor: "", href: "", label: custom.title, index: 1, count: 1 }
+        : null,
+    [custom]
+  );
+  const step = customStep ?? (stepIndex != null ? steps[stepIndex] ?? null : null);
+  const pageSteps = custom
+    ? custom.steps
+    : step?.kind === "tab"
+      ? PAGE_TOURS[`${step.guideKey}/${step.label}`] ?? null
+      : null;
   const sub = state?.sub ?? null;
   const pageStep = sub != null && pageSteps ? pageSteps[sub] ?? null : null;
 
@@ -288,7 +312,9 @@ export function SectionTour() {
         for (let p = el.parentElement; p; p = p.parentElement) {
           if (p.scrollLeft) sideways.push([p, p.scrollLeft]);
         }
-        el.scrollIntoView({ block: "nearest", inline: "nearest" });
+        // A custom guide points at boxes to fill in: bring each one up under the title bar,
+        // clear of the card (on phones the card sits at the bottom).
+        el.scrollIntoView({ block: step.guideKey === "custom" ? "start" : "nearest", inline: "nearest" });
         el.style.scrollMarginTop = before;
         for (let p = el.parentElement; p; p = p.parentElement) {
           const kept = sideways.find(([box]) => box === p);
@@ -356,7 +382,16 @@ export function SectionTour() {
   let onNext: () => void;
   let onBack: (() => void) | null;
 
-  if (pageStep && pageSteps && sub != null) {
+  if (custom && pageStep && sub != null) {
+    const lastSub = sub === custom.steps.length - 1;
+    eyebrow = `${custom.title} · ${sub + 1} of ${custom.steps.length}`;
+    title = pageStep.title;
+    text = body ?? pageStep.body;
+    dots = { count: custom.steps.length, at: sub };
+    nextLabel = lastSub ? "Finish" : "Next";
+    onNext = () => writeState(lastSub ? null : { step: 0, sub: sub + 1, custom });
+    onBack = sub > 0 ? () => writeState({ step: 0, sub: sub - 1, custom }) : null;
+  } else if (pageStep && pageSteps && sub != null) {
     eyebrow = `${step.label} · ${sub + 1} of ${pageSteps.length}`;
     title = pageStep.title;
     text = body ?? pageStep.body;

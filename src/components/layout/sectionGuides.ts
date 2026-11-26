@@ -50,7 +50,7 @@ function clientEngine(title: string, hub: ToolsHubKey): SectionGuide {
 }
 
 const BLUEPRINT_DETAIL: Record<string, string> = {
-  command: "Your next best action, and how far each part of your plan has got.",
+  command: "Your checklist and your next step. Work down it and you're ready to launch.",
   about: "The one page you fill in: your story, your skills and your goals. Everything else is built from it.",
   market: "Know exactly who you're built to help, so every message lands with the right owners.",
   linkedin: "Look credible before someone replies. Your headline and About section, written for your ideal client.",
@@ -99,8 +99,9 @@ export const SECTION_GUIDES: SectionGuide[] = [
     title: "My Blueprint",
     headline: "Your practice plan, built for you.",
     body: "You fill in About You and BCA builds the rest: who you help, your LinkedIn profile, lead lists, campaigns, content, offer and pitch. Each page feeds the tools in Get Calls and Win Clients.",
+    // Only the two pages the coach works on; BCA builds the rest.
     tabs: (prefix) =>
-      BLUEPRINT_PAGES.map((page) => ({
+      BLUEPRINT_PAGES.filter((page) => page.slug === "command" || page.slug === "about").map((page) => ({
         label: page.title,
         detail: BLUEPRINT_DETAIL[page.slug] ?? page.heading ?? "",
         anchor: `nav[aria-label="Practice blueprint"] a[data-hint-label="${page.title}"]`,

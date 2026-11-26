@@ -5,6 +5,7 @@ import {
 } from "@/lib/assessmentContactParams";
 import { loadAssessmentInviteToken } from "@/lib/assessmentInviteToken";
 import type { AbVariantStats } from "@/lib/unipile/abMetrics";
+import { canonicalizeProspectStatus } from "@/lib/prospectStatus";
 import {
   sanitizeMessageMediaPatch,
   isLevelVariantSet,
@@ -483,8 +484,44 @@ export async function abStatsForCampaign(campaignId: string) {
 
   const { data: leads } = await supabaseAdmin
     .from("linkedin_campaign_leads")
-    .select("id, status, interest_outcome, ab_assignments")
+    .select("id, status, interest_outcome, ab_assignments, contact_id")
     .eq("campaign_id", campaignId);
+
+  // Further down the funnel lives on the contact: a booking, the pipeline
+  // stage, or being on the client list.
+  const contactIds = [
+    ...new Set(
+      (leads ?? [])
+        .filter((lead) => lead.ab_assignments && lead.contact_id)
+        .map((lead) => lead.contact_id as string)
+    ),
+  ];
+  const bookedContacts = new Set<string>();
+  const wonContacts = new Set<string>();
+  for (let i = 0; i < contactIds.length; i += 300) {
+    const chunk = contactIds.slice(i, i + 300);
+    const [{ data: contacts }, { data: bookings }] = await Promise.all([
+      supabaseAdmin
+        .from("contacts")
+        .select("id, type, prospect_status")
+        .in("id", chunk),
+      supabaseAdmin
+        .from("bookings")
+        .select("contact_id")
+        .in("contact_id", chunk)
+        .neq("status", "cancelled"),
+    ]);
+    for (const c of contacts ?? []) {
+      const stage = canonicalizeProspectStatus(c.prospect_status as string | null);
+      if (c.type === "client" || stage === "won") wonContacts.add(c.id as string);
+      if (stage === "booked" || stage === "rebook" || stage === "follow_up") {
+        bookedContacts.add(c.id as string);
+      }
+    }
+    for (const b of bookings ?? []) {
+      if (b.contact_id) bookedContacts.add(b.contact_id as string);
+    }
+  }
 
   const byStep: Record<string, Record<string, AbVariantStats>> = {};
 
@@ -499,38 +536,39 @@ export async function abStatsForCampaign(campaignId: string) {
         replied: 0,
         connected: 0,
         booked: 0,
+        won: 0,
       };
     }
   }
 
   for (const lead of leads ?? []) {
     const assigns = (lead.ab_assignments || {}) as Record<string, string>;
+    const contactId = (lead.contact_id as string | null) ?? null;
+    const st = lead.status as string;
+    // Each stage counts everyone who got past it, so the table reads as a funnel.
+    const won = Boolean(contactId && wonContacts.has(contactId));
+    const booked =
+      won ||
+      st === "call_offered" ||
+      Boolean(contactId && bookedContacts.has(contactId));
+    const interested =
+      booked ||
+      st === "interested" ||
+      st === "assessment_sent" ||
+      st === "assessment_done" ||
+      lead.interest_outcome === "positive" ||
+      lead.interest_outcome === "soft";
+    const replied = interested || st === "replied";
+    const connected = replied || CONNECTED_STATUSES.has(st);
     for (const [stepId, key] of Object.entries(assigns)) {
       if (!byStep[stepId]?.[key]) continue;
       const row = byStep[stepId][key];
       row.assigned += 1;
-      const st = lead.status as string;
-      if (
-        st === "interested" ||
-        st === "assessment_sent" ||
-        st === "assessment_done" ||
-        st === "call_offered" ||
-        lead.interest_outcome === "positive" ||
-        lead.interest_outcome === "soft"
-      ) {
-        row.interested += 1;
-      }
-      if (
-        st === "replied" ||
-        st === "interested" ||
-        st === "assessment_sent" ||
-        st === "assessment_done" ||
-        st === "call_offered"
-      ) {
-        row.replied += 1;
-      }
-      if (CONNECTED_STATUSES.has(st)) row.connected += 1;
-      if (st === "call_offered") row.booked += 1;
+      if (interested) row.interested += 1;
+      if (replied) row.replied += 1;
+      if (connected) row.connected += 1;
+      if (booked) row.booked += 1;
+      if (won) row.won = (row.won ?? 0) + 1;
     }
   }
 

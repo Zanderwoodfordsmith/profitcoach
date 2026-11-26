@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   const [aboutYou, linkedin] = await Promise.all([
     findPracticeKnowledge(auth.coachId)
       .then(aboutYouProgress)
-      .catch(() => ({ state: "done" as const, left: 0 })),
+      .catch(() => ({ state: "done" as const, left: 0, open: [] })),
     linkedInSetupState(auth.coachId).catch((err) => {
       console.error("linkedin setup state:", err instanceof Error ? err.message : "failed");
       return "ok" as const;

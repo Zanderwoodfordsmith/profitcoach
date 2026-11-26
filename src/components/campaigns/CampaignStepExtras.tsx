@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState, type ReactNode } from "react";
-import { Circle, MessageSquare, Mic, Upload, Video, X } from "lucide-react";
+import { ChevronDown, Circle, MessageSquare, Mic, Upload, Video, X } from "lucide-react";
 import { CampaignMediaRecorder } from "@/components/campaigns/CampaignMediaRecorder";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -43,6 +43,45 @@ const OPEN_PROFILE_LIMIT = {
   noun: "an Open Profile message",
 };
 
+/** One slim row that opens to show its settings. */
+function FoldRow({
+  title,
+  summary,
+  children,
+}: {
+  title: string;
+  summary: string;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const bodyId = useId();
+  return (
+    <div>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={bodyId}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0c5290]/40"
+      >
+        <span className="shrink-0 font-semibold text-slate-700">{title}</span>
+        <span className="min-w-0 flex-1 truncate text-slate-500">{summary}</span>
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-150 ${
+            open ? "rotate-180" : ""
+          }`}
+          aria-hidden
+        />
+      </button>
+      {open ? (
+        <div id={bodyId} className="px-3 pb-3 pt-0.5">
+          {children}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function InviteOpenProfileInmail({
   config,
   picker,
@@ -62,11 +101,11 @@ export function InviteOpenProfileInmail({
   }
 
   return (
-    <div className="rounded-lg border border-sky-200 bg-sky-50/60 px-3 py-2.5">
-      <p className="text-xs font-semibold text-[#0c5290]">
-        If they have an Open Profile
-      </p>
-      <label className="mt-2 flex items-start gap-2 text-xs text-slate-700">
+    <FoldRow
+      title="If they have an Open Profile"
+      summary={enabled ? "Send a message instead of an invite" : "Send the invite"}
+    >
+      <label className="flex items-start gap-2 text-xs text-slate-700">
         <input
           type="checkbox"
           checked={enabled}
@@ -118,7 +157,7 @@ export function InviteOpenProfileInmail({
           </div>
         </div>
       ) : null}
-    </div>
+    </FoldRow>
   );
 }
 
@@ -145,10 +184,17 @@ export function InviteNoConnectBranch({
     onCommit();
   }
 
+  const target = campaigns.find((c) => c.id === branch.no_connect_campaign_id);
+  const summary =
+    selected && !libraryMode
+      ? `Move to ${target?.name ?? "another campaign"} after ${formatWaitDuration(
+          branch.no_connect_wait_hours
+        )}`
+      : "Leave the invite pending";
+
   return (
-    <div className="rounded-lg border border-rose-200 bg-rose-50/60 px-3 py-2.5">
-      <p className="text-xs font-semibold text-rose-800">If they don&apos;t connect</p>
-      <div className="mt-2 space-y-1.5">
+    <FoldRow title="If they don't connect" summary={summary}>
+      <div className="space-y-1.5">
         <label className="flex items-start gap-2 text-xs text-slate-700">
           <input
             type="radio"
@@ -187,7 +233,7 @@ export function InviteNoConnectBranch({
       {selected && !libraryMode ? (
         <div className="mt-2 space-y-2">
           {campaigns.length === 0 ? (
-            <p className="text-caption text-rose-800">Create another campaign first.</p>
+            <p className="text-caption text-slate-500">Create another campaign first.</p>
           ) : (
             <label className="block text-caption font-medium text-slate-600">
               Campaign
@@ -256,7 +302,7 @@ export function InviteNoConnectBranch({
           </div>
         </div>
       ) : null}
-    </div>
+    </FoldRow>
   );
 }
 
@@ -268,6 +314,7 @@ export function MessageStepMedia({
   onCommit,
   uploadUrl,
   trailing,
+  slot = "",
 }: {
   campaignId: string;
   mediaKind: CampaignStepMediaKind | null;
@@ -279,8 +326,13 @@ export function MessageStepMedia({
   onCommit: () => void;
   uploadUrl?: string;
   trailing?: ReactNode;
+  /** Which version this is (A/B), so set-aside recordings stay with their version. */
+  slot?: string;
 }) {
   const { impersonatingCoachId } = useImpersonation();
+  // Switching to Message clears the saved file (the file decides what gets
+  // sent), so keep it here while the step is open and bring it back on return.
+  const setAside = useRef(new Map<string, CampaignStepMedia>());
   const inputRef = useRef<HTMLInputElement>(null);
   const hintId = useId();
   const [busy, setBusy] = useState(false);
@@ -377,13 +429,16 @@ export function MessageStepMedia({
   function selectKind(next: CampaignStepMediaKind | "message") {
     if (next === selected) return;
     setRecording(false);
+    if (media) setAside.current.set(`${slot}:${media.kind}`, media);
     if (next === "message") {
       patch({ media_kind: null, media: null });
       return;
     }
     patch({
       media_kind: next,
-      media: mediaKind === next ? media : null,
+      media:
+        setAside.current.get(`${slot}:${next}`) ??
+        (mediaKind === next ? media : null),
     });
   }
 
@@ -496,12 +551,13 @@ export function MessageStepMedia({
           <button
             type="button"
             aria-label="Remove file"
-            onClick={() =>
+            onClick={() => {
+              setAside.current.delete(`${slot}:${media.kind}`);
               patch({
                 media: null,
                 media_kind: mediaKind,
-              })
-            }
+              });
+            }}
             className="rounded-full p-0.5 text-slate-400 hover:text-rose-600"
           >
             <X className="h-3.5 w-3.5" />

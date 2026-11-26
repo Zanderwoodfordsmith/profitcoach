@@ -380,8 +380,11 @@ export function winClientsHubPaths(prefix: "/coach" | "/admin"): string[] {
 }
 
 export function getCallsHubPaths(prefix: "/coach" | "/admin"): string[] {
-  const win = new Set(winClientsHubPaths(prefix));
-  return getClientsHubPaths(prefix).filter((path) => !win.has(path));
+  const win = winClientsHubPaths(prefix);
+  // Drop Win Clients pages and anything under them (Call Practice sits under Scripts).
+  return getClientsHubPaths(prefix).filter(
+    (path) => !isToolsHubPath(path.split("?")[0] ?? path, win)
+  );
 }
 
 export function isWinClientsPath(pathname: string | null): boolean {

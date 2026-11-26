@@ -66,7 +66,7 @@ function ClassroomLinks({ page }: { page: BlueprintLink }) {
   const { href } = usePractice();
   if (!page.learn?.length) return null;
   return (
-    <aside data-tour="blueprint-classroom" className="bp-keep rounded-2xl border border-[var(--bp-rule)] px-5 py-5">
+    <aside className="bp-keep rounded-2xl border border-[var(--bp-rule)] px-5 py-5">
       <p className="inline-flex items-center gap-2 text-[0.9375rem] font-semibold text-[var(--bp-ink)]">
         <GraduationCap className="h-4 w-4 text-[var(--bp-sky)]" aria-hidden />
         How to do it, in the Classroom

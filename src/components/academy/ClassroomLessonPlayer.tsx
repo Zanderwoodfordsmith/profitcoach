@@ -1144,7 +1144,7 @@ export function ClassroomLessonPlayer({
             renderLessonRows(
               section.lessons,
               minimal
-                ? "space-y-0.5 pb-1 pl-5"
+                ? "space-y-0.5 pb-1 pl-2"
                 : "space-y-0.5 border-t border-slate-100 px-2 py-2",
             )
           ) : null

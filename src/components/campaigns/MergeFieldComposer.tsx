@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { ChevronDown, Info } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { ChevronDown, Info, Loader2, Sparkles } from "lucide-react";
+import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { checkConnectionNote } from "@/lib/campaigns/connectionNote";
 import {
   DEFAULT_MERGE_FIELD_PICKER,
@@ -314,6 +316,8 @@ export function MergeFieldComposer({
   ariaLabel,
   picker = DEFAULT_MERGE_FIELD_PICKER,
   limit,
+  tabs,
+  header,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -323,6 +327,10 @@ export function MergeFieldComposer({
   picker?: MergeFieldPickerContext;
   /** First-touch copy: count characters against LinkedIn's limit and flag what doesn't belong. */
   limit?: { max: number; noun: string };
+  /** Folder tabs (e.g. A / B) that sit on the top edge of the box. */
+  tabs?: ReactNode;
+  /** Shown inside the box, above the text. */
+  header?: ReactNode;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const savedRange = useRef<Range | null>(null);
@@ -336,6 +344,35 @@ export function MergeFieldComposer({
   const note =
     limit && value.trim() ? checkConnectionNote(value, limit.max) : null;
   const tooLong = (note?.over ?? 0) > 0;
+  const { impersonatingCoachId } = useImpersonation();
+  const [shortening, setShortening] = useState(false);
+  const [shortenError, setShortenError] = useState<string | null>(null);
+  /** What it said before Ava shortened it, for Undo. */
+  const [beforeShorten, setBeforeShorten] = useState<string | null>(null);
+
+  async function letAvaShorten() {
+    if (!limit || shortening) return;
+    setShortening(true);
+    setShortenError(null);
+    try {
+      const headers = await getCoachAuthHeaders(impersonatingCoachId);
+      if (!headers) throw new Error("Sign in required.");
+      const res = await fetch("/api/coach/linkedin-outreach/shorten-note", {
+        method: "POST",
+        headers: { Authorization: headers.Authorization, "Content-Type": "application/json" },
+        body: JSON.stringify({ body: value, max: limit.max }),
+      });
+      const json = (await res.json().catch(() => ({}))) as { body?: string; error?: string };
+      if (!res.ok || !json.body) throw new Error(json.error || "Ava couldn't shorten it. Try again.");
+      setBeforeShorten(value);
+      onChange(json.body);
+      onCommit();
+    } catch (err) {
+      setShortenError(err instanceof Error ? err.message : "Ava couldn't shorten it. Try again.");
+    } finally {
+      setShortening(false);
+    }
+  }
 
   useEffect(() => {
     const el = editorRef.current;
@@ -368,6 +405,7 @@ export function MergeFieldComposer({
     const next = serializeEditor(el);
     if (next === emitted.current) return;
     emitted.current = next;
+    setBeforeShorten(null);
     onChange(next);
   }
 
@@ -435,11 +473,20 @@ export function MergeFieldComposer({
 
   return (
     <div className="space-y-1.5">
+      {tabs ? (
+        <div role="tablist" className="relative z-10 -mb-px flex items-end gap-1">
+          {tabs}
+        </div>
+      ) : null}
       <div
         className={`overflow-hidden rounded-lg border bg-white ${
+          tabs ? "!mt-0 rounded-tl-none" : ""
+        } ${
           tooLong
             ? "border-red-400 ring-1 ring-red-500"
-            : "border-slate-200 focus-within:border-[#0c5290]"
+            : tabs
+              ? "border-slate-300"
+              : "border-slate-300 focus-within:border-[#0c5290]"
         }`}
         onDragOver={(event) => {
           if (!isMergeFieldDrag()) return;
@@ -455,13 +502,14 @@ export function MergeFieldComposer({
           event.stopPropagation();
         }}
       >
+        {header ? <div className="px-3 pt-2.5">{header}</div> : null}
         <div
           ref={editorRef}
           role="textbox"
           aria-multiline="true"
           aria-label={ariaLabel}
           aria-invalid={tooLong || undefined}
-          aria-describedby={note ? noteId : undefined}
+          aria-describedby={note ? `${noteId} ${noteId}-count` : undefined}
           contentEditable
           suppressContentEditableWarning
           data-placeholder={placeholder}
@@ -492,8 +540,20 @@ export function MergeFieldComposer({
             if (el) insertLineBreakInEditor(el);
             emit();
           }}
-          className="min-h-[8.5rem] w-full whitespace-pre-wrap bg-white px-3 py-2.5 text-read leading-relaxed text-slate-800 outline-none empty:before:text-slate-400 empty:before:content-[attr(data-placeholder)]"
+          className={`min-h-[8.5rem] w-full whitespace-pre-wrap bg-white px-3 pt-2.5 text-read leading-relaxed text-slate-800 outline-none empty:before:text-slate-400 empty:before:content-[attr(data-placeholder)] ${
+            note && !tooLong ? "pb-0" : "pb-2.5"
+          }`}
         />
+        {note && !tooLong ? (
+          <p
+            id={`${noteId}-count`}
+            aria-live="polite"
+            className="bg-white px-3 pb-1.5 text-right text-xs tabular-nums text-slate-400"
+          >
+            About {note.length.toLocaleString("en-GB")} of{" "}
+            {note.max.toLocaleString("en-GB")} characters
+          </p>
+        ) : null}
         <div
           className="flex items-stretch border-t border-slate-200 bg-slate-100"
           onPointerDown={() => {
@@ -549,12 +609,47 @@ export function MergeFieldComposer({
           </div>
         </div>
         {note && limit && tooLong ? (
-          <p className="border-t border-red-200 bg-red-50 px-3 py-2 text-xs font-medium leading-snug text-red-800">
-            Too long for {limit.noun}. LinkedIn allows{" "}
-            {note.max.toLocaleString("en-GB")} characters, and this is about{" "}
-            {note.length.toLocaleString("en-GB")} once names and other fields
-            are filled in. Cut about {note.over.toLocaleString("en-GB")}.
-          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-red-300 bg-red-100 px-3 py-2.5">
+            <p className="min-w-0 flex-1 text-ui font-medium leading-snug text-red-900">
+              Too long for {limit.noun}. LinkedIn allows{" "}
+              {note.max.toLocaleString("en-GB")} characters, and this is about{" "}
+              {note.length.toLocaleString("en-GB")} once names and other fields
+              are filled in. Cut about {note.over.toLocaleString("en-GB")}.
+            </p>
+            <button
+              type="button"
+              disabled={shortening}
+              onClick={() => void letAvaShorten()}
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-semibold text-red-900 transition duration-150 hover:bg-red-50 disabled:opacity-60"
+            >
+              {shortening ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+              ) : (
+                <Sparkles className="h-3.5 w-3.5" aria-hidden />
+              )}
+              {shortening ? "Shortening…" : "Let Ava shorten it"}
+            </button>
+            {shortenError ? (
+              <p className="w-full text-xs text-red-800">{shortenError}</p>
+            ) : null}
+          </div>
+        ) : null}
+        {beforeShorten != null && beforeShorten !== value ? (
+          <div className="flex items-center justify-between gap-3 border-t border-slate-200 bg-sky-50 px-3 py-2 text-xs text-slate-700">
+            <span>Ava shortened it. Check it still sounds like you.</span>
+            <button
+              type="button"
+              onClick={() => {
+                const prev = beforeShorten;
+                setBeforeShorten(null);
+                onChange(prev);
+                onCommit();
+              }}
+              className="shrink-0 font-semibold text-[#0c5290] hover:underline"
+            >
+              Undo
+            </button>
+          </div>
         ) : null}
       </div>
       {note ? (
@@ -563,12 +658,7 @@ export function MergeFieldComposer({
             <span className="sr-only">
               Too long for {limit?.noun}. Cut about {note.over} characters.
             </span>
-          ) : (
-            <p className="text-right tabular-nums text-slate-500">
-              About {note.length.toLocaleString("en-GB")} of{" "}
-              {note.max.toLocaleString("en-GB")} characters
-            </p>
-          )}
+          ) : null}
           {note.fillIns ? (
             <p className="text-amber-700">
               Replace the {note.fillIns} [bracketed]{" "}

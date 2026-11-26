@@ -7,6 +7,9 @@ import { Loader2, UserRound, X } from "lucide-react";
 import { LinkedInSolidIcon } from "@/components/icons/LinkedInSolidIcon";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 
+import type { PageTourStep } from "./pageTours";
+import { startCustomTour } from "./SectionTour";
+
 /** Zander's referral link: two months of Sales Navigator free (20 Nov). */
 const SALES_NAV_REFERRAL_URL =
   "https://www.linkedin.com/premium/redeem/?upsellOrderOrigin=sn_referral_promotion&coupon=rbt8JKG-x&customKey=ref_s&redeemTypeV2=REFERRAL_COUPON";
@@ -14,7 +17,8 @@ const SALES_NAV_REFERRAL_URL =
 const ABOUT_YOU_HREF = "/coach/blueprint/about";
 
 type LinkedInState = "ok" | "connect" | "reconnect" | "sales_navigator";
-type AboutYou = { state: "not_started" | "started" | "done"; left: number };
+type OpenQuestion = { path: string; sectionKey: string; section: string; ask: string };
+type AboutYou = { state: "not_started" | "started" | "done"; left: number; open?: OpenQuestion[] };
 type Need = "about_start" | "about_finish" | "connect" | "reconnect" | "sales_navigator";
 
 /**
@@ -59,6 +63,17 @@ function copyFor(need: Need, left: number): { text: string; button: string } {
   }
 }
 
+/** One guide step per question left: the card sits by its box and asks it in plain words. */
+function questionSteps(open: OpenQuestion[]): PageTourStep[] {
+  return open.map((q, i) => ({
+    selector: `.bp-field:has([id="f-${q.path}"])`,
+    // Boxes that aren't plain fields (or a folded section): point at the whole section.
+    fallback: `[id="s-${q.sectionKey.replace(":", "-")}"]`,
+    title: q.section,
+    body: i === open.length - 1 ? `${q.ask} Your answer saves by itself when you click away.` : q.ask,
+  }));
+}
+
 const hiddenKey = (coachId: string | null, need: Need) => `pc-setup-bar-hidden:${coachId ?? "self"}:${need}`;
 
 /**
@@ -79,6 +94,7 @@ export function CoachSetupBar({
 }) {
   const [need, setNeed] = useState<Need | null>(null);
   const [left, setLeft] = useState(0);
+  const [open, setOpen] = useState<OpenQuestion[]>([]);
   const [hidden, setHidden] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,6 +109,7 @@ export function CoachSetupBar({
     const next = pickNeed(body.aboutYou, body.linkedin);
     setNeed(next);
     setLeft(body.aboutYou.left);
+    setOpen(body.aboutYou.open ?? []);
     try {
       setHidden(next ? sessionStorage.getItem(hiddenKey(coachId, next)) === "1" : false);
     } catch {
@@ -138,16 +155,18 @@ export function CoachSetupBar({
   }
 
   const primary =
-    "inline-flex shrink-0 items-center gap-1.5 rounded-md bg-sky-600 px-3 py-1 font-medium text-white hover:bg-sky-700 disabled:opacity-60";
+    "inline-flex shrink-0 items-center gap-1.5 rounded-md bg-white px-3 py-1 font-medium text-sky-700 hover:bg-sky-50 disabled:opacity-60";
 
   return (
-    <div className={`relative flex shrink-0 items-center gap-3 border-b border-sky-200 bg-sky-50 py-1.5 text-sm text-sky-950 max-md:flex-wrap max-md:items-start max-md:gap-y-2.5 max-md:py-3 ${bleedInset} ${flushBelow ? "-mb-4" : ""}`}>
+    <div className={`relative flex shrink-0 items-center gap-3 border-b border-sky-700 bg-sky-600 py-1.5 text-sm text-white max-md:flex-wrap max-md:items-start max-md:gap-y-2.5 max-md:py-3 md:justify-center ${bleedInset} ${flushBelow ? "-mb-4" : ""}`}>
+      {/* Desktop: icon, text and button sit together in the middle; X stays at the right edge. */}
+      <div className="max-md:contents md:flex md:min-w-0 md:items-center md:gap-3 md:px-8">
       {aboutYou ? (
-        <UserRound className="h-4 w-4 shrink-0 text-sky-700 max-md:mt-0.5" aria-hidden />
+        <UserRound className="h-4 w-4 shrink-0 text-white max-md:mt-0.5" aria-hidden />
       ) : (
-        <LinkedInSolidIcon className="h-4 w-4 max-md:mt-0.5" />
+        <LinkedInSolidIcon className="h-4 w-4 ring-1 ring-white/80 max-md:mt-0.5" />
       )}
-      <p className="min-w-0 flex-1 max-md:basis-[calc(100%-1.75rem)] max-md:pr-7">
+      <p className="min-w-0 max-md:flex-1 max-md:basis-[calc(100%-1.75rem)] max-md:pr-7">
         {error ?? (opened ? "Once Sales Navigator is on your LinkedIn, check again here." : copy.text)}
       </p>
       <div className="flex shrink-0 items-center gap-3 max-md:basis-full max-md:pl-7">
@@ -158,13 +177,18 @@ export function CoachSetupBar({
             setOpened(false);
             void check();
           }}
-          className="shrink-0 rounded-md border border-sky-300 bg-white px-3 py-1 font-medium text-sky-700 hover:bg-sky-100"
+          className="shrink-0 rounded-md border border-white/70 px-3 py-1 font-medium text-white hover:bg-white/10"
         >
           Check again
         </button>
       ) : null}
       {aboutYou ? (
-        <Link href={ABOUT_YOU_HREF} className={primary}>
+        <Link
+          href={ABOUT_YOU_HREF}
+          className={primary}
+          // Nearly done: walk them to each question left, like the page tours.
+          onClick={need === "about_finish" ? () => startCustomTour("About You", questionSteps(open)) : undefined}
+        >
           {copy.button}
         </Link>
       ) : need === "sales_navigator" ? (
@@ -185,11 +209,12 @@ export function CoachSetupBar({
         </button>
       )}
       </div>
+      </div>
       <button
         type="button"
         onClick={close}
         aria-label="Hide for now"
-        className="shrink-0 rounded-md p-1 text-sky-700 hover:bg-sky-100 hover:text-sky-900 max-md:absolute max-md:right-2 max-md:top-2"
+        className="shrink-0 rounded-md p-1 text-white/80 hover:bg-white/15 hover:text-white absolute right-2 md:top-1/2 md:-translate-y-1/2 max-md:top-2"
       >
         <X className="h-4 w-4" />
       </button>

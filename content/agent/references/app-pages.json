@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-25T11:04:31.629Z",
+  "generatedAt": "2026-11-26T06:26:56.936Z",
   "model": "claude-sonnet-5-5",
   "pages": [
     {
@@ -209,67 +209,65 @@
     {
       "path": "/coach/blueprint",
       "adminPath": "/admin/blueprint",
-      "hash": "a71370b7f3d05430",
+      "hash": "ef5462b620b36a3f",
       "coachVisible": true,
       "title": "My Blueprint",
-      "where": "My Blueprint (in the sidebar)",
-      "summary": "See your Blueprint overview: every page of your practice plan, where each one stands, and the set-up steps to get going.",
+      "where": "My Blueprint in the sidebar",
+      "summary": "See where each page of your practice plan stands, and open any page to work on it.",
       "tabs": [],
       "controls": [
-        "**Your Blueprint** heading with a ? button (**How your Blueprint works**) that opens a pop-up with **Where you are**, **Why we build it for you** (video) and **How status works**",
-        "**List** / **Board** switch: List shows pages in groups, Board shows a card per page in columns by status",
-        "Set-up checklist under the intro text (what you do to get going)",
-        "Page rows in List view, each with a title, a short line, a chat count (**2 new** when unread) and a status pill",
-        "Status pills: **Needs you**, **BCA**, **In progress**, **Review**, **Done**",
-        "Board columns by status, each with its page cards (the **Needs you** column folds to a thin strip when empty)",
-        "Click a page row or card to open that page of the Blueprint",
-        "The pop-up's three steps: talk to Ava, the Blueprint Call, then BCA builds the practice (a tick means finished)",
-        "**Sign off this page** button beside a page's status when it is in Review (on the page itself)"
+        "**Your Blueprint** heading with a **?** button (How your Blueprint works) that opens a pop-up with Where you are, a video, and what each status means",
+        "**List** / **Board** switch at the top right: List shows pages in groups, Board shows a card per page in status columns",
+        "Checklist of setup steps under the intro text",
+        "Page rows in List view, each with its title, a short line, a chat count (e.g. \"2 new\") and a status label",
+        "Status labels: **Needs you**, **BCA**, **In progress**, **Review**, **Done**",
+        "Board columns, one per status; cards open the page. An empty Needs you column folds into a thin strip",
+        "**Where you are** steps in the pop-up: talk to Ava, the Blueprint Call, then BCA builds your practice; a tick means done",
+        "Chat panel on the right opens with page chats; **Close panel** closes it"
       ],
-      "notes": "Pages BCA builds look quieter until you have answered your own cards. The Checklist/Timeline switch, Ava's draft strip, Release and the Launch back button are for admins only, so never offer them. Coaches always see the checklist, not the timeline."
+      "notes": "Each page has its own chat and, when its status is Review, a **Sign off this page** button. The Checklist/Timeline switch, Ava's drafts, Release and the BCA status menu are admin-only; never offer them to coaches. Opens on the List view by default, and the List or Board choice is remembered."
     },
     {
       "path": "/coach/blueprint/[slug]",
       "adminPath": null,
-      "hash": "c944faa6d10e0577",
+      "hash": "65804bdfb2b2b7e2",
       "coachVisible": true,
       "title": "One Blueprint page",
-      "where": "My Blueprint → pick a page from the Contents list",
-      "summary": "Read one page of your practice plan on its own, answer what is still needed from you and edit what BCA wrote.",
+      "where": "My Blueprint → pick a page from the contents or the links on the Blueprint",
+      "summary": "Read one page of your practice Blueprint on its own and answer or edit the parts that are yours to fill in.",
       "tabs": [],
       "controls": [
-        "**Contents** list on the main My Blueprint page, with a link to each page",
-        "**Parts of this page** buttons at the top of a long page like About you, with a tick once a part is done",
-        "**You tell us** and **BCA writes it, you can edit it** key explaining the two kinds of box",
-        "**How to do it, in the Classroom** box at the bottom with links to Classroom lessons",
-        "**Still needed from you** box with **Talk it through** button, which opens Ava",
-        "**Download** button with **Whole blueprint for your AI**, **Just this page** and **Save as PDF**",
-        "**Decisions** page: your agreed decisions in groups, with a badge showing Proposed by BCA or Agreed",
-        "**Lead lists** page: the lists built for you, with how many people came in"
+        "**You tell us** and **BCA writes it, you can edit it** key explaining which boxes are yours to fill and which BCA wrote",
+        "Part buttons at the top of a long page (such as About you) that jump to each part, ticked once done",
+        "Section boxes you can fill in or edit on the page",
+        "**How to do it, in the Classroom** box with links to lessons, on pages that have them",
+        "**Lead lists** page: the lists built for you and how each one searches LinkedIn, with how many people came in",
+        "**Decisions** page: **Agreed**, **Proposed by BCA** or **With BCA** label on each group of decisions"
       ],
-      "notes": "The page title and which sections show depend on which Blueprint page is opened. The Decision page Edit button, Ava's plan on Lead lists, the Write my blueprint bar and the Pool import buttons are for BCA only, so never offer them to coaches. Until BCA has built the lists, Lead lists says they are being built.</br>"
+      "notes": "The page opens from a Blueprint page link, so there is no tab row here. If the page name is not a real Blueprint page it shows a not-found page. Edit, Save and Cancel on the Decisions page, and Ava's plan, import and re-plan on Lead lists, are for BCA admins only, so never offer them to coaches.}"
     },
     {
       "path": "/coach/blueprint/blueprint",
       "adminPath": null,
-      "hash": "23569bb7912f1262",
+      "hash": "bd2e3c0209ffe500",
       "coachVisible": true,
       "title": "Blueprint (whole document)",
-      "where": "My Blueprint, then open the whole Blueprint document",
-      "summary": "Read your whole Practice Blueprint as one long document, with a contents list and every chapter, and see what BCA still needs from you.",
+      "where": "My Blueprint → Blueprint",
+      "summary": "Read your whole practice blueprint as one document, see what is still needed from you, and jump to any chapter or page.",
       "tabs": [],
       "controls": [
-        "**Still needed from you** box at the top, listing each missing item; click one to jump to it",
-        "**Talk it through** button in that box, opens Ava",
-        "**Contents** list with numbered chapters and the pages inside each",
-        "Cover showing your name, how many sections are written and how many are to do",
-        "Chapter headings with each page's sections below them",
-        "**How to do it, in the Classroom** links at the bottom of pages that have them",
-        "Part buttons at the top of longer pages, ticked when nothing is left for you",
-        "**Edit** and **Agreed** / **Proposed by BCA** labels on the Decision Record page",
-        "Lead lists page showing the lists built for you and how many people came in"
+        "**Your Portfolio Blueprint** or **The Practice Blueprint** cover at the top with your name and how many sections are written",
+        "**Still needed from you** box listing what you still have to fill in, each linking to its section",
+        "**Talk it through** button in the Still needed box, opens Ava",
+        "**Contents** list of numbered chapters and their pages, each a link",
+        "Chapters one after another, each with its pages and sections",
+        "**How to do it, in the Classroom** links at the end of some pages",
+        "**Decision Record** page with the agreed decisions, shown read-only",
+        "**Lead lists** page showing the lists built for you and how each searches LinkedIn",
+        "Part buttons at the top of some pages that scroll to each part, ticked when done",
+        "**Why we build it for you** welcome video from Zander, if shown on the cover"
       ],
-      "notes": "The Still needed box only appears when something is missing. The Write my blueprint / Rewrite everything button, Ava's plan with its import buttons, and editing the Decision Record are for BCA admins only, so never offer them to coaches. The Lead lists page shows a waiting message until BCA has imported your lists.}"
+      "notes": "The Still needed box only appears when something is missing. The Write my blueprint button, Edit on the Decision Record, and Ava's plan on Lead lists are for BCA only, so never offer them to coaches. Download is not on this page itself."
     },
     {
       "path": "/coach/blueprint/jobs",
@@ -438,11 +436,11 @@
     {
       "path": "/coach/campaigns/magnets/[magnetId]",
       "adminPath": "/admin/campaigns/magnets/[magnetId]",
-      "hash": "e56f88d92883cf8a",
+      "hash": "f133f14b2ac3773c",
       "coachVisible": true,
       "title": "One lead magnet",
-      "where": "Get Calls → Lead Magnets, then open a lead magnet (for example the BOSS Score)",
-      "summary": "See who opted in, started and finished one lead magnet, share its link, and edit the follow-up emails.",
+      "where": "Get Calls → Lead Magnets → open a lead magnet (for example BOSS Score)",
+      "summary": "See who opted in, started and finished one lead magnet, share its link, and edit the follow-up emails that go out after.",
       "tabs": [
         {
           "label": "Overview",
@@ -458,19 +456,19 @@
         }
       ],
       "controls": [
-        "**Settings** button at the top right: pop-up **Lead magnet settings** with **This app** or **My old CRM** under \"Who emails people after they take one?\"",
-        "**Share** button: pop-up with **Your public URL** field and **Save**, plus the share links",
+        "**Settings** button at the top right: opens **Lead magnet settings** where you choose **This app** or **My old CRM** to email people after they take it",
+        "**Share** button: opens a pop-up with **Your public URL** and the share links",
         "**Edit your page** button (BOSS Score only, once you have a public URL)",
-        "**Copy** next to the public link, or **Add a public link** if you have none yet",
-        "Date range dropdown (Last 7 days, Last 14 days, Last 30 days, Last 90 days, All time, Custom range) with **From** and **To** dates for Custom range",
-        "Overview: **By stage** card with **View all**, plus **Opted in** and **Completed** percentage dials",
-        "People: stage buttons (**All**, plus one per stage) and a **Search name or email** box",
-        "People table with columns Person, Stage, Score and When; click a row to open that person",
-        "Sequences: one tab per follow-up sequence, with a step builder to add, edit, copy, reorder and delete steps",
-        "Sequences: **Notify me when** box with **Add alert** and Bell, Email and WhatsApp switches",
-        "Share pop-up: **Personalise**, **Copy**, **QR code**, **Preview**, **Embed on your website**, **Mass send from Pro Coach Platform**"
+        "**Add a public link** link, shown when no public URL is set yet",
+        "**Copy** link beside the public link under the title",
+        "Date range dropdown (Last 7 days, Last 14 days, Last 30 days, Last 90 days, All time, Custom range) on Overview and People",
+        "Overview: **By stage** chart with **View all**, plus **Opted in** and **Completed** dials",
+        "People tab: stage chips (All, plus the stages), **Search name or email** box, and a list with Person, Stage, Score and When",
+        "Sequences tab: one tab per follow-up sequence, with steps you can add, edit, copy, reorder and delete",
+        "**Notify me when** box on the Sequences tab, with **Add alert** and Bell, Email and WhatsApp switches",
+        "**Connect your email** link in the settings pop-up if emails would go from the support address"
       ],
-      "notes": "Set a public URL first, otherwise the share links do not work. Emails sent from this app come from your own email once you connect it in Settings → Integrations (the Settings pop-up has a **Connect your email** link). The Opted in dial and the views count show for the BOSS Score only."
+      "notes": "Set a public URL first, or the share links won't work. The views count and the opt-in dial show only for BOSS Score. If the lead magnet is not found, the page shows a link back to the lead magnets list.}"
     },
     {
       "path": "/coach/clients",
