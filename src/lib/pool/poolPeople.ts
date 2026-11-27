@@ -6,6 +6,7 @@ import {
 } from "@/lib/prospectDisplayFormat";
 import { SALES_NAV_HEADCOUNT_BANDS } from "@/lib/salesNavigator/headcountBands";
 import { fitRank, type FitLabel } from "@/lib/pool/fit";
+import type { PoolOutreachStatus } from "@/lib/pool/outreachStatus";
 
 export type PoolPerson = {
   id: string;
@@ -50,6 +51,10 @@ export type PoolPerson = {
   in_campaign: boolean;
   /** Campaigns this person is already enrolled in. */
   campaign_ids: string[];
+  /** Furthest they've got with the coach on LinkedIn (job 300). Missing = not contacted. */
+  outreach_status?: PoolOutreachStatus;
+  /** When that status started; null when unknown. */
+  outreach_status_at?: string | null;
   blacklisted: boolean;
   /** Can enroll in at least one channel (LinkedIn, email, or WhatsApp). */
   campaignable: boolean;
@@ -76,6 +81,7 @@ export type PoolColumnKey =
   | "website"
   | "source"
   | "campaign"
+  | "status"
   | "created_at"
   | "linkedin"
   | "address"
@@ -98,6 +104,7 @@ export const POOL_TABLE_COLUMN_OPTIONS: Array<{
   { key: "website", label: "Website" },
   { key: "source", label: "Source" },
   { key: "campaign", label: "Campaign" },
+  { key: "status", label: "Status" },
   { key: "created_at", label: "Date added" },
   { key: "linkedin", label: "LinkedIn" },
   { key: "address", label: "Address" },
@@ -116,6 +123,7 @@ export const DEFAULT_POOL_COLUMN_VISIBILITY: PoolColumnVisibility = {
   website: false,
   source: true,
   campaign: true,
+  status: true,
   created_at: true,
   linkedin: true,
   address: false,
@@ -141,6 +149,8 @@ export const DEFAULT_POOL_COLUMN_ORDER: PoolColumnKey[] =
 export const ALL_POOL_COLUMN_KEYS = DEFAULT_POOL_COLUMN_ORDER;
 
 export type PoolCampaignFilter = "all" | "in_campaign" | "not_in_campaign";
+/** Where they are with the coach on LinkedIn (job 300). */
+export type PoolStatusFilter = "all" | PoolOutreachStatus;
 export type PoolSourceFilter = "all" | string;
 export type PoolContactFilter =
   | "all"
@@ -255,6 +265,14 @@ export function poolRowMatchesFitFilter(
   if (filter === "all") return true;
   if (filter === "none") return !row.fit;
   return row.fit === filter;
+}
+
+export function poolRowMatchesStatusFilter(
+  row: Pick<PoolPerson, "outreach_status">,
+  filter: PoolStatusFilter
+): boolean {
+  if (filter === "all") return true;
+  return (row.outreach_status ?? "none") === filter;
 }
 
 export function poolRowMatchesContactFilter(

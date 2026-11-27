@@ -96,8 +96,8 @@ export const ROADMAP_AREA_META: Record<
   "bca-funnel": {
     label: "BCA website and funnel",
     hint: "BCA's own website, sales pitch, explainers and member agreement",
-    dot: "bg-orange-500",
-    chip: "bg-orange-100 text-orange-800",
+    dot: "bg-blue-600",
+    chip: "bg-blue-100 text-blue-800",
   },
 };
 

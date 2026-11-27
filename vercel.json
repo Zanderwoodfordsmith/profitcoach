@@ -55,6 +55,10 @@
       "schedule": "0 */6 * * *"
     },
     {
+      "path": "/api/cron/linkedin-connections-sync",
+      "schedule": "40 * * * *"
+    },
+    {
       "path": "/api/cron/messaging-scheduled",
       "schedule": "* * * * *"
     },

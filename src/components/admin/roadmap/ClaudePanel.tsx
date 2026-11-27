@@ -60,7 +60,10 @@ export function HandToClaudeButton({
         ) : (
           <Sparkles className="h-3.5 w-3.5" aria-hidden />
         )}
-        {busy ? "Claude is on it" : again ? "Send back to Claude" : "Hand to Claude"}
+        {/* Phones: the icon only, so the job page's bar fits on one row. */}
+        <span className="max-sm:sr-only">
+          {busy ? "Claude is on it" : again ? "Send back to Claude" : "Hand to Claude"}
+        </span>
       </button>
       {error ? (
         <p className="absolute right-0 top-full z-10 mt-1 w-72 rounded-lg bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700 shadow-sm">

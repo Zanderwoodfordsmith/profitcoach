@@ -39,8 +39,6 @@ export const CONSTRAINT_RULES = {
 
 export type FunnelNumbers = {
   linkedin_connected: boolean;
-  /** Outreach runs on the old Sales Robot platform, so it is not counted here. */
-  sales_robot: boolean;
   campaigns_running: number;
   people_in_running_campaigns: number;
   people_waiting_for_invite: number;
@@ -101,9 +99,6 @@ export function pickConstraint(n: FunnelNumbers): ConstraintVerdict & { not_judg
   const missing: string[] = [];
   const notJudged: string[] = [];
   if (n.capacity == null) missing.push("Capacity is not in their Blueprint (Offer), so I cannot tell if they are full.");
-  if (n.sales_robot && n.campaigns_running === 0) {
-    missing.push("Their outreach runs on Sales Robot, so invites, accepts and replies are not in the app.");
-  }
   if (n.calls_booked_all_time === 0) missing.push("No calls have ever been recorded in the app.");
   if (n.active_clients === 0) missing.push("No clients are in their client list.");
 
@@ -196,15 +191,14 @@ export function pickConstraint(n: FunnelNumbers): ConstraintVerdict & { not_judg
   // People going in.
   const people = (why: string, open: string, next_job: string, check_first: string | null = null) =>
     done({ stage: "people", label: "Not enough people in campaigns", why, open, next_job, check_first });
-  if (!n.linkedin_connected && !n.sales_robot) {
+  if (!n.linkedin_connected) {
     return people("LinkedIn is not connected, so no campaign can send.", "guide", "Connect LinkedIn in Settings. It takes about five minutes.");
   }
   if (n.campaigns_running === 0) {
     return people(
       `No campaign is running. ${n.invites_30d} invites went out in the last 30 days.`,
       "campaigns",
-      "Get a Connection campaign running with a list in it.",
-      n.sales_robot ? "They are on Sales Robot. Ask if their outreach runs there." : null
+      "Get a Connection campaign running with a list in it."
     );
   }
   if (n.people_waiting_for_invite < R.minWaiting) {
@@ -275,9 +269,8 @@ export async function loadFunnelNumbers(coachId: string): Promise<FunnelNumbers>
   const since30 = new Date(now - 30 * DAY).toISOString();
   const since90 = new Date(now - 90 * DAY).toISOString();
 
-  const [linkedIn, coachRow, campaigns, practice, jobs, leadsRecent, ghl, bookings, clients] = await Promise.all([
+  const [linkedIn, campaigns, practice, jobs, leadsRecent, ghl, bookings, clients] = await Promise.all([
     getOkLinkedInAccount(coachId).catch(() => null),
-    supabaseAdmin.from("coaches").select("has_sales_robot_account").eq("id", coachId).maybeSingle(),
     supabaseAdmin.from("linkedin_campaigns").select("id, status").eq("coach_id", coachId),
     supabaseAdmin.from("coach_practice_knowledge").select("payload").eq("coach_id", coachId).maybeSingle(),
     all<{ lead_id: string | null; step_id: string }>((f, t) =>
@@ -311,7 +304,7 @@ export async function loadFunnelNumbers(coachId: string): Promise<FunnelNumbers>
       supabaseAdmin.from("contacts").select("client_joined_on").eq("coach_id", coachId).eq("type", "client").range(f, t)
     ),
   ]);
-  for (const res of [coachRow, campaigns, practice]) if (res.error) throw new Error(res.error.message);
+  for (const res of [campaigns, practice]) if (res.error) throw new Error(res.error.message);
 
   const campaignRows = campaigns.data ?? [];
   const runningIds = campaignRows.filter((c) => c.status === "running").map((c) => c.id as string);
@@ -390,7 +383,6 @@ export async function loadFunnelNumbers(coachId: string): Promise<FunnelNumbers>
 
   return {
     linkedin_connected: Boolean(linkedIn),
-    sales_robot: Boolean(coachRow.data?.has_sales_robot_account),
     campaigns_running: runningIds.length,
     people_in_running_campaigns: inRunning,
     people_waiting_for_invite: waiting,

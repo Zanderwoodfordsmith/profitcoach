@@ -6,20 +6,19 @@ import {
   POOL_COLUMN_LAYOUT_VERSION,
   POOL_LEAD_FOLDED_COLUMN_KEYS,
   type PersistedPoolGrouping,
-  type PoolCampaignFilter,
   type PoolColumnKey,
   type PoolColumnVisibility,
-  type PoolContactFilter,
-  type PoolDateAddedFilter,
-  type PoolHeadcountFilter,
-  type PoolLinkedInFilter,
-  type PoolFitFilter,
   type PoolGroupField,
   type PoolGroupOrder,
   type PoolSortField,
   type PoolSortOrder,
-  type PoolTagFilter,
 } from "@/lib/pool/poolPeople";
+import {
+  createEmptyPoolFilters,
+  normalizePoolFilters,
+  type PoolFilters,
+} from "@/lib/pool/poolFilters";
+import { normalizeSmartRules, type PoolSmartRules } from "@/lib/pool/smartListRules";
 import { completeColumnOrder } from "@/lib/table/completeColumnOrder";
 import {
   DEFAULT_PROSPECT_TABLE_VIEW_NAME,
@@ -38,22 +37,8 @@ export {
   MAX_PROSPECT_TABLE_VIEW_SETTINGS_BYTES as MAX_POOL_TABLE_VIEW_SETTINGS_BYTES,
 };
 
-export type PoolTableViewSettings = {
-  sourceFilter: string;
-  campaignFilter: PoolCampaignFilter;
-  /** A specific campaign. Empty means the status filter above applies. */
-  campaignIdFilter: string;
-  contactFilter: PoolContactFilter;
-  linkedinFilter: PoolLinkedInFilter;
-  fitFilter: PoolFitFilter;
-  dateAddedFilter: PoolDateAddedFilter;
-  headcountFilter: PoolHeadcountFilter;
-  cityFilter: string;
-  postcodeFilter: string;
-  industryFilter: string;
-  tagFilter: PoolTagFilter;
-  /** Hide people carrying any of these tags (case-insensitive). */
-  excludeTags: string[];
+/** Filters (see PoolFilters), then sort, grouping and columns. */
+export type PoolTableViewSettings = PoolFilters & {
   sortField: PoolSortField;
   sortOrder: PoolSortOrder;
   /** Bumped when the default sort changes, so old defaults can move over. */
@@ -62,6 +47,8 @@ export type PoolTableViewSettings = {
   columnVisibility: PoolColumnVisibility;
   columnOrder: PoolColumnKey[];
   columnLayoutVersion: number;
+  /** Set on a smart list (job 301): who belongs, by rules. Null on other tabs. */
+  smartRules: PoolSmartRules | null;
 };
 
 export type PoolTableView = {
@@ -194,19 +181,7 @@ function normalizeSort(
 
 export function createDefaultPoolTableViewSettings(): PoolTableViewSettings {
   return {
-    sourceFilter: "all",
-    campaignFilter: "all",
-    campaignIdFilter: "",
-    contactFilter: "all",
-    linkedinFilter: "all",
-    fitFilter: "all",
-    dateAddedFilter: "all",
-    headcountFilter: [],
-    cityFilter: "",
-    postcodeFilter: "",
-    industryFilter: "",
-    tagFilter: "all",
-    excludeTags: [],
+    ...createEmptyPoolFilters(),
     sortField: "import_order",
     sortOrder: "asc",
     sortVersion: POOL_SORT_VERSION,
@@ -214,72 +189,8 @@ export function createDefaultPoolTableViewSettings(): PoolTableViewSettings {
     columnVisibility: { ...DEFAULT_POOL_COLUMN_VISIBILITY },
     columnOrder: [...DEFAULT_POOL_COLUMN_ORDER],
     columnLayoutVersion: POOL_COLUMN_LAYOUT_VERSION,
+    smartRules: null,
   };
-}
-
-function isPoolContactFilter(value: unknown): value is PoolContactFilter {
-  return (
-    value === "all" ||
-    value === "email" ||
-    value === "phone" ||
-    value === "both" ||
-    value === "none"
-  );
-}
-
-function isPoolLinkedInFilter(value: unknown): value is PoolLinkedInFilter {
-  return value === "all" || value === "has" || value === "none";
-}
-
-function isPoolFitFilter(value: unknown): value is PoolFitFilter {
-  return value === "all" || value === "good" || value === "ok" || value === "bad" || value === "none";
-}
-
-function normalizeHeadcountFilter(value: unknown): PoolHeadcountFilter {
-  if (!Array.isArray(value)) return [];
-  const out: string[] = [];
-  for (const item of value) {
-    if (typeof item !== "string") continue;
-    const trimmed = item.trim().slice(0, 40);
-    if (!trimmed) continue;
-    const key = trimmed.toLowerCase() === "unknown" ? "unknown" : trimmed;
-    if (out.some((existing) => existing.toLowerCase() === key.toLowerCase())) {
-      continue;
-    }
-    out.push(key);
-    if (out.length >= 12) break;
-  }
-  return out;
-}
-
-function normalizeExcludeTags(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const out: string[] = [];
-  for (const item of value) {
-    if (typeof item !== "string") continue;
-    const tag = item.trim();
-    if (!tag) continue;
-    if (out.some((existing) => existing.toLowerCase() === tag.toLowerCase())) {
-      continue;
-    }
-    out.push(tag);
-  }
-  return out;
-}
-
-function normalizePlaceQuery(value: unknown): string {
-  if (typeof value !== "string") return "";
-  return value.trim().slice(0, 80);
-}
-
-function isPoolDateAddedFilter(value: unknown): value is PoolDateAddedFilter {
-  return (
-    value === "all" ||
-    value === "today" ||
-    value === "7d" ||
-    value === "30d" ||
-    value === "older_than_30d"
-  );
 }
 
 export function normalizePoolTableViewSettings(
@@ -290,47 +201,15 @@ export function normalizePoolTableViewSettings(
     raw && typeof raw === "object"
       ? (raw as Partial<PoolTableViewSettings>)
       : {};
-  const campaignFilter: PoolCampaignFilter =
-    source.campaignFilter === "in_campaign" ||
-    source.campaignFilter === "not_in_campaign"
-      ? source.campaignFilter
-      : "all";
   const columns = normalizeColumns(source);
-  const tagFilter: PoolTagFilter =
-    typeof source.tagFilter === "string" && source.tagFilter.trim()
-      ? source.tagFilter.trim()
-      : defaults.tagFilter;
   return {
-    sourceFilter:
-      typeof source.sourceFilter === "string" && source.sourceFilter.trim()
-        ? source.sourceFilter
-        : defaults.sourceFilter,
-    campaignFilter,
-    campaignIdFilter:
-      typeof source.campaignIdFilter === "string"
-        ? source.campaignIdFilter.trim().slice(0, 80)
-        : "",
-    contactFilter: isPoolContactFilter(source.contactFilter)
-      ? source.contactFilter
-      : defaults.contactFilter,
-    linkedinFilter: isPoolLinkedInFilter(source.linkedinFilter)
-      ? source.linkedinFilter
-      : defaults.linkedinFilter,
-    fitFilter: isPoolFitFilter(source.fitFilter) ? source.fitFilter : defaults.fitFilter,
-    dateAddedFilter: isPoolDateAddedFilter(source.dateAddedFilter)
-      ? source.dateAddedFilter
-      : defaults.dateAddedFilter,
-    headcountFilter: normalizeHeadcountFilter(source.headcountFilter),
-    cityFilter: normalizePlaceQuery(source.cityFilter),
-    postcodeFilter: normalizePlaceQuery(source.postcodeFilter),
-    industryFilter: normalizePlaceQuery(source.industryFilter),
-    tagFilter,
-    excludeTags: normalizeExcludeTags(source.excludeTags),
+    ...normalizePoolFilters(source),
     ...normalizeSort(source, defaults),
     grouping: normalizeGrouping(source.grouping),
     columnVisibility: columns.columnVisibility,
     columnOrder: columns.columnOrder,
     columnLayoutVersion: columns.columnLayoutVersion,
+    smartRules: normalizeSmartRules(source.smartRules),
   };
 }
 

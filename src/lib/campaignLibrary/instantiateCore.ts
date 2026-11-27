@@ -8,13 +8,16 @@ export function isLibraryItemId(value: string): boolean {
   return LIBRARY_ITEM_ID_RE.test(value.trim());
 }
 
+/** BCA's published templates, or the coach's own; never another coach's. */
 export function publishedTemplateError(
-  item: CampaignLibraryItemDetail | null
+  item: CampaignLibraryItemDetail | null,
+  coachId: string | null = null
 ): string | null {
-  if (!item || item.item_type !== "template" || item.status !== "published") {
-    return "Template not found.";
+  if (!item || item.item_type !== "template") return "Template not found.";
+  if (item.coach_id) {
+    return item.coach_id === coachId ? null : "Template not found.";
   }
-  return null;
+  return item.status === "published" ? null : "Template not found.";
 }
 
 /** Copy library steps onto a live campaign: drop library ids, keep order. */

@@ -18,6 +18,8 @@ function template(
     name: "Connection",
     description: "Invite then follow up.",
     status: "published",
+    coach_id: null,
+    channel: "linkedin",
     settings: defaultLibraryTemplateSettings(),
     step_count: 2,
     step_types: ["invite", "message"],
@@ -55,6 +57,13 @@ describe("published campaign templates", () => {
       "Template not found."
     );
     assert.equal(publishedTemplateError(template({})), null);
+  });
+
+  it("lets a coach use their own templates but not another coach's", () => {
+    const mine = template({ coach_id: "coach-a" });
+    assert.equal(publishedTemplateError(mine, "coach-a"), null);
+    assert.equal(publishedTemplateError(mine, "coach-b"), "Template not found.");
+    assert.equal(publishedTemplateError(mine), "Template not found.");
   });
 
   it("drops library step ids and reindexes for a live campaign", () => {

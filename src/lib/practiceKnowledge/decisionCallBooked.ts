@@ -1,5 +1,4 @@
 import { ADVISORY_BLUEPRINT_CALENDAR_SLUG } from "@/config/advisoryBlueprintCalendar";
-import { PROGRAMME_ORIENTATION_CALENDAR_SLUG } from "@/config/programmeOrientationCalendar";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 function norm(value: string | null | undefined): string {
@@ -36,7 +35,8 @@ export async function loadDecisionCallBookedAt(
     supabaseAdmin
       .from("bookings")
       .select("prospect_email, prospect_phone, starts_at, kind, status")
-      .in("kind", [ADVISORY_BLUEPRINT_CALENDAR_SLUG, PROGRAMME_ORIENTATION_CALENDAR_SLUG])
+      // Only Pam's Blueprint Call counts; the orientation call is a different call (job 174).
+      .eq("kind", ADVISORY_BLUEPRINT_CALENDAR_SLUG)
       .eq("status", "booked")
       .order("starts_at", { ascending: false })
       .limit(500),

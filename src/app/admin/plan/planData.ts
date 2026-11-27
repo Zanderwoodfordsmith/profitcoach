@@ -281,7 +281,6 @@ export const COACHES: CoachGap[] = [
     waitsOn: "BCA",
     have: ["About You 100%", "A result: a W5 store from £600k to £1m sales", "LinkedIn draft from 24 Oct (you said it was off)"],
     missing: [
-      "His LinkedIn is the free kind, so only 3 notes a month: Premium, or the no-note version of the template",
       "A reply to his ticket from 21 Oct",
       "Blueprint call",
       "Market sections",
@@ -289,7 +288,7 @@ export const COACHES: CoachGap[] = [
       "List",
       "Campaign",
     ],
-    next: "Reply to him, then decide on Premium.",
+    next: "Reply to him.",
   },
   {
     name: "Mark Hennessey",
@@ -337,6 +336,5 @@ export const ASKS: string[] = [
   "Approve the recommended template, or tell me what to change.",
   "Peter Buglass: OK his LinkedIn draft, then turn on his fixed campaign.",
   "Make the new template the default for every new coach?",
-  "Octave: pay for Premium, or use the no-note version?",
   "Ask Paul Hamnett, Peter Fairley and Mark for one result each, with numbers and a timeframe (I can draft the asks).",
 ];

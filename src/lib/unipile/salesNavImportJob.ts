@@ -78,6 +78,13 @@ function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
+function isStatementTimeout(error: { code?: string; message?: string }) {
+  return (
+    error.code === "57014" ||
+    /statement timeout|canceling statement/i.test(error.message ?? "")
+  );
+}
+
 async function markFailed(
   jobId: string,
   startedAt: string | null,
@@ -604,39 +611,52 @@ async function persistProgress(
     reload?: boolean;
   }
 ): Promise<SalesNavImportJobRow> {
-  const { error } = await supabaseAdmin
-    .from("sales_nav_import_runs")
-    .update({
-      status: opts.done ? "succeeded" : "running",
-      unipile_cursor: opts.cursor,
-      scraped_count: opts.snapshot.length,
-      progress_count: opts.snapshot.length,
-      cache_inserted: opts.cacheInserted,
-      cache_updated: opts.cacheUpdated,
-      cache_skipped: opts.cacheSkipped,
-      lead_snapshot: opts.snapshot,
-      segment_plan: opts.segmentPlan.length ? opts.segmentPlan : job.segment_plan,
-      segment_index: opts.segmentIndex,
-      segmented: opts.segmentPlan.length > 1,
-      segment_total: opts.segmentPlan.length || job.segment_total,
-      error_message: null,
-      ...(opts.done
-        ? {
-            finished_at: new Date().toISOString(),
-            duration_ms: Number.isFinite(
-              Date.parse(job.started_at || job.created_at)
-            )
-              ? Math.max(
-                  0,
-                  Date.now() - Date.parse(job.started_at || job.created_at)
-                )
-              : null,
-          }
-        : {}),
-    })
-    .eq("id", job.id)
-    .in("status", ["pending", "running"]);
+  const saveProgress = () =>
+    supabaseAdmin
+      .from("sales_nav_import_runs")
+      .update({
+        status: opts.done ? "succeeded" : "running",
+        unipile_cursor: opts.cursor,
+        scraped_count: opts.snapshot.length,
+        progress_count: opts.snapshot.length,
+        cache_inserted: opts.cacheInserted,
+        cache_updated: opts.cacheUpdated,
+        cache_skipped: opts.cacheSkipped,
+        lead_snapshot: opts.snapshot,
+        segment_plan: opts.segmentPlan.length ? opts.segmentPlan : job.segment_plan,
+        segment_index: opts.segmentIndex,
+        segmented: opts.segmentPlan.length > 1,
+        segment_total: opts.segmentPlan.length || job.segment_total,
+        error_message: null,
+        ...(opts.done
+          ? {
+              finished_at: new Date().toISOString(),
+              duration_ms: Number.isFinite(
+                Date.parse(job.started_at || job.created_at)
+              )
+                ? Math.max(
+                    0,
+                    Date.now() - Date.parse(job.started_at || job.created_at)
+                  )
+                : null,
+            }
+          : {}),
+      })
+      .eq("id", job.id)
+      .in("status", ["pending", "running"]);
 
+  let { error } = await saveProgress();
+  if (error && isStatementTimeout(error)) {
+    await sleep(1_000);
+    ({ error } = await saveProgress());
+  }
+  if (error && isStatementTimeout(error)) {
+    // The snapshot grows to several MB, so a busy database can time this
+    // save out. Keep the job running: the next save (or the next tick,
+    // from the last saved cursor) catches up, and cache writes dedupe.
+    console.error("sales nav import progress save timed out:", job.id);
+    return job;
+  }
   if (error) {
     return markFailed(job.id, job.started_at, job.created_at, error.message);
   }

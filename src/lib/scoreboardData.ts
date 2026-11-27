@@ -86,11 +86,7 @@ export async function loadScoreboardData(coachId: string): Promise<ScoreboardDat
   const from = {} as Record<keyof Numbers, NumberFrom>;
 
   numbers.outbound = funnel.invites_30d;
-  from.outbound = data(
-    funnel.sales_robot && funnel.campaigns_running === 0
-      ? "LinkedIn invites sent in the app in the last 30 days. Outreach on Sales Robot isn't counted."
-      : "LinkedIn invites sent in the last 30 days."
-  );
+  from.outbound = data("LinkedIn invites sent in the last 30 days.");
 
   if (funnel.invites_30d >= 300) {
     numbers.outboundRate = funnel.interested_30d / funnel.invites_30d;

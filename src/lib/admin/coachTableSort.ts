@@ -15,6 +15,7 @@ type LegacyCoachTableColumnVisibility = CoachTableColumnVisibility & {
   activeCampaigns?: boolean;
   payingAccounts?: boolean;
   conference?: boolean;
+  salesRobot?: boolean;
 };
 
 export type CoachSortableRow = {
@@ -183,12 +184,14 @@ function migrateCoachTableColumns(
     activeCampaigns: _activeCampaigns,
     payingAccounts: _payingAccounts,
     conference: _conference,
+    salesRobot: _salesRobot,
     ...columnVisibility
   } = legacyVisibility;
   void _removed;
   void _activeCampaigns;
   void _payingAccounts;
   void _conference;
+  void _salesRobot;
 
   if (legacyMemberFor === true) {
     columnVisibility.joinDate = true;
@@ -204,6 +207,7 @@ function migrateCoachTableColumns(
     "activeCampaigns",
     "payingAccounts",
     "conference",
+    "salesRobot",
   ]);
   const columnOrder = (
     settings.columnOrder as Array<
@@ -212,6 +216,7 @@ function migrateCoachTableColumns(
       | "activeCampaigns"
       | "payingAccounts"
       | "conference"
+      | "salesRobot"
     >
   ).filter(
     (key): key is keyof CoachTableColumnVisibility => !removedColumnKeys.has(key)
@@ -267,8 +272,13 @@ export function normalizeCoachTableViewSettings(
     sortField?: unknown;
     sortOrder?: unknown;
     lastLoginSort?: unknown;
+    salesRobotFilter?: unknown;
   }
 ): CoachTableViewSettings {
+  // Sales Robot filter removed 27 Nov; drop it from older saved views.
+  const { salesRobotFilter: _salesRobotFilter, ...rest } = settings;
+  void _salesRobotFilter;
+  settings = rest;
   const sorts =
     Array.isArray(settings.sorts) && settings.sorts.length > 0
       ? settings.sorts.filter(isCoachSortCriterion)

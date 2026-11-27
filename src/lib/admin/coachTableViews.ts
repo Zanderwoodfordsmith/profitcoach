@@ -8,7 +8,6 @@ export type LastLoginFilter =
   | "never"
   | "last_30_days"
   | "over_90_days";
-export type SalesRobotFilter = "all" | "has_sales_robot" | "no_sales_robot";
 export type RecurringBillingFilter = "all" | "active" | "inactive";
 export type CoachSortField = "last_login" | "last_active" | "join_date";
 export type CoachSortOrder = "recent_first" | "oldest_first" | "missing_first";
@@ -36,7 +35,6 @@ export type CoachTableColumnVisibility = {
   lastLogin: boolean;
   lastActive: boolean;
   crm: boolean;
-  salesRobot: boolean;
   profitCoachEmail: boolean;
   accessTier: boolean;
   level: boolean;
@@ -70,7 +68,6 @@ export type CoachTableViewSettings = {
   conferenceFilter: ConferenceFilter;
   crmNameFilter: CrmNameFilter;
   lastLoginFilter: LastLoginFilter;
-  salesRobotFilter: SalesRobotFilter;
   recurringBillingFilter: RecurringBillingFilter;
   joinDateAfter: string;
   joinDateBefore: string;
@@ -212,7 +209,6 @@ export const DEFAULT_COACH_TABLE_COLUMN_ORDER: Array<
   "crm",
   "calendarEmbed",
   "leadWebhook",
-  "salesRobot",
   "profitCoachEmail",
   "landing",
 ];
@@ -232,7 +228,6 @@ export const DEFAULT_COACH_TABLE_COLUMNS: CoachTableColumnVisibility = {
   lastLogin: false,
   lastActive: true,
   crm: false,
-  salesRobot: false,
   profitCoachEmail: false,
   accessTier: true,
   level: true,
@@ -267,7 +262,6 @@ export function createDefaultCoachTableViewSettings(): CoachTableViewSettings {
     conferenceFilter: "all",
     crmNameFilter: "all",
     lastLoginFilter: "all",
-    salesRobotFilter: "all",
     recurringBillingFilter: "all",
     joinDateAfter: "",
     joinDateBefore: "",

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -38,16 +39,15 @@ import {
   Trash2,
   X,
   Zap,
-  Maximize2,
   Sparkles,
 } from "lucide-react";
 import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
 import { ClaudePanel, HandToClaudeButton, claudeIsBusy, claudeWaitingFor3002 } from "@/components/admin/roadmap/ClaudePanel";
 import { NewJobComposer } from "@/components/admin/roadmap/NewJobComposer";
 import { JobIcon, ProjectIcon } from "@/components/admin/roadmap/roadmapIcons";
+import { ROADMAP_SPACES, jobSpace } from "@/components/admin/roadmap/spaces";
 import { projectHref } from "@/components/admin/roadmap/useRoadmapData";
-import { Caret, MetaDropdown, ROADMAP_STATUS_META, SCORE_TONE, ScoreBarsPair, ScoreDropdown, useDismiss } from "@/components/admin/roadmap/roadmapUi";
-import { WorkshopActivityPanel } from "@/components/BossGrid/WorkshopActivityPanel";
+import { Caret, MetaDropdown, ROADMAP_STATUS_META, SCORE_TONE, ScoreBarsPair, ScoreDropdown, StatusIcon, useDismiss } from "@/components/admin/roadmap/roadmapUi";
 import { FilterSlidersIcon } from "@/components/icons/FilterSlidersIcon";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import { buttonClass } from "@/components/ui/Button";
@@ -55,7 +55,6 @@ import { cardClass } from "@/components/ui/Card";
 import { fieldClass } from "@/components/ui/Field";
 import { StickyPageHeader } from "@/components/layout/StickyPageHeader";
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
-import type { WorkshopComment } from "@/lib/playbookSessionNotes";
 import type { CreateRoadmapJobInput } from "@/lib/roadmap/core";
 import { supabaseClient } from "@/lib/supabaseClient";
 import {
@@ -245,9 +244,12 @@ export type RoadmapJobsBoardProps = {
 /** The jobs board (Board, List, Graph): Product → Jobs, and a project page's Jobs tab. */
 export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsBoardProps = {}) {
   const { profile } = useDashboardProfile();
+  const router = useRouter();
   const [jobs, setJobs] = useState<RoadmapJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /** Spaces ticked in Filter (Profit Coach, BCA, Client work); empty = all. */
+  const [spaceFilter, setSpaceFilter] = useState<Set<string>>(() => new Set());
   /** Categories ticked in Filter; empty = all. */
   const [areaFilter, setAreaFilter] = useState<Set<string>>(() => new Set());
   /** Projects ticked in Filter (NO_PROJECT for jobs without one); empty = all. */
@@ -289,7 +291,6 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
   const [expandedColumns, setExpandedColumns] = useState<Set<RoadmapStatus>>(
     () => new Set(BOARD_COLUMNS.filter((s) => !DEFAULT_COLLAPSED.includes(s)))
   );
-  const [openJobId, setOpenJobId] = useState<string | null>(null);
   const dragActiveRef = useRef(false);
 
   useEffect(() => {
@@ -446,7 +447,7 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
     setLoading(false);
   }, [authHeaders]);
 
-  // Links from the project and initiative pages: ?job=35 opens that card, ?project=Blueprint filters to it.
+  // Old links: ?job=35 goes to that job's page; ?project=Blueprint filters to it.
   const linkedRef = useRef(false);
   useEffect(() => {
     if (linkedRef.current || loading) return;
@@ -456,8 +457,8 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
     if (linkedProject && !project) setProjectFilter(new Set([linkedProject]));
     const n = Number(params.get("job"));
     const linked = n ? jobs.find((j) => j.job_number === n) : undefined;
-    if (linked) setOpenJobId(linked.id);
-  }, [loading, jobs, project]);
+    if (linked) router.replace(`/admin/roadmap/jobs/${linked.job_number}`);
+  }, [loading, jobs, project, router]);
 
   // While Claude works on a card (or 3002 is pulling one in), reload often so its progress shows live.
   const claudeActive = jobs.some((j) => claudeIsBusy(j) || claudeWaitingFor3002(j));
@@ -612,12 +613,13 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
       if (!window.confirm("Delete this job?")) return;
       const headers = await authHeaders();
       if (!headers) return;
-      setOpenJobId((open) => (open === id ? null : open));
       setJobs((prev) => prev.filter((j) => j.id !== id));
       await fetch(`/api/admin/roadmap/${id}`, { method: "DELETE", headers });
-      await load();
+      // Deleted from its own page: back to the board.
+      if (jobNumber !== undefined) router.push("/admin/roadmap");
+      else await load();
     },
-    [authHeaders, load]
+    [authHeaders, load, jobNumber, router]
   );
 
   function handleDrop(e: React.DragEvent, status: RoadmapStatus) {
@@ -656,6 +658,8 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
     for (const j of jobs) {
       if (OPEN_STATUSES.includes(j.status)) {
         counts.set(j.area, (counts.get(j.area) ?? 0) + 1);
+        const space = jobSpace(j);
+        counts.set(`space:${space}`, (counts.get(`space:${space}`) ?? 0) + 1);
       }
     }
     return counts;
@@ -674,16 +678,22 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
       jobs.filter(
         (j) =>
           !hiddenStatuses.has(j.status) &&
+          (spaceFilter.size === 0 || spaceFilter.has(jobSpace(j))) &&
           (areaFilter.size === 0 || areaFilter.has(j.area)) &&
           (projectFilter.size === 0 || projectFilter.has(j.project ?? NO_PROJECT)) &&
           matchesSearch(j, search)
       ),
-    [jobs, areaFilter, projectFilter, hiddenStatuses, search]
+    [jobs, spaceFilter, areaFilter, projectFilter, hiddenStatuses, search]
   );
 
-  const openJob = openJobId
-    ? jobs.find((j) => j.id === openJobId) ?? null
-    : null;
+  // A job opens as its own page.
+  const openJobView = useCallback(
+    (id: string) => {
+      const job = jobs.find((j) => j.id === id);
+      if (job) router.push(`/admin/roadmap/jobs/${job.job_number}`);
+    },
+    [jobs, router]
+  );
 
   const viewToggle = (
     <div className="flex overflow-hidden rounded-lg border border-slate-200">
@@ -749,7 +759,8 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
   /** New jobs join the project when exactly one is ticked in Filter. */
   const filterProject =
     projectFilter.size === 1 && !projectFilter.has(NO_PROJECT) ? [...projectFilter][0] : null;
-  const filterCount = areaFilter.size + (project ? 0 : projectFilter.size) + hiddenStatuses.size;
+  const filterCount =
+    spaceFilter.size + areaFilter.size + (project ? 0 : projectFilter.size) + hiddenStatuses.size;
   const statusCounts = new Map<RoadmapStatus, number>();
   for (const j of jobs) statusCounts.set(j.status, (statusCounts.get(j.status) ?? 0) + 1);
   const toggleIn = (set: Set<string>, value: string) => {
@@ -805,7 +816,7 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
           key={job.id}
           job={job}
           dragActiveRef={dragActiveRef}
-          onOpen={() => setOpenJobId(job.id)}
+          onOpen={() => openJobView(job.id)}
           showProject={showProject}
           variant={cardStyle}
         />
@@ -863,6 +874,7 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
                 }`}
                 title={`${label} (${headerCount}) — click to expand`}
               >
+                <StatusIcon status={status} />
                 <span className="text-xs font-semibold text-slate-500">
                   {headerCount}
                 </span>
@@ -894,12 +906,13 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
               <div className="mb-2 flex shrink-0 items-center justify-between px-1 pt-0.5">
                 <span className="flex items-center gap-2">
                   <span
-                    className={`rounded-md px-2 py-0.5 text-xs font-semibold ${
+                    className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${
                       status === "parked"
                         ? "bg-slate-200/80 text-slate-700"
                         : STATUS_META[status].chip
                     }`}
                   >
+                    <StatusIcon status={status} />
                     {label}
                   </span>
                   {upNextCount > 0 ? (
@@ -1022,36 +1035,55 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
   // A job's own page, like Linear's issue page: the same pieces as the popup, laid out as a page.
   if (jobNumber !== undefined) {
     const pageJob = jobs.find((j) => j.job_number === jobNumber) ?? null;
+    const trail = (
+      <nav aria-label="Where you are" className="flex min-w-0 items-center gap-1.5 text-sm text-slate-500">
+        {pageJob ? (
+          <>
+            <span className="shrink-0 font-medium text-slate-700 max-sm:hidden">{jobSpace(pageJob)}</span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300 max-sm:hidden" aria-hidden />
+          </>
+        ) : null}
+        <Link href="/admin/roadmap" className="inline-flex shrink-0 items-center gap-1.5 font-medium hover:text-slate-900">
+          <JobIcon className="h-3.5 w-3.5" aria-hidden />
+          <span className="max-sm:sr-only">Jobs</span>
+        </Link>
+        {pageJob?.project ? (
+          <>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300 max-sm:hidden" aria-hidden />
+            <Link
+              href={projectHref(pageJob.project)}
+              className="inline-flex min-w-0 items-center gap-1.5 hover:text-slate-900 max-sm:hidden"
+            >
+              <ProjectIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              <span className="truncate">{pageJob.project}</span>
+            </Link>
+          </>
+        ) : null}
+        <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-300" aria-hidden />
+        <span className="shrink-0 font-medium text-slate-900">
+          <JobNumber n={jobNumber} />
+        </span>
+        {pageJob ? <span className="min-w-0 truncate max-md:hidden">{pageJob.title}</span> : null}
+      </nav>
+    );
     return (
       <div className="w-full">
         <StickyPageHeader rootRef={headerRef} title="Product" tabs={<LessonImportTabs />} />
-        <nav aria-label="Where you are" className="mt-5 flex flex-wrap items-center gap-1 text-sm text-slate-500">
-          <Link href="/admin/roadmap" className="inline-flex items-center gap-1.5 hover:text-slate-900">
-            <JobIcon className="h-3.5 w-3.5" aria-hidden />
-            Jobs
-          </Link>
-          {pageJob?.project ? (
-            <>
-              <ChevronRight className="h-3.5 w-3.5 text-slate-300" aria-hidden />
-              <Link href={projectHref(pageJob.project)} className="inline-flex items-center gap-1.5 hover:text-slate-900">
-                <ProjectIcon className="h-3.5 w-3.5" aria-hidden />
-                {pageJob.project}
-              </Link>
-            </>
-          ) : null}
-          <ChevronRight className="h-3.5 w-3.5 text-slate-300" aria-hidden />
-          <span className="truncate font-medium text-slate-900">
-            <JobNumber n={jobNumber} /> {pageJob?.title ?? ""}
-          </span>
-        </nav>
+        {/* One flat white page under the top menu, like Linear. */}
+        <div
+          className="-mx-4 bg-white px-4 md:-mx-8 md:-mb-6 md:px-8"
+          style={{ minHeight: `calc(100dvh - ${headerHeight}px)` }}
+        >
+        {loading || !pageJob ? <JobPageBar trail={trail} stickyTop={headerHeight} /> : null}
         {loading ? (
           <p className="py-10 text-sm text-slate-500">Loading the job…</p>
         ) : pageJob ? (
-          <JobDetailModal
-            variant="page"
+          <JobPageView
+            key={pageJob.id}
+            trail={trail}
+            stickyTop={headerHeight}
             job={pageJob}
             authorName={profile?.first_name || profile?.full_name || "Admin"}
-            onClose={() => {}}
             onPatch={patchJob}
             onHandToClaude={handToClaude}
             onDelete={removeJob}
@@ -1068,6 +1100,7 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
             </Link>
           </p>
         )}
+        </div>
       </div>
     );
   }
@@ -1097,7 +1130,30 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
             />
             {toolbarMenu === "filter" ? (
               <div className="absolute left-0 top-full z-[90] mt-1 max-h-[min(40rem,78vh)] w-80 overflow-y-auto rounded-xl border border-slate-200 bg-white p-3 shadow-[0_12px_32px_-12px_rgba(15,23,42,0.35)]">
-                <p className="mb-1 px-2 text-xs font-semibold text-slate-700">
+                {/* Space first: the biggest cut. A project's own board is already in one space. */}
+                {project ? null : (
+                  <>
+                    <p className="mb-1 px-2 text-xs font-semibold text-slate-700">Space</p>
+                    {ROADMAP_SPACES.map((s) => (
+                      <label
+                        key={s}
+                        className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={spaceFilter.has(s)}
+                          onChange={() => setSpaceFilter((f) => toggleIn(f, s))}
+                          className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-400"
+                        />
+                        <span className="flex-1">{s}</span>
+                        {openCounts.get(`space:${s}`) ? (
+                          <span className="text-xs tabular-nums text-slate-400">{openCounts.get(`space:${s}`)}</span>
+                        ) : null}
+                      </label>
+                    ))}
+                  </>
+                )}
+                <p className={`mb-1 px-2 text-xs font-semibold text-slate-700 ${project ? "" : "mt-3 border-t border-slate-100 pt-3"}`}>
                   Status <span className="font-normal text-slate-400">· untick to hide</span>
                 </p>
                 <div className="flex flex-col">
@@ -1121,7 +1177,7 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
                             onChange={() => toggleHiddenStatus(st)}
                             className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-400"
                           />
-                          <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_META[st].chip}`} />
+                          <StatusIcon status={st} />
                           <span className="flex-1 truncate">
                             {STATUS_MENU_LABEL[st] ?? STATUS_META[st].label}
                           </span>
@@ -1185,6 +1241,7 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
                   <button
                     type="button"
                     onClick={() => {
+                      setSpaceFilter(new Set());
                       setAreaFilter(new Set());
                       setProjectFilter(new Set(project ? [project] : []));
                       setHiddenStatuses(new Set());
@@ -1311,7 +1368,7 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
                   <p className="px-2 pb-1 pt-1 text-xs font-semibold text-slate-700">Card style</p>
                   {(
                     [
-                      ["clean", "Clean", "Dot, progress bar, flags"],
+                      ["clean", "Clean", "Number on top, flags"],
                       ["classic", "Classic", "The earlier look"],
                     ] as const
                   ).map(([key, label, hint]) => (
@@ -1425,7 +1482,7 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
         <ImpactEaseGraph
           jobs={visible}
           allJobs={jobs}
-          onOpen={setOpenJobId}
+          onOpen={openJobView}
           onScore={(id, impact, ease) => void patchJob(id, { impact, ease })}
           stickyTop={headerHeight}
         />
@@ -1433,7 +1490,7 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
         <RoadmapListTable
           jobs={visible}
           areas={areas}
-          onOpen={setOpenJobId}
+          onOpen={openJobView}
           onPatch={patchJob}
           addSlot={addSlot}
           stickyTop={headerHeight}
@@ -1472,24 +1529,6 @@ export function RoadmapJobsBoard({ project, subheader, jobNumber }: RoadmapJobsB
         renderBoard(boardJobs, "", undefined, true)
       )}
 
-      {openJob ? (
-        <JobDetailModal
-          job={openJob}
-          authorName={
-            profile?.first_name ||
-            profile?.full_name ||
-            "Admin"
-          }
-          onClose={() => setOpenJobId(null)}
-          onPatch={patchJob}
-          onHandToClaude={handToClaude}
-          onDelete={removeJob}
-          onUploadImages={uploadImages}
-          onDeleteImage={deleteImage}
-          areas={areas}
-          projects={projects}
-        />
-      ) : null}
     </div>
   );
 }
@@ -1562,11 +1601,8 @@ function CleanJobCard({
   const commentCount = job.comments?.length ?? 0;
   const imageCount = job.images?.length ?? 0;
   const missingDoneWhen = !job.done_when?.trim() && NEEDS_DONE_WHEN.includes(job.status);
-  const edge = job.blocked_by
-    ? "bg-rose-500"
-    : job.status === "up_next"
-      ? "bg-orange-400"
-      : null;
+  const hasFooter =
+    claudeIsBusy(job) || missingDoneWhen || imageCount > 0 || commentCount > 0 || checklistTotal > 0;
   return (
     <div
       draggable
@@ -1594,48 +1630,38 @@ function CleanJobCard({
         onOpen();
       }}
       className={`relative cursor-pointer overflow-hidden rounded-lg border outline-none transition focus-visible:ring-2 focus-visible:ring-sky-400 hover:shadow-sm active:cursor-grabbing ${
-        job.blocked_by
-          ? "border-rose-200 bg-rose-50/70 hover:border-rose-300"
-          : "border-slate-200 bg-white hover:border-slate-300"
+        // BCA's own work (website and funnel) is blue so it stands apart from the app; a block still shows as the red line.
+        job.area === "bca-funnel"
+          ? "border-blue-200 bg-blue-50 hover:border-blue-300"
+          : job.blocked_by
+            ? "border-rose-200 bg-rose-50/70 hover:border-rose-300"
+            : "border-slate-200 bg-white hover:border-slate-300"
       } ${job.status === "vetoed" ? "opacity-60 hover:opacity-100" : ""}`}
     >
-      {edge ? <span className={`absolute inset-y-0 left-0 w-1 ${edge}`} aria-hidden /> : null}
       <div className="py-2.5 pl-3.5 pr-3">
-        {showProject && job.project ? (
-          // Project line carries the scores, so the title gets the full width.
-          <>
-            <div className="mb-0.5 flex items-center justify-between gap-2">
-              <p className="truncate text-caption font-medium text-slate-500">{job.project}</p>
-              <span className="flex shrink-0 items-center gap-1.5">
-                {job.urgent ? <UrgentFlag /> : null}
-                <ScoreBarsPair impact={job.impact} ease={job.ease} impactNames={ROADMAP_IMPACT_LEVELS} easeNames={ROADMAP_EASE_LEVELS} />
-              </span>
-            </div>
-            <p className="line-clamp-3 text-sm font-medium leading-snug text-slate-900">
-              {job.title}
-            </p>
-          </>
-        ) : (
-          <div className="flex items-start justify-between gap-2">
-            <p className="line-clamp-3 text-sm font-medium leading-snug text-slate-900">
-              {job.title}
-            </p>
-            <span className="flex shrink-0 items-center gap-1.5">
-              {job.urgent ? <UrgentFlag /> : null}
-              <ScoreBarsPair impact={job.impact} ease={job.ease} impactNames={ROADMAP_IMPACT_LEVELS} easeNames={ROADMAP_EASE_LEVELS} />
+        {/* Top row: number and project left, flags and scores right; the title gets the full width. */}
+        <div className="mb-0.5 flex items-center justify-between gap-2">
+          <p className="flex min-w-0 items-center gap-1.5 text-caption font-medium text-slate-500">
+            <span className="text-slate-400">
+              <JobNumber n={job.job_number} />
             </span>
-          </div>
-        )}
+            {showProject && job.project ? <span className="truncate">{job.project}</span> : null}
+          </p>
+          <span className="flex shrink-0 items-center gap-1.5">
+            {job.urgent ? <UrgentFlag /> : null}
+            <ScoreBarsPair impact={job.impact} ease={job.ease} impactNames={ROADMAP_IMPACT_LEVELS} easeNames={ROADMAP_EASE_LEVELS} />
+          </span>
+        </div>
+        <p className="line-clamp-3 text-sm font-medium leading-snug text-slate-900">
+          {job.title}
+        </p>
         {job.blocked_by ? (
           <p className="mt-1 line-clamp-1 text-xs font-medium text-rose-700">
             Blocked: {job.blocked_by}
           </p>
         ) : null}
+        {hasFooter ? (
         <div className="mt-2 flex items-center gap-2.5 text-xs text-slate-500">
-          <span
-            title={areaMeta(job.area).label}
-            className={`h-2 w-2 shrink-0 rounded-full ${areaMeta(job.area).dot}`}
-          />
           {claudeIsBusy(job) ? (
             <span className="inline-flex items-center gap-1 font-medium text-[#0c5290]" title="Claude is working on this in the cloud">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#0c5290]" aria-hidden />
@@ -1664,19 +1690,9 @@ function CleanJobCard({
               {checklistDone}/{checklistTotal}
             </span>
           ) : null}
-          <span className="ml-auto">
-            <JobNumber n={job.job_number} />
-          </span>
         </div>
+        ) : null}
       </div>
-      {checklistTotal > 0 ? (
-        <div className="h-1 w-full bg-slate-100" aria-hidden>
-          <div
-            className="h-full bg-emerald-500 transition-all"
-            style={{ width: `${(checklistDone / checklistTotal) * 100}%` }}
-          />
-        </div>
-      ) : null}
     </div>
   );
 }
@@ -1731,9 +1747,7 @@ function JobCard({
         onOpen();
       }}
       className={`cursor-pointer rounded-lg border bg-white px-3 py-2.5 outline-none transition focus-visible:ring-2 focus-visible:ring-sky-400 hover:shadow-sm active:cursor-grabbing ${
-        job.status === "up_next"
-          ? "border-orange-200 border-l-2 border-l-orange-400 hover:border-orange-300"
-          : job.status === "review"
+        job.status === "review"
             ? "border-yellow-200 border-l-2 border-l-yellow-400 hover:border-yellow-300"
             : job.status === "vetoed"
               ? "border-slate-200 opacity-60 hover:border-slate-300 hover:opacity-100"
@@ -1811,7 +1825,10 @@ function StatusDropdown({
         onClick={() => setOpen((o) => !o)}
         className={`inline-flex min-w-36 items-center justify-between gap-2 rounded-full px-4 py-2 text-sm font-semibold transition hover:opacity-90 ${STATUS_META[value].chip}`}
       >
-        {STATUS_META[value].label}
+        <span className="flex items-center gap-2">
+          <StatusIcon status={value} className="h-4 w-4" />
+          {STATUS_META[value].label}
+        </span>
         <ChevronDown className="h-4 w-4 opacity-60" aria-hidden />
       </button>
       {open ? (
@@ -1835,7 +1852,7 @@ function StatusDropdown({
                     group.label ? "pl-5" : "pl-2"
                   }`}
                 >
-                  <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_META[s].chip}`} />
+                  <StatusIcon status={s} />
                   <span className="flex-1">{STATUS_MENU_LABEL[s] ?? STATUS_META[s].label}</span>
                   {value === s ? <Check className="h-4 w-4 text-slate-500" aria-hidden /> : null}
                 </button>
@@ -1853,13 +1870,16 @@ function MetaRow({
   icon: Icon,
   label,
   children,
+  narrow = false,
 }: {
   icon: typeof Folder;
   label: string;
   children: React.ReactNode;
+  /** A job page's side panel: a shorter label column so values fit on one line. */
+  narrow?: boolean;
 }) {
   return (
-    <div className="grid min-h-9 grid-cols-[7.5rem_minmax(0,1fr)] items-center gap-x-3 text-sm">
+    <div className={`grid min-h-9 ${narrow ? "grid-cols-[6.25rem_minmax(0,1fr)]" : "grid-cols-[7.5rem_minmax(0,1fr)]"} items-center gap-x-3 text-sm`}>
       <span className="flex items-center gap-2 text-slate-400">
         <Icon className="h-4 w-4 shrink-0" aria-hidden />
         {label}
@@ -1970,45 +1990,9 @@ function ProjectDropdown({
   );
 }
 
-/** Roadmap comments in the shape the BOSS Pro comments panel uses, and back. */
-function toPanelComments(comments: RoadmapComment[]): WorkshopComment[] {
-  return comments.map((c) => ({
-    id: c.id,
-    author: "coach",
-    authorName: c.author ?? "Admin",
-    text: c.text,
-    createdAt: c.created_at,
-    editedAt: c.edited_at ?? undefined,
-    replies: (c.replies ?? []).map((r) => ({
-      id: r.id,
-      author: "coach",
-      authorName: r.author ?? "Admin",
-      text: r.text,
-      createdAt: r.created_at,
-    })),
-  }));
-}
-
-function fromPanelComments(comments: WorkshopComment[]): RoadmapComment[] {
-  return comments.map((c) => ({
-    id: c.id,
-    author: c.authorName ?? null,
-    text: c.text,
-    created_at: c.createdAt,
-    edited_at: c.editedAt ?? null,
-    replies: c.replies.map((r) => ({
-      id: r.id,
-      author: r.authorName ?? null,
-      text: r.text,
-      created_at: r.createdAt,
-    })),
-  }));
-}
-
-function JobDetailModal({
+function JobPageView({
   job,
   authorName,
-  onClose,
   onPatch,
   onHandToClaude,
   onDelete,
@@ -2016,11 +2000,11 @@ function JobDetailModal({
   onDeleteImage,
   areas,
   projects,
-  variant = "modal",
+  trail,
+  stickyTop = 0,
 }: {
   job: RoadmapJob;
   authorName: string;
-  onClose: () => void;
   onPatch: (id: string, patch: Record<string, unknown>) => Promise<void>;
   onHandToClaude: (id: string) => Promise<string | null>;
   onDelete: (id: string) => Promise<void>;
@@ -2028,19 +2012,16 @@ function JobDetailModal({
   onDeleteImage: (id: string, imageId: string) => Promise<void>;
   areas: string[];
   projects: string[];
-  /** "page": the job's own page (properties at the side, activity under the writing), like Linear. */
-  variant?: "modal" | "page";
+  /** The way back, shown in the slim bar under the top menu. */
+  trail?: React.ReactNode;
+  /** The top menu's height, so the slim bar sits just under it. */
+  stickyTop?: number;
 }) {
   const [title, setTitle] = useState(job.title);
   const [notes, setNotes] = useState(job.notes ?? "");
   const [doneWhen, setDoneWhen] = useState(job.done_when ?? "");
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  const headingRef = useRef<HTMLDivElement | null>(null);
-  /** The big title has scrolled away: show the slim bar instead. */
-  const [compact, setCompact] = useState(false);
   const [blockedBy, setBlockedBy] = useState(job.blocked_by ?? "");
   const [newItem, setNewItem] = useState("");
-  const [commentsCollapsed, setCommentsCollapsed] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const titleRef = useRef<HTMLTextAreaElement | null>(null);
@@ -2074,26 +2055,6 @@ function JobDetailModal({
     setBlockedBy(job.blocked_by ?? "");
   }, [job.id, job.title, job.notes, job.done_when, job.blocked_by]);
 
-  useEffect(() => {
-    const root = scrollRef.current;
-    const target = headingRef.current;
-    if (!root || !target) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => setCompact(!entry.isIntersecting),
-      { root, threshold: 0 }
-    );
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   function saveChecklist(next: RoadmapChecklistItem[]) {
     void onPatch(job.id, { checklist: next });
   }
@@ -2109,7 +2070,11 @@ function JobDetailModal({
   }
 
   const checklist = job.checklist ?? [];
-  const panelComments = toPanelComments(job.comments ?? []);
+  // Side panels: Checklist starts folded once every item is ticked.
+  const [propertiesOpen, setPropertiesOpen] = useState(true);
+  const [checklistOpen, setChecklistOpen] = useState(
+    () => !(checklist.length > 0 && checklist.every((c) => c.done))
+  );
   const images = job.images ?? [];
 
   const pasteImages = (e: React.ClipboardEvent) => {
@@ -2120,7 +2085,6 @@ function JobDetailModal({
     }
   };
 
-  // The popup and the job's own page are built from the same pieces.
   const titleField = (
                   <textarea
                     ref={titleRef}
@@ -2137,16 +2101,6 @@ function JobDetailModal({
 
   const controls = (
                 <div className="flex shrink-0 items-center gap-2">
-                  {variant === "modal" ? (
-                    <Link
-                      href={`/admin/roadmap/jobs/${job.job_number}`}
-                      title="Open as a page"
-                      aria-label="Open as a page"
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-400 ring-1 ring-inset ring-slate-200 transition hover:bg-slate-50 hover:text-slate-700"
-                    >
-                      <Maximize2 className="h-4 w-4" aria-hidden />
-                    </Link>
-                  ) : null}
                   <HandToClaudeButton job={job} onHand={onHandToClaude} />
                   <button
                     type="button"
@@ -2173,16 +2127,16 @@ function JobDetailModal({
   );
 
   const properties = (
-              <div className={`grid gap-x-10 gap-y-1 ${variant === "page" ? "" : "mt-5 sm:grid-cols-2"}`}>
+              <div className="grid gap-x-10 gap-y-1">
                 <div className="flex flex-col gap-1">
-                  <MetaRow icon={Folder} label="Project">
+                  <MetaRow narrow icon={Folder} label="Project">
                     <ProjectDropdown
                       value={job.project}
                       projects={projects}
                       onChange={(next) => void onPatch(job.id, { project: next ?? "" })}
                     />
                   </MetaRow>
-                  <MetaRow icon={Tag} label="Category">
+                  <MetaRow narrow icon={Tag} label="Category">
                     <MetaDropdown
                       display={
                         <span className="flex items-center gap-2 font-medium text-slate-800">
@@ -2203,7 +2157,7 @@ function JobDetailModal({
                       }))}
                     />
                   </MetaRow>
-                  <MetaRow icon={OctagonAlert} label="Blocked by">
+                  <MetaRow narrow icon={OctagonAlert} label="Blocked by">
                     <input
                       value={blockedBy}
                       onChange={(e) => setBlockedBy(e.target.value)}
@@ -2220,7 +2174,7 @@ function JobDetailModal({
                   </MetaRow>
                 </div>
                 <div className="flex flex-col gap-1">
-                  <MetaRow icon={Zap} label="Impact">
+                  <MetaRow narrow icon={Zap} label="Impact">
                     <ScoreDropdown
                       label="Impact"
                       value={job.impact}
@@ -2228,7 +2182,7 @@ function JobDetailModal({
                       onChange={(impact) => void onPatch(job.id, { impact })}
                     />
                   </MetaRow>
-                  <MetaRow icon={Gauge} label="Ease">
+                  <MetaRow narrow icon={Gauge} label="Ease">
                     <ScoreDropdown
                       label="Ease"
                       value={job.ease}
@@ -2240,51 +2194,8 @@ function JobDetailModal({
               </div>
   );
 
-  const sections = (
-    <>
-              <ClaudePanel job={job} />
-
-              {/* Done when */}
-              <h3 className="mt-5 text-sm font-semibold text-slate-900">Done when</h3>
-              <textarea
-                value={doneWhen}
-                onChange={(e) => setDoneWhen(e.target.value)}
-                onBlur={() => {
-                  if ((doneWhen.trim() || null) !== (job.done_when ?? null)) {
-                    void onPatch(job.id, { doneWhen: doneWhen.trim() || null });
-                  }
-                }}
-                rows={3}
-                placeholder="What finished looks like, in a sentence or two. Review checks against this."
-                className="mt-1.5 w-full resize-y rounded-lg border border-emerald-200 bg-emerald-50/40 px-3.5 py-2.5 text-sm font-medium leading-relaxed text-slate-800 placeholder:font-normal placeholder:text-slate-400 focus:border-emerald-400 focus:outline-none"
-              />
-
-              {/* Scope */}
-              <h3 className="mt-5 text-sm font-semibold text-slate-900">Scope</h3>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                onBlur={() => {
-                  if ((notes.trim() || null) !== (job.notes ?? null)) {
-                    void onPatch(job.id, { notes: notes.trim() || null });
-                  }
-                }}
-                rows={12}
-                placeholder="Why it matters, what's in and out, links and notes."
-                className={fieldClass("textarea", "normal", "mt-1.5 min-h-64 resize-y leading-relaxed")}
-              />
-
-              {/* Checklist */}
-              <h3 className="mt-6 text-sm font-semibold text-slate-900">
-                Checklist
-                {checklist.length > 0 ? (
-                  <span className="font-normal text-slate-400">
-                    {" "}
-                    · {checklist.filter((c) => c.done).length}/{checklist.length}
-                  </span>
-                ) : null}
-              </h3>
-              <div className="mt-2 flex flex-col gap-1.5">
+  const checklistItems = (
+              <div className="flex flex-col gap-1.5">
                 {checklist.map((item) => (
                   <div key={item.id} className="group flex items-start gap-2.5">
                     <input
@@ -2328,6 +2239,37 @@ function JobDetailModal({
                   className="mt-1 w-full rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-sm text-slate-800 placeholder:text-slate-400 hover:bg-slate-50 focus:border-sky-400 focus:bg-white focus:outline-none"
                 />
               </div>
+  );
+
+  const sections = (
+    <>
+              <ClaudePanel job={job} />
+
+              {/* Done when */}
+              <h3 className={PAGE_HEADING}>Done when</h3>
+              <PlainTextarea
+                value={doneWhen}
+                onChange={(e) => setDoneWhen(e.target.value)}
+                onBlur={() => {
+                  if ((doneWhen.trim() || null) !== (job.done_when ?? null)) {
+                    void onPatch(job.id, { doneWhen: doneWhen.trim() || null });
+                  }
+                }}
+                placeholder="What finished looks like, in a sentence or two. Review checks against this."
+              />
+
+              {/* Scope */}
+              <h3 className={PAGE_HEADING}>Scope</h3>
+              <PlainTextarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                onBlur={() => {
+                  if ((notes.trim() || null) !== (job.notes ?? null)) {
+                    void onPatch(job.id, { notes: notes.trim() || null });
+                  }
+                }}
+                placeholder="Why it matters, what's in and out, links and notes."
+              />
 
               {/* Links */}
               {job.app_path ? (
@@ -2348,7 +2290,34 @@ function JobDetailModal({
                 </>
               ) : null}
 
-              {/* Images */}
+              {/* Images: one quiet button until there are some */}
+              {images.length === 0 ? (
+                <div className="mt-8">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    title="Design refs and screenshots. You can also paste a screenshot anywhere on the page."
+                    className="inline-flex items-center gap-1.5 text-sm text-slate-500 transition hover:text-slate-900"
+                  >
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                    {uploading ? "Uploading…" : "Add images"}
+                  </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files ?? []);
+                    e.target.value = "";
+                    void uploadFiles(files);
+                  }}
+                />
+                </div>
+              ) : (
+                <>
               <div className="mt-6 flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-900">
                   Images
@@ -2385,6 +2354,8 @@ function JobDetailModal({
               <p className="mt-0.5 text-xs text-slate-400">
                 Design refs and screenshots. Paste a screenshot anywhere in this card.
               </p>
+                </>
+              )}
               {images.length > 0 ? (
                 <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-5">
                   {images.map((img) => (
@@ -2436,123 +2407,133 @@ function JobDetailModal({
               </div>
   );
 
-  if (variant === "page") {
-    return (
-      <div className="mt-6 grid gap-12 pb-16 lg:grid-cols-[minmax(0,1fr)_18rem]" onPaste={pasteImages}>
-        <main className="min-w-0 max-w-3xl">
-          <p className="text-kicker font-semibold uppercase text-slate-500">
-            Job <JobNumber n={job.job_number} />
-          </p>
+  const sidePanels = (
+    <>
+      <SidePanel title="Properties" open={propertiesOpen} onToggle={() => setPropertiesOpen((o) => !o)}>
+        {properties}
+      </SidePanel>
+      <SidePanel
+        title="Checklist"
+        meta={checklist.length > 0 ? `${checklist.filter((c) => c.done).length}/${checklist.length}` : undefined}
+        open={checklistOpen}
+        onToggle={() => setChecklistOpen((o) => !o)}
+      >
+        {checklistItems}
+      </SidePanel>
+    </>
+  );
+  return (
+    <>
+      <JobPageBar trail={trail} actions={controls} stickyTop={stickyTop} />
+      {/* Like Linear's issue page: the writing on the left, Properties and Checklist right beside it. */}
+      <div
+        className="mt-8 grid gap-10 pb-16 lg:grid-cols-[minmax(0,46rem)_20rem] lg:gap-12"
+        onPaste={pasteImages}
+      >
+        <main className="min-w-0">
           {titleField}
           {sections}
+          {/* Phones: Properties and Checklist come after the writing, before the activity. */}
+          <div className="mt-8 border-t border-slate-200 pt-4 lg:hidden">{sidePanels}</div>
           <JobActivity job={job} authorName={authorName} onPatch={onPatch} />
           {footer}
         </main>
-        <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-          <div className="flex flex-wrap items-center gap-2">{controls}</div>
-          <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-            <h2 className="px-1 pb-2 text-sm font-medium text-slate-900">Properties</h2>
-            {properties}
-          </div>
+        <aside className="min-w-0 self-start border-l border-slate-200 pl-8 max-lg:hidden">
+          {sidePanels}
         </aside>
       </div>
-    );
-  }
+    </>
+  );
+}
 
+/** Headings on a job's page (Done when, Scope). */
+const PAGE_HEADING = "mt-8 text-base font-semibold text-slate-900";
+
+/** Text you click to edit, sized to its words with no box, like Linear's issue page. */
+function PlainTextarea({
+  value,
+  className = "",
+  ...rest
+}: Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "value"> & { value: string }) {
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [value]);
   return (
-    <div className="fixed inset-0 z-[110]" role="dialog" aria-modal="true">
+    <textarea
+      ref={ref}
+      value={value}
+      rows={1}
+      {...rest}
+      className={`mt-2 block w-full resize-none overflow-hidden border-0 bg-transparent p-0 text-[15px] leading-relaxed text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-0 ${className}`}
+    />
+  );
+}
+
+/** A job page's side section (Properties, Checklist) that folds, with the arrow after its name. */
+function SidePanel({
+  title,
+  meta,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  meta?: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="border-b border-slate-200 py-4 first:pt-0 last:border-b-0">
       <button
         type="button"
-        aria-label="Close"
-        onClick={onClose}
-        className="absolute inset-0 bg-slate-900/55 backdrop-blur-[2px]"
-      />
-      <div
-        className="absolute left-1/2 top-1/2 h-[min(88vh,880px)] w-[min(calc(100vw-1.5rem),72rem)] -translate-x-1/2 -translate-y-1/2"
-        onPaste={pasteImages}
+        aria-expanded={open}
+        onClick={onToggle}
+        className="flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-slate-900"
       >
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute -right-3 -top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-md transition hover:bg-slate-50 hover:text-slate-800"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" strokeWidth={2} aria-hidden />
-        </button>
+        {title}
+        {meta ? <span className="font-normal text-slate-400">{meta}</span> : null}
+        <ChevronDown className={`h-3.5 w-3.5 transition ${open ? "" : "-rotate-90"}`} aria-hidden />
+      </button>
+      {open ? <div className="mt-2">{children}</div> : null}
+    </section>
+  );
+}
 
-        <div className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-2xl ring-1 ring-slate-900/5 lg:flex-row">
-          {/* Main */}
-          <div ref={scrollRef} className="min-h-0 min-w-0 flex-1 overflow-y-auto">
-            {/* Slim bar that stays put once the title scrolls away, like ClickUp */}
-            <div className="sticky top-0 z-20 h-0">
-              <div
-                aria-hidden={!compact}
-                className={`absolute inset-x-0 top-0 flex items-center gap-3 border-b border-slate-200 bg-white/95 px-6 py-3 backdrop-blur transition md:px-10 ${
-                  compact ? "opacity-100" : "pointer-events-none -translate-y-1 opacity-0"
-                }`}
-              >
-                <span
-                  className={`h-3.5 w-3.5 shrink-0 rounded-full ring-2 ring-white ${STATUS_META[job.status].chip}`}
-                  title={STATUS_META[job.status].label}
-                />
-                {job.urgent ? <UrgentFlag className="h-4 w-4" /> : null}
-                <span className="min-w-0 flex-1 truncate text-base font-semibold text-slate-900">
-                  {job.title}
-                </span>
-                <span className="shrink-0 text-xs font-medium text-slate-400">
-                  <JobNumber n={job.job_number} />
-                </span>
-                <ScoreBarsPair impact={job.impact} ease={job.ease} impactNames={ROADMAP_IMPACT_LEVELS} easeNames={ROADMAP_EASE_LEVELS} />
-              </div>
-            </div>
-            <div className="px-6 pb-8 pt-7 md:px-10 md:pt-8">
-              <div ref={headingRef} className="flex items-start justify-between gap-6">
-                <div className="min-w-0 flex-1">
-                  <p className="text-kicker font-semibold uppercase text-slate-500">
-                    Job <JobNumber n={job.job_number} />
-                    {job.project ? <span className="text-slate-400"> · {job.project}</span> : null}
-                  </p>
-                  {titleField}
-                </div>
-                {controls}
-              </div>
-
-              {properties}
-
-              <div className="mt-6 border-t border-slate-200" role="presentation" />
-
-              {sections}
-
-              {footer}
-            </div>
-          </div>
-
-          {/* Comments: the same panel as a BOSS Pro playbook */}
-          <WorkshopActivityPanel
-            activity={[]}
-            comments={panelComments}
-            editable
-            defaultAuthor="coach"
-            defaultAuthorName={authorName}
-            onCommentsChange={(next) =>
-              void onPatch(job.id, { comments: fromPanelComments(next) })
-            }
-            onActivityAppend={() => {}}
-            collapsed={commentsCollapsed}
-            onCollapsedChange={setCommentsCollapsed}
-            allowManage
-            emptyText="No comments yet."
-          />
-        </div>
-      </div>
+/**
+ * A job page's slim bar, like Linear's: just under the top menu (which never
+ * changes), the way back on the left and the job's buttons on the right. It
+ * stays put as you scroll.
+ */
+function JobPageBar({
+  trail,
+  actions,
+  stickyTop,
+}: {
+  trail: React.ReactNode;
+  actions?: React.ReactNode;
+  stickyTop: number;
+}) {
+  return (
+    <div
+      style={{ top: stickyTop }}
+      className="sticky z-20 -mx-4 flex min-h-12 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-slate-200 bg-white px-4 py-1.5 md:-mx-8 md:px-8"
+    >
+      {/* Phones show "Jobs › #154" only, so it keeps its width; wide screens truncate the title. */}
+      <div className="min-w-0 flex-1 max-md:min-w-fit">{trail}</div>
+      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </div>
   );
 }
 
 /**
  * A job page's Activity, like Linear's: comments and Claude's progress in one
- * timeline under the writing, and a box to leave a comment. (Replies and edits
- * stay in the popup's comments panel.)
+ * timeline under the writing, and a box to leave a comment. (Replies show as a
+ * count; replying and editing aren't on the page yet.)
  */
 function JobActivity({
   job,
@@ -3535,8 +3516,9 @@ function RoadmapListTable({
                             </td>
                             <td className="px-3 py-2.5">
                               <span
-                                className={`rounded-full px-2 py-0.5 text-caption font-semibold ${STATUS_META[job.status].chip}`}
+                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-caption font-semibold ${STATUS_META[job.status].chip}`}
                               >
+                                <StatusIcon status={job.status} className="h-3 w-3" />
                                 {STATUS_META[job.status].label}
                               </span>
                             </td>

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-26T16:13:52.732Z",
+  "generatedAt": "2026-11-27T10:59:01.800Z",
   "model": "claude-sonnet-5-5",
   "pages": [
     {
@@ -13,6 +13,30 @@
       "tabs": [],
       "controls": [],
       "notes": "Coaches only see 'Redirecting…' for a moment, or an error like 'Unable to load your profile.' or 'Coach record not found. Ask an admin to create a row in the 'coaches' table with your id and slug.' Admins who are not viewing as a coach are sent to the admin community page. Point coaches to Academy in the sidebar instead."
+    },
+    {
+      "path": "/coach/academy-experiences/[courseId]",
+      "adminPath": "/admin/academy-experiences/[courseId]",
+      "hash": "058eafde117e67c4",
+      "coachVisible": false,
+      "title": "Old programme link (redirect)",
+      "where": "Not a page coaches open directly. Old links go to Academy → Classroom.",
+      "summary": "Old programme link that sends the coach straight to that programme's card in the Classroom, or to the Classroom if the programme isn't found.",
+      "tabs": [],
+      "controls": [],
+      "notes": "This is only a redirect with nothing on screen. Point coaches to Academy → Classroom to find a programme instead."
+    },
+    {
+      "path": "/coach/academy/archive/[courseId]",
+      "adminPath": "/admin/academy/archive/[courseId]",
+      "hash": "4c61556f908dc1ba",
+      "coachVisible": false,
+      "title": "Old programme archive link",
+      "where": "Not reachable from the sidebar. Old links to a programme go to the Classroom (Academy → Classroom) instead.",
+      "summary": "This is a retired page that sends the coach straight to the matching programme card in the Classroom.",
+      "tabs": [],
+      "controls": [],
+      "notes": "Coaches never see this page, it only redirects. If someone asks about an old programme link, point them to Academy → Classroom."
     },
     {
       "path": "/coach/academy/classroom",
@@ -272,14 +296,14 @@
     {
       "path": "/coach/blueprint/jobs",
       "adminPath": null,
-      "hash": "37eacf10e3908405",
+      "hash": "78ce21c03b0763ea",
       "coachVisible": false,
-      "title": "Your plan (jobs view)",
-      "where": "Not reachable by coaches. My Blueprint is the sidebar item at /coach/blueprint, and this page sends coaches back there.",
-      "summary": "A new admin-only jobs list that shows the Blueprint as a list or board of launch jobs; coaches are sent back to My Blueprint.",
+      "title": "Your plan (jobs)",
+      "where": "Not reachable by coaches. It sits under My Blueprint at /coach/blueprint/jobs, but only admins can open it.",
+      "summary": "An admin-only list of launch jobs (Launch, Get calls, Get clients, Keep clients) with status, progress and chat, as a List or Board.",
       "tabs": [],
       "controls": [],
-      "notes": "The whole page is admin-only for now: anyone who is not an admin is redirected to My Blueprint and sees nothing here. Ava should never send a coach to this page or describe its list, board or job chats."
+      "notes": "Coaches are sent straight back to My Blueprint if they open this page, so Ava must never point a coach here. It is a new page that admins use until it is ready."
     },
     {
       "path": "/coach/boss-pro",
@@ -348,37 +372,49 @@
     {
       "path": "/coach/campaigns",
       "adminPath": "/admin/campaigns",
-      "hash": "90d4208646ccaf6e",
+      "hash": "b9d938029bf22c9e",
       "coachVisible": true,
       "title": "Campaigns",
       "where": "Get Calls → Campaigns",
-      "summary": "See how your outreach campaigns are doing, switch them on or off, and create or open a campaign.",
-      "tabs": [],
-      "controls": [
-        "**New Campaign** button at the top right (opens a pop-up: **Name**, **Channel** LinkedIn, Email or WhatsApp, then **Blank** or **Templates**)",
-        "**Create campaign** button when you have no campaigns yet",
-        "**Sending settings** button at the top right (shows once LinkedIn is connected)",
-        "**Activity this** chart with arrows (**Previous period**, **Next period**) and a range drop-down (**Activity range**)",
-        "Four tiles under the chart: **People reached**, **Planned remaining**, **Connect rate**, **Replies**",
-        "Campaign list with columns **Campaign**, **Via**, **Connect**, **Replies**",
-        "On/off switch (**On** or **Off**) at the start of each campaign row",
-        "Grip handle on each row to drag campaigns into a new order",
-        "Three-dot **Campaign actions** menu on each row: **Edit**, **Duplicate**, **Archive** (or **Unarchive**), **Delete**",
-        "**Archived** bar at the bottom of the list that opens or closes archived campaigns",
-        "Click a campaign row to open that campaign",
-        "Right-hand side: to-do and activity list, plus **Social Selling Index** and **pending invites** cards",
-        "**Connect LinkedIn** button on the right-hand cards if LinkedIn is not connected"
+      "summary": "See all your outreach campaigns, switch them on or off, create new ones, and follow what is due, planned and done.",
+      "tabs": [
+        {
+          "label": "To do",
+          "path": null
+        },
+        {
+          "label": "Planned",
+          "path": null
+        },
+        {
+          "label": "Done",
+          "path": null
+        }
       ],
-      "notes": "LinkedIn must be connected before a LinkedIn campaign can be switched on. Email campaigns need Gmail or Outlook connected, and WhatsApp campaigns need WhatsApp connected. A floating **Sample data** switch is only for staff and the demo coach, so never offer it to other coaches."
+      "controls": [
+        "**New Campaign** button at the top right (opens a pop-up with **Name**, **Channel** LinkedIn/Email/WhatsApp, and **Blank** or **Templates**)",
+        "**Sending settings** button at the top right (only shows once LinkedIn is connected)",
+        "**On/Off** switch at the start of each campaign row",
+        "**Campaign**, **Via**, **Connect** and **Replies** columns in the campaigns table",
+        "Drag handle on each row to reorder campaigns",
+        "**Campaign actions** menu (three dots) on each row: **Edit**, **Settings**, **Duplicate**, **Save as template**, **Archive**, **Delete**",
+        "**Archived** bar under the table: opens archived campaigns, whose menu offers **Unarchive**",
+        "**To do**, **Planned** and **Done** tabs in the activity panel on the right, listing lead, status and next step",
+        "**Social Selling Index** card with a **Breakdown** button",
+        "**Pending invites** card with an **Auto-clean** switch",
+        "**Connect LinkedIn** button on the right-hand cards when LinkedIn is not connected",
+        "**Create campaign** button when you have no campaigns yet"
+      ],
+      "notes": "LinkedIn must be connected before a LinkedIn campaign can be switched on; email campaigns need Gmail or Outlook, and WhatsApp campaigns need WhatsApp connected. Lead Lists and Lead Magnets are other tabs in the Get Calls row. A floating Sample data switch appears only for staff and the demo coach, so coaches never see it."
     },
     {
       "path": "/coach/campaigns/[id]",
       "adminPath": "/admin/campaigns/[id]",
-      "hash": "1b3cd9b8eb1dcc66",
+      "hash": "a7b2de669ae3bfff",
       "coachVisible": true,
       "title": "One campaign",
       "where": "Get Calls → Campaigns, then click a campaign",
-      "summary": "Run one LinkedIn (or email/WhatsApp) campaign: turn it on or off, add people, write the steps and watch results.",
+      "summary": "Run one outreach campaign: switch it on or off, see how it is doing, manage the people in it, and write its steps.",
       "tabs": [
         {
           "label": "Overview",
@@ -394,20 +430,20 @@
         }
       ],
       "controls": [
-        "**← Campaigns** link at the top, back to the campaigns list",
-        "**On/Off switch** next to the campaign name, turns the campaign on or off",
-        "**Edit campaign name** pencil next to the name",
-        "**Settings** button at the top right, opens campaign settings (including archive and delete)",
-        "**Before you launch** box (shows \"Fix … before this can go live\" or \"… likely to cost you replies\") with **Show/Hide**",
-        "**Join a BCA group test** box with **Show/Hide**, **Test** dropdown and **Join this test** button; **Leave test** once joined",
-        "Overview: **By status** chart with **View all** and **Add prospects** buttons",
-        "Overview: **Conversion** rings and **Daily activity** chart",
-        "Overview when empty: **Set up steps** / **Review steps** button and **Add people** options: **Already in the system**, **Add one person**, **Sales Navigator**, **Google Maps**, **Google Search**, **Upload CSV**",
-        "Prospects tab: list of people in the campaign, with add, pause, resume, move and delete options and a link to replies in Conversations",
-        "Steps tab: build the message sequence, add, copy, delete or reorder steps, and a **Choose a template** pop-up",
-        "Click a status or step count to open a side list of the people there, with a **Close** button"
+        "**← Campaigns** link at the top to go back to the list",
+        "On/off switch next to the campaign name (turn campaign on or off)",
+        "Pencil button next to the name (**Edit campaign name**)",
+        "**Save template** button: saves the steps and sending settings as your own template",
+        "**Duplicate** button: choose Steps, People, or Steps and people; the copy starts switched off",
+        "**Settings** button: opens the campaign settings, where you can archive or delete it",
+        "**Overview** tab: **By status** chart with **View all** and **Add prospects**, **Conversion** dials, **Daily activity** chart",
+        "**Prospects** tab: table of people in the campaign, with add, pause, resume, move and delete",
+        "**Steps** tab: build the sequence, add steps, connect an account, and **Choose a template**",
+        "**Before you launch** style warning bar: shows things to fix before going live, with Show/Hide",
+        "**Join a BCA group test** box with **Join this test** and **Leave test**",
+        "**Add people** choices: **Already in the system**, **Add one person**, **Sales Navigator**, **Google Maps**, **Google Search**, **Upload CSV**"
       ],
-      "notes": "The On switch only works once the right account (LinkedIn, email or WhatsApp) is connected, and is disabled for archived campaigns. The group test box is hidden for email campaigns and archived campaigns. Lead magnet campaigns open automatically on their own magnet page instead."
+      "notes": "The on/off switch only works once the matching account (LinkedIn, email or WhatsApp) is connected, and it is locked for archived campaigns. The group test box does not show for email campaigns. Campaigns made from a lead magnet automatically open on their lead magnet page instead."
     },
     {
       "path": "/coach/campaigns/invites",
@@ -433,11 +469,11 @@
     {
       "path": "/coach/campaigns/magnets/[magnetId]",
       "adminPath": "/admin/campaigns/magnets/[magnetId]",
-      "hash": "f133f14b2ac3773c",
+      "hash": "378e6b1932fd8a8b",
       "coachVisible": true,
       "title": "One lead magnet",
-      "where": "Get Calls → Lead Magnets → open a lead magnet (for example BOSS Score)",
-      "summary": "See who opted in, started and finished one lead magnet, share its link, and edit the follow-up emails that go out after.",
+      "where": "Get Calls → Lead Magnets → open a lead magnet (for example the BOSS Score)",
+      "summary": "See who opted in, started and finished a lead magnet, share its link, and edit the follow-up emails sent to people.",
       "tabs": [
         {
           "label": "Overview",
@@ -453,19 +489,19 @@
         }
       ],
       "controls": [
-        "**Settings** button at the top right: opens **Lead magnet settings** where you choose **This app** or **My old CRM** to email people after they take it",
-        "**Share** button: opens a pop-up with **Your public URL** and the share links",
-        "**Edit your page** button (BOSS Score only, once you have a public URL)",
-        "**Add a public link** link, shown when no public URL is set yet",
-        "**Copy** link beside the public link under the title",
-        "Date range dropdown (Last 7 days, Last 14 days, Last 30 days, Last 90 days, All time, Custom range) on Overview and People",
-        "Overview: **By stage** chart with **View all**, plus **Opted in** and **Completed** dials",
-        "People tab: stage chips (All, plus the stages), **Search name or email** box, and a list with Person, Stage, Score and When",
-        "Sequences tab: one tab per follow-up sequence, with steps you can add, edit, copy, reorder and delete",
-        "**Notify me when** box on the Sequences tab, with **Add alert** and Bell, Email and WhatsApp switches",
-        "**Connect your email** link in the settings pop-up if emails would go from the support address"
+        "**Settings** button at the top right: pop-up called Lead magnet settings with **This app** or **My old CRM** under \"Who emails people after they take one?\"",
+        "**Connect your email** and **Rename it** links inside Settings",
+        "Magnet title, picture and public link, with a **Copy** button next to the link",
+        "**Add a public link** shown when no public link is set up yet",
+        "**Edit your page** button (BOSS Score only)",
+        "**Share** button: pop-up with **Your public URL** box and **Save**, plus share settings",
+        "Date range dropdown (Last 7 days, Last 14 days, Last 30 days, Last 90 days, All time, Custom range) with **From** and **To** dates; BOSS Score also shows a views count",
+        "Overview: **By stage** chart with **View all**, plus **Opted in** and **Completed** percentage dials",
+        "People: stage buttons (**All**, plus the stage names), **Search name or email** box, and a table with Person, Stage, Score and When; click a row to open that person",
+        "Sequences: a tab for each follow-up sequence, where you add, edit, copy, reorder and delete steps and insert merge fields",
+        "**Notify me when** box beside the sequence: **Add alert** with **Bell**, **Email** and **WhatsApp** switches"
       ],
-      "notes": "Set a public URL first, or the share links won't work. The views count and the opt-in dial show only for BOSS Score. If the lead magnet is not found, the page shows a link back to the lead magnets list.}"
+      "notes": "Emails to people only go out from this app if the sender in Settings is **This app**; connect your email so they come from you. The **Opted in** dial shows only for the BOSS Score. If the magnet isn't found, the page shows \"Lead magnet not found\" with a **← Back to lead magnets** link."
     },
     {
       "path": "/coach/clients",
@@ -551,11 +587,11 @@
     {
       "path": "/coach/community/calendar",
       "adminPath": "/admin/community/calendar",
-      "hash": "79fc4f2e5a170497",
+      "hash": "c04b043e277c35fe",
       "coachVisible": true,
       "title": "Calendar",
       "where": "Academy → Calendar",
-      "summary": "See upcoming and past community calls, open an event for details, watch recordings, and add the calls to your own calendar app.",
+      "summary": "See community events and calls in a month, week or list view, open an event for details, and watch recordings of past calls.",
       "tabs": [
         {
           "label": "Upcoming",
@@ -567,66 +603,44 @@
         }
       ],
       "controls": [
-        "**Today** button at top left, jumps back to today",
-        "**Previous month** / **Next month** arrows (they say week in Week layout) beside the month title",
-        "Time zone link under the title (shows your current time and city), click to pick another time zone",
-        "**Subscribe** button, opens a pop-up called Subscribe to calls",
-        "**Download .ics** in the Subscribe pop-up",
-        "**Google Calendar**, **Apple Calendar** and **Outlook** buttons in the Subscribe pop-up",
-        "**Copy feed link** in the Subscribe pop-up",
-        "Layout dropdown with **Week** and **Month** (calendar view, bigger screens only)",
-        "Calendar view and List view icon buttons",
-        "**Upcoming** and **Previous calls** switch in List view",
-        "Click any event to open its card with time, link or In person, and description",
+        "**Today** button at top left jumps back to today",
+        "Arrows before and after the month name move to the previous or next month (or week in week view)",
+        "Clock line under the month name (e.g. \"5:00pm London time\") opens a list of time zones to switch to",
+        "**Subscribe** button at top right adds the calendar to your own calendar app",
+        "**Calendar layout** drop-down with **Week** and **Month** (calendar view only, desktop)",
+        "**Calendar view** and **List view** icon buttons switch between the grid and the list",
+        "Click an event in the grid or list to open its pop-up with time, location link, description and links",
         "**Watch recording** button on past events that have a recording",
-        "**Previous** / **Next** page buttons under the list when there are more than 6 events"
+        "Past events without a recording may show a short note where the recording would be",
+        "In list view, **Upcoming** and **Previous calls** switch between future and past events",
+        "List pages use **Previous** and **Next** buttons when there are more than 6 events",
+        "Events marked **Live** are happening now; **Cancelled** marks cancelled sessions"
       ],
-      "notes": "On phones and small screens only the list view shows. Admins also see an Add event button, an event options menu (Edit, Cancel session) and recording or cancellation reason boxes; coaches never see these, so don't offer them. Keep the Subscribe feed link private, since anyone with it can see the call schedule."
+      "notes": "On phones and small screens only the list view is shown. Adding, editing and cancelling events (the Add event button, the event options menu, and recording or cancellation notes) are admin-only, so never offer them to coaches. Coaches only see events tagged for their access level.}"
     },
     {
       "path": "/coach/community/members",
       "adminPath": "/admin/community/members",
-      "hash": "92e6a5bb8260c02a",
+      "hash": "a4fba94d0b2d382e",
       "coachVisible": true,
       "title": "Members",
-      "where": "Academy → Community → Members",
-      "summary": "Browse everyone in the Profit Coach community as a list or on a map, see who is online, and add your own location to the map.",
-      "tabs": [
-        {
-          "label": "Members",
-          "path": "/coach/community/members"
-        },
-        {
-          "label": "Online",
-          "path": "/coach/community/members?filter=online"
-        },
-        {
-          "label": "Admins",
-          "path": "/coach/community/members?filter=admins"
-        },
-        {
-          "label": "List",
-          "path": "/coach/community/members"
-        },
-        {
-          "label": "Map",
-          "path": "/coach/community/members?view=map"
-        }
-      ],
+      "where": "Academy → Community → Members (or click Members, Online or Admins in the Profit Coach Community box on the right)",
+      "summary": "Browse everyone in the Profit Coach community, see who is online, and add your own location to the members map.",
+      "tabs": [],
       "controls": [
-        "**Members**, **Online** and **Admins** buttons at the top, each with a count, to filter the list",
-        "**List** and **Map** switch to change the view",
-        "Sort button (arrows icon) with options **Last online**, **Name** and **Program level**, each in both directions (e.g. Most recently active first, Alphabetical A–Z, Highest level first)",
-        "Member cards showing photo, name, Online or Offline tag, @handle, business name, short bio, last seen, joined date and location",
-        "**View profile** button on a card (only for members listed in the directory)",
-        "**Previous**, page numbers and **Next** under the list when there are more than 20 members",
-        "Side panel with **Profit Coach Community** stats, **Recently active** photos and **This Week's Calls**",
-        "**View full calendar →** link in the This Week's Calls box",
-        "**Your location** box on the map, with a **City, region, country** field and a save button",
-        "**Place pin on map** button (shows **Update map pin** once you have a pin) in the location box",
-        "**Your map pin** pop-up with **Save pin**, **Cancel** and **Close**"
+        "**Members**, **Online** and **Admins** filter buttons, each with a count, at the top of the list",
+        "**List** and **Map** switch at the top",
+        "Sort button (up-down arrows icon) with options: **Last online**, **Name**, **Program level**, each in two directions",
+        "Member cards showing name, @handle, business name, bio, Online/Offline tag, Last seen, Joined date and location",
+        "**View profile** button on a member card (only for members listed in the directory)",
+        "**Previous**, **Next** and page numbers under the list when there is more than one page of 20",
+        "Map view: **Your location** box in the top right with a **City, region, country** field and a save (disk) button",
+        "Map view: **Place pin on map** button (shows **Update map pin** once you have a pin)",
+        "Pin pop-up titled **Your map pin** with **Save pin**, **Cancel** and **Close**",
+        "Right-hand box **Profit Coach Community** with member counts, **Recently active** avatars and **View all**",
+        "**This Week's Calls** box with **View full calendar →**"
       ],
-      "notes": "The map only shows members who have a location and a pin; if nobody does, a message says so. The Online and Offline tags and Last seen only appear when presence data is available. The **Add event** button in the side panel is admin-only on the calendar page, so never offer it here."
+      "notes": "The Online tag, green dot and Recently active avatars only show if the presence feature is available. Your own photo never gets a green dot. The Add event button in the right-hand box is admin-only and does not appear here."
     },
     {
       "path": "/coach/contacts",
@@ -834,29 +848,36 @@
     {
       "path": "/coach/prospects",
       "adminPath": "/admin/prospects",
-      "hash": "b825870cba65adc5",
+      "hash": "b534db6677c32e99",
       "coachVisible": true,
       "title": "Pipeline",
       "where": "Win Clients → Pipeline",
-      "summary": "See everyone you are talking to, move them through stages, add or import prospects, and open one to work on them.",
-      "tabs": [],
+      "summary": "See everyone you are talking to and where they are up to, then add, update, book, import or export prospects.",
+      "tabs": [
+        {
+          "label": "Pipeline view",
+          "path": null
+        },
+        {
+          "label": "List view",
+          "path": null
+        }
+      ],
       "controls": [
-        "**Search prospects…** box in the top bar",
+        "**Search prospects…** box at the top left of the toolbar",
         "**Filter** button: Status, Tags, Exclude tags, Assessment, Next call",
         "**Sort** button: Sort by (Name, Company, Date created, Last assessed, BOSS score, Next call) and Order",
-        "**Group** button (list view only): Group by and Group order",
-        "**Cards** button (pipeline view): Show on cards tick boxes and **Customize pipeline**",
-        "**Columns** button (list view): tick, hide or drag columns",
-        "**Import** button: pop-up with **Choose CSV**, **Download template**, column matching, then **Import**",
-        "**Export** button: Shown columns or All columns as a CSV file",
-        "**Pipeline view** and **List view** switch buttons",
-        "**Add prospect** button: opens a box with Prospect name, Email (optional), Business name (optional), a tick box to copy your assessment link, then **Create prospect**",
-        "Saved view tabs in list view, with **+ View** to add one and a menu to rename, duplicate or delete",
-        "**Customize pipeline** side panel: rename, reorder, show or hide columns and sections, **Add column**",
-        "Status badge in list view: click to change it or choose Use auto",
-        "**Add next action** in the list: type an action and due date"
+        "**Group** button (list view only): Group by, Group order",
+        "**Cards** button (pipeline view): tick what shows on cards, plus **Customize pipeline** to rename, reorder, show or hide columns and sections",
+        "**Columns** button (list view): tick, hide and drag columns to reorder",
+        "**Import** button: pop-up with **Choose CSV**, **Download template**, column matching and **Import**",
+        "**Export** button: **Shown columns** or **All columns**",
+        "Pipeline view and List view switch, next to Add prospect",
+        "**Add prospect** button: form with **Prospect name**, **Email (optional)**, **Business name (optional)**, a checkbox to copy your assessment link, and **Create prospect**",
+        "Saved view tabs above the list (list view only), with **+ View** to add one and a menu on each tab to rename, duplicate or delete",
+        "Click a prospect to open its page; on a row, edit the status, **Add next action**, contact details, delete, or **Book a call**"
       ],
-      "notes": "The page heading on screen is Win Clients. Clicking a prospect opens their own page. Other pop-ups here: Edit contact, Book a call (needs a calendar switched on under Calls → Booking pages), and delete confirmation. The Coach filter and Coach column are admin-only, so never offer them."
+      "notes": "The page heading on screen is Win Clients. Moving prospects to the pool is not offered on this page. Booking a call needs at least one calendar switched on under Calls → Booking pages.Cards, deleting and booking are done from each prospect's card or row."
     },
     {
       "path": "/coach/prospects/[id]",

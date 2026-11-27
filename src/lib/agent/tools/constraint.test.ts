@@ -6,7 +6,6 @@ import { type FunnelNumbers, pickConstraint } from "./constraint";
 /** A coach with every stage healthy. */
 const healthy: FunnelNumbers = {
   linkedin_connected: true,
-  sales_robot: false,
   campaigns_running: 1,
   people_in_running_campaigns: 1_200,
   people_waiting_for_invite: 700,

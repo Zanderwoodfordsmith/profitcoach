@@ -25,7 +25,6 @@ export type CoachHealthRow = {
   blueprint: string | null;
   linkedin: "connected" | "problem" | "none";
   ssi: number | null;
-  sales_robot: boolean;
   campaigns_running: number;
   invites_7d: number;
   invites_30d: number;
@@ -68,19 +67,19 @@ export function diagnose(r: Omit<CoachHealthRow, "level" | "stuck_at" | "next_st
   if (r.last_active_days != null && r.last_active_days >= 14) {
     return { level: "red", stuck_at: "Not logging in", next_step: "Personal check-in: what's got in the way?" };
   }
-  if (r.linkedin === "none" && !r.sales_robot) {
+  if (r.linkedin === "none") {
     return { level: "red", stuck_at: "LinkedIn not connected", next_step: "Connect LinkedIn in Settings (5 minutes)." };
   }
   if (r.linkedin === "problem") {
     return { level: "red", stuck_at: "LinkedIn connection broken", next_step: "Reconnect LinkedIn; campaigns are paused until then." };
   }
-  if (r.invites_7d === 0 && r.campaigns_running === 0 && !r.sales_robot) {
+  if (r.invites_7d === 0 && r.campaigns_running === 0) {
     return { level: "red", stuck_at: "Not sending", next_step: "Turn on a campaign; offer to build the first one with them." };
   }
   if (r.blueprint && /not started|draft|interview/i.test(r.blueprint)) {
     return { level: "amber", stuck_at: "Blueprint not finished", next_step: "Finish the Blueprint so campaigns can use their proof and tribe." };
   }
-  if (r.invites_30d > 0 && r.invites_30d < 200 && !r.sales_robot) {
+  if (r.invites_30d > 0 && r.invites_30d < 200) {
     return { level: "amber", stuck_at: "Sending too little", next_step: "Aim for 100+ invites a week; check daily limits and the pool size." };
   }
   if (r.accept_rate != null && r.invites_30d >= 100 && r.accept_rate < 0.1) {
@@ -91,9 +90,6 @@ export function diagnose(r: Omit<CoachHealthRow, "level" | "stuck_at" | "next_st
   }
   if (r.median_reply_hours != null && r.median_reply_hours > 4) {
     return { level: "amber", stuck_at: "Slow replies", next_step: "Turn on Ava phone alerts; aim to reply within 30 minutes." };
-  }
-  if (r.sales_robot && r.campaigns_running === 0) {
-    return { level: "green", stuck_at: "On Sales Robot (not tracked here)", next_step: "Move them onto Get Clients so we can see and help." };
   }
   return { level: "green", stuck_at: "On track", next_step: "Keep going; share what's working with the group." };
 }
@@ -173,8 +169,8 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
   const since30 = new Date(Date.now() - 30 * DAY).toISOString();
   const since7 = Date.now() - 7 * DAY;
 
-  const coaches = await all<{ id: string; slug: string; membership_status: string | null; recurring_payment_status: string | null; has_sales_robot_account: boolean | null; record_kind: string | null; membership_started_at: string | null }>(
-    (f, t) => supabaseAdmin.from("coaches").select("id, slug, membership_status, recurring_payment_status, has_sales_robot_account, record_kind, membership_started_at").range(f, t)
+  const coaches = await all<{ id: string; slug: string; membership_status: string | null; recurring_payment_status: string | null; record_kind: string | null; membership_started_at: string | null }>(
+    (f, t) => supabaseAdmin.from("coaches").select("id, slug, membership_status, recurring_payment_status, record_kind, membership_started_at").range(f, t)
   );
   const active = coaches.filter(
     (c) => (c.membership_status === "active" || c.membership_status === "past_due" || c.membership_status === "trialing") && c.record_kind !== "historical"
@@ -332,7 +328,6 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
         blueprint: bp.get(c.id) ?? "not started",
         linkedin: (acct ? (acct.status.toUpperCase() === "OK" ? "connected" : "problem") : "none") as CoachHealthRow["linkedin"],
         ssi: acct?.ssi ?? null,
-        sales_robot: Boolean(c.has_sales_robot_account),
         campaigns_running: running.get(c.id) ?? 0,
         invites_7d: inv7.get(c.id) ?? 0,
         invites_30d: inv30,

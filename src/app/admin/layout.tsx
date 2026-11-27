@@ -67,6 +67,8 @@ export default function AdminLayout({
   const playbooksReader = isPlaybooksReaderPath(pathname);
   /** Long table: a flat canvas keeps its row lines readable all the way down. */
   const curriculumBoardPage = pathname.startsWith("/admin/lesson-import/curriculum");
+  /** Roadmap (Jobs, Projects): flat off-white, no gradient. */
+  const roadmapPage = pathname.startsWith("/admin/roadmap");
   const blueprintPage = pathname.startsWith("/admin/blueprint");
   const coachesBlueprintPage =
     pathname === "/admin/client-success/blueprint" || pathname.startsWith("/admin/client-success/blueprint/");
@@ -185,7 +187,14 @@ export default function AdminLayout({
       className={`group/appshell ${
         fullHeightPage ? "h-dvh overflow-hidden" : "min-h-screen"
       } ${shellPadClass} text-slate-900 ${
-        playbooksReader ? "bg-[#fbfbfa]" : curriculumBoardPage ? "bg-[#f7f9fb]" : "app-canvas-bg"
+        playbooksReader
+          ? "bg-[#fbfbfa]"
+          : curriculumBoardPage
+            ? "bg-[#f7f9fb]"
+            : roadmapPage
+              ? // The sticky table headers read --app-canvas-base, so it changes with the page.
+                "bg-[#f7f9fb] [--app-canvas-base:#f7f9fb]"
+              : "app-canvas-bg"
       }`}
     >
       <UsageTracker />

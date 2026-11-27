@@ -19,6 +19,7 @@ import {
   MapPin,
   Link as LinkIcon,
   Video,
+  VideoOff,
   XCircle,
   Trash2,
 } from "lucide-react";
@@ -1729,6 +1730,11 @@ export function CommunityCalendar({
                               <Video className="h-4 w-4 shrink-0" />
                               Watch recording
                             </a>
+                          ) : isPast && !ev.isCancelled && ev.noRecordingNote ? (
+                            <p className="mt-[0.3rem] flex items-start gap-1.5 text-sm text-slate-600">
+                              <VideoOff className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                              {ev.noRecordingNote}
+                            </p>
                           ) : null}
                         </div>
                       </div>

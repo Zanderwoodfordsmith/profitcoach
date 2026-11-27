@@ -15,7 +15,7 @@ export const COMMUNITY_CALENDAR_EVENT_SELECT =
   "id, created_by, title, description, cover_image_url, starts_at, ends_at, display_timezone, location_kind, location_url, recording_link_url, recording_video_url, is_recurring, recurrence, access_tags, created_at, updated_at";
 
 export const COMMUNITY_CALENDAR_EXCEPTION_SELECT =
-  "id, event_id, occurrence_start, cancelled_at, cancellation_reason, recording_link_url, recording_video_url, rescheduled_starts_at, rescheduled_ends_at, omit_from_calendar, created_at";
+  "id, event_id, occurrence_start, cancelled_at, cancellation_reason, recording_link_url, recording_video_url, rescheduled_starts_at, rescheduled_ends_at, omit_from_calendar, no_recording_note, created_at";
 
 export type CommunityCalendarData = {
   events: CommunityCalendarEventRow[];
@@ -42,6 +42,7 @@ export function mergeCommunityCalendarOccurrenceState(
     ...occurrence,
     isCancelled: Boolean(ex?.cancelled_at),
     cancellationReason: ex?.cancellation_reason ?? null,
+    noRecordingNote: ex?.no_recording_note?.trim() || null,
     recording_link_url: recurring
       ? (ex?.recording_link_url ?? null)
       : (ex?.recording_link_url ?? event.recording_link_url),
@@ -149,7 +150,7 @@ export async function saveCommunityCalendarOccurrenceRecording(
   const { data: existing, error: readError } = await supabaseClient
     .from("community_calendar_event_exceptions")
     .select(
-      "id, cancellation_reason, recording_link_url, recording_video_url"
+      "id, cancellation_reason, recording_link_url, recording_video_url, no_recording_note"
     )
     .eq("event_id", eventId)
     .eq("occurrence_start", normalized)
@@ -160,6 +161,10 @@ export async function saveCommunityCalendarOccurrenceRecording(
   const hasCancellation = Boolean(
     (existing as { cancelled_at?: string | null } | null)?.cancelled_at
   );
+  const hasNoRecordingNote = Boolean(
+    (existing as { no_recording_note?: string | null } | null)
+      ?.no_recording_note
+  );
   const link = recording.recording_link_url;
   const video =
     recording.recording_video_url !== undefined
@@ -167,7 +172,7 @@ export async function saveCommunityCalendarOccurrenceRecording(
       : ((existing as { recording_video_url?: string | null } | null)
           ?.recording_video_url ?? null);
 
-  if (!link && !video && !hasCancellation) {
+  if (!link && !video && !hasCancellation && !hasNoRecordingNote) {
     const { error: deleteError } = await supabaseClient
       .from("community_calendar_event_exceptions")
       .delete()
@@ -191,6 +196,31 @@ export async function saveCommunityCalendarOccurrenceRecording(
             ?.cancellation_reason ?? null,
         recording_link_url: link,
         recording_video_url: video,
+      },
+      { onConflict: "event_id,occurrence_start" }
+    );
+  if (error) throw error;
+}
+
+/** Note coaches see on a past session with no recording. Null clears it. */
+export async function saveCommunityCalendarNoRecordingNote(
+  eventId: string,
+  occurrenceStartIso: string,
+  note: string | null
+): Promise<void> {
+  const normalized = DateTime.fromISO(occurrenceStartIso, {
+    zone: "utc",
+  }).toISO();
+  if (!normalized) throw new Error("Invalid occurrence start time");
+
+  // Upsert only touches the columns sent, so cancellation and recording stay.
+  const { error } = await supabaseClient
+    .from("community_calendar_event_exceptions")
+    .upsert(
+      {
+        event_id: eventId,
+        occurrence_start: normalized,
+        no_recording_note: note?.trim() || null,
       },
       { onConflict: "event_id,occurrence_start" }
     );

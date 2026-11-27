@@ -7,6 +7,7 @@ import {
   Link as LinkIcon,
   MapPin,
   Video,
+  VideoOff,
   Pencil,
   Trash2,
   X,
@@ -27,9 +28,12 @@ import {
 } from "@/lib/communityCalendarDisplay";
 import { inferCommunityPostMediaKindFromUrl } from "@/lib/communityPostMedia";
 import {
+  saveCommunityCalendarNoRecordingNote,
   saveCommunityCalendarOccurrenceRecording,
   updateCommunityCalendarCancellationReason,
 } from "@/lib/communityCalendarData";
+
+const DEFAULT_NO_RECORDING_NOTE = "Sorry, we forgot to record this call.";
 import {
   communityCalendarExceptionOccurrenceStart,
   isRecurringCommunityCalendarEvent,
@@ -109,9 +113,22 @@ export function CommunityCalendarEventModal({
     string | null
   >(null);
 
+  const [noRecordingDraft, setNoRecordingDraft] = useState(
+    occurrence.noRecordingNote ?? ""
+  );
+  const [noRecordingOpen, setNoRecordingOpen] = useState(false);
+  const [noRecordingSaving, setNoRecordingSaving] = useState(false);
+  const [noRecordingError, setNoRecordingError] = useState<string | null>(null);
+
   useEffect(() => {
     setRecordingLinkDraft(occurrence.recording_link_url ?? "");
     setRecordingError(null);
+  }, [occurrence]);
+
+  useEffect(() => {
+    setNoRecordingDraft(occurrence.noRecordingNote ?? "");
+    setNoRecordingOpen(false);
+    setNoRecordingError(null);
   }, [occurrence]);
 
   useEffect(() => {
@@ -241,6 +258,31 @@ export function CommunityCalendarEventModal({
     onRecordingSaved,
   ]);
 
+  const saveNoRecordingNote = useCallback(
+    async (note: string | null) => {
+      setNoRecordingSaving(true);
+      setNoRecordingError(null);
+      try {
+        await saveCommunityCalendarNoRecordingNote(
+          occurrence.eventId,
+          exceptionOccurrenceStart,
+          note
+        );
+        onRecordingSaved?.();
+      } catch (e) {
+        const msg = supabaseErrorMessage(e);
+        const hint = communityAccessHint(msg);
+        setNoRecordingError(
+          [msg, hint ?? ""].filter(Boolean).join("\n\n") ||
+            "Could not save the note."
+        );
+      } finally {
+        setNoRecordingSaving(false);
+      }
+    },
+    [occurrence.eventId, exceptionOccurrenceStart, onRecordingSaved]
+  );
+
   const saveCancellationReason = useCallback(async () => {
     setCancellationReasonSaving(true);
     setCancellationReasonError(null);
@@ -368,6 +410,12 @@ export function CommunityCalendarEventModal({
             <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
             <span>{whenLabel}</span>
           </p>
+          {isPast && !watchUrl && !occurrence.isCancelled && occurrence.noRecordingNote ? (
+            <p className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+              <VideoOff className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+              <span>{occurrence.noRecordingNote}</span>
+            </p>
+          ) : null}
           {occurrence.isCancelled ? (
             <div className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-800">
               <p>This session has been cancelled and will not take place.</p>
@@ -491,6 +539,61 @@ export function CommunityCalendarEventModal({
                   ? "Applies only to this date in the series. Other sessions are unchanged."
                   : "Applies to this event. Upload a video file via Edit if needed."}
               </p>
+              {!watchUrl ? (
+                noRecordingOpen || occurrence.noRecordingNote ? (
+                  <div className="space-y-2 pt-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      No recording
+                    </p>
+                    <textarea
+                      value={noRecordingDraft}
+                      onChange={(e) => setNoRecordingDraft(e.target.value)}
+                      maxLength={300}
+                      rows={2}
+                      placeholder={DEFAULT_NO_RECORDING_NOTE}
+                      className={fieldClass("textarea")}
+                    />
+                    {noRecordingError ? (
+                      <p className="text-xs text-rose-700">{noRecordingError}</p>
+                    ) : null}
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={noRecordingSaving || !noRecordingDraft.trim()}
+                        onClick={() => void saveNoRecordingNote(noRecordingDraft)}
+                        className={buttonClass("second", "small")}
+                      >
+                        {noRecordingSaving ? "Saving…" : "Save note"}
+                      </button>
+                      {occurrence.noRecordingNote ? (
+                        <button
+                          type="button"
+                          disabled={noRecordingSaving}
+                          onClick={() => void saveNoRecordingNote(null)}
+                          className={buttonClass("quiet", "small")}
+                        >
+                          Remove note
+                        </button>
+                      ) : null}
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Coaches see this on the calendar where the recording would be.
+                      It hides once a recording is added.
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNoRecordingDraft(DEFAULT_NO_RECORDING_NOTE);
+                      setNoRecordingOpen(true);
+                    }}
+                    className="text-xs font-semibold text-sky-600 hover:text-sky-700 hover:underline"
+                  >
+                    No recording? Say sorry instead
+                  </button>
+                )
+              ) : null}
             </div>
           ) : null}
           </div>

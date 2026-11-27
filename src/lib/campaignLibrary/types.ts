@@ -1,4 +1,4 @@
-import type { CampaignStepInput } from "@/lib/unipile/campaigns";
+import type { CampaignChannel, CampaignStepInput } from "@/lib/unipile/campaigns";
 import type { AvailabilityRuleRow } from "@/lib/booking/computeBookingSlots";
 
 export const CAMPAIGN_LIBRARY_ITEM_TYPES = [
@@ -81,6 +81,10 @@ export type CampaignLibraryItemSummary = {
   name: string;
   description: string | null;
   status: CampaignLibraryStatus;
+  /** Set when a coach saved it as their own; null for BCA's library. */
+  coach_id: string | null;
+  /** The kind of campaign it makes. BCA's library is LinkedIn. */
+  channel: CampaignChannel;
   settings: CampaignLibraryItemSettings;
   step_count: number;
   step_types: string[];
@@ -92,7 +96,7 @@ export type CampaignLibraryItemDetail = CampaignLibraryItemSummary & {
   steps: CampaignStepInput[];
 };
 
-/** Published templates a coach can start from. No drafts or admin settings. */
+/** Templates a coach can start from: BCA's published ones plus their own. */
 export type CoachCampaignTemplate = {
   id: string;
   name: string;
@@ -100,6 +104,9 @@ export type CoachCampaignTemplate = {
   kind: CampaignLibraryKind;
   step_count: number;
   step_types: string[];
+  /** The coach saved this one themselves (they can rename or delete it). */
+  mine: boolean;
+  channel: CampaignChannel;
 };
 
 export function toCoachCampaignTemplate(
@@ -112,6 +119,8 @@ export function toCoachCampaignTemplate(
     kind: item.kind,
     step_count: item.step_count,
     step_types: item.step_types,
+    mine: item.coach_id != null,
+    channel: item.channel,
   };
 }
 

@@ -22,6 +22,8 @@ import { HealthChip } from "./roadmapHealth";
 import { JobIcon, ProjectIcon } from "./roadmapIcons";
 import { Caret, MetaDropdown, ScoreBarsPair, ScoreDropdown, StatusIcon, useDismiss } from "./roadmapUi";
 import { RoadmapProjectsViewV1 } from "./RoadmapProjectsViewV1";
+import type { SpaceChoice } from "./RoadmapSpacePicker";
+import { projectSpace } from "./spaces";
 
 /**
  * Projects view: one row per project, in the List view's look (sticky column
@@ -35,6 +37,8 @@ export type ProjectsShow = "list" | "board" | "graph" | "timeline";
 
 type Props = {
   show: ProjectsShow;
+  /** The space picked in the toolbar: only its projects show (all when "all"). */
+  space?: SpaceChoice;
   jobs: RoadmapJob[];
   authHeaders: () => Promise<Record<string, string> | null>;
   onOpenProject: (name: string) => void;
@@ -135,7 +139,7 @@ export function RoadmapProjectsView(props: Props) {
   );
 }
 
-function ProjectsTable({ show, jobs, authHeaders, onOpenProject, stickyTop }: Props) {
+function ProjectsTable({ show, space = "all", jobs, authHeaders, onOpenProject, stickyTop }: Props) {
   const [saved, setSaved] = useState<RoadmapProject[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [initiatives, setInitiatives] = useState<RoadmapInitiative[]>([]);
@@ -171,13 +175,15 @@ function ProjectsTable({ show, jobs, authHeaders, onOpenProject, stickyTop }: Pr
     if (!saved) return [];
     const byName = new Map(saved.map((p) => [p.name, p]));
     const names = new Set([...saved.map((p) => p.name), ...jobs.map((j) => j.project).filter((p): p is string => Boolean(p))]);
-    return [...names].map((name) => {
-      const p = byName.get(name);
-      return p
-        ? { ...p, saved: true }
-        : { name, stage: "next" as const, goal: null, impact: null, ease: null, start_on: null, target_on: null, sort_order: 999, updated_at: "", initiative_id: null, brief: null, saved: false };
-    });
-  }, [saved, jobs]);
+    return [...names]
+      .filter((name) => space === "all" || projectSpace(name) === space)
+      .map((name) => {
+        const p = byName.get(name);
+        return p
+          ? { ...p, saved: true }
+          : { name, stage: "next" as const, goal: null, impact: null, ease: null, start_on: null, target_on: null, sort_order: 999, updated_at: "", initiative_id: null, brief: null, saved: false };
+      });
+  }, [saved, jobs, space]);
 
   const jobsBy = useMemo(() => {
     const map = new Map<string, RoadmapJob[]>();

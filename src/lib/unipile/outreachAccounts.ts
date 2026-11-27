@@ -305,6 +305,204 @@ export async function upsertOutreachAccountFromNotify(input: {
     { onConflict: "coach_id,unipile_account_id" }
   );
   if (error) throw new Error(error.message);
+
+  if (provider === "LINKEDIN") {
+    try {
+      await enforceOneLinkedInConnection(input.coachId);
+    } catch (err) {
+      console.error(
+        "one LinkedIn per coach:",
+        input.coachId,
+        err instanceof Error ? err.message : err
+      );
+    }
+  }
+}
+
+type LinkedInConnection = {
+  id: string;
+  unipileAccountId: string;
+  status: string;
+  createdAt: string;
+  alive: boolean;
+  salesNav: boolean;
+  personId: string | null;
+  live: Record<string, unknown> | null;
+};
+
+function linkedInIdentity(raw: unknown): Record<string, unknown> {
+  const im = (raw as { connection_params?: { im?: unknown } } | null)
+    ?.connection_params?.im;
+  return im && typeof im === "object" ? (im as Record<string, unknown>) : {};
+}
+
+/** The coach's LinkedIn connections, best first: still there, Sales Navigator, newest. */
+async function rankLinkedInConnections(
+  coachId: string
+): Promise<LinkedInConnection[]> {
+  const { data, error } = await supabaseAdmin
+    .from("linkedin_outreach_accounts")
+    .select("id, unipile_account_id, provider, status, created_at, raw")
+    .eq("coach_id", coachId);
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []).filter(
+    (row) =>
+      normalizeUnipileProvider(row.provider as string) === "LINKEDIN" &&
+      Boolean(String(row.unipile_account_id ?? "").trim())
+  );
+  const ranked: LinkedInConnection[] = [];
+  for (const row of rows) {
+    const got = await getUnipileAccount(row.unipile_account_id as string);
+    const live = got.ok
+      ? ((got.data ?? null) as Record<string, unknown> | null)
+      : null;
+    const identity = linkedInIdentity(live ?? row.raw);
+    const premium = Array.isArray(identity.premiumFeatures)
+      ? identity.premiumFeatures.map(String)
+      : [];
+    ranked.push({
+      id: row.id as string,
+      unipileAccountId: row.unipile_account_id as string,
+      status: String(row.status ?? ""),
+      createdAt: String(row.created_at ?? ""),
+      // Only a definite "not found" counts as gone: a network blip must
+      // never remove a coach's connection.
+      alive: !isUnipileAccountNotFound(got),
+      salesNav: premium.includes("sales_navigator"),
+      personId:
+        typeof identity.id === "string" && identity.id ? identity.id : null,
+      live,
+    });
+  }
+  return ranked.sort(
+    (a, b) =>
+      Number(b.alive) - Number(a.alive) ||
+      Number(b.salesNav) - Number(a.salesNav) ||
+      (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0)
+  );
+}
+
+/**
+ * The LinkedIn to sign in again to when a coach connects LinkedIn, so they
+ * never end up with two. Null when they have none still connected.
+ */
+export async function linkedInToReconnect(
+  coachId: string
+): Promise<string | null> {
+  const [best] = await rankLinkedInConnections(coachId);
+  return best?.alive ? best.unipileAccountId : null;
+}
+
+/**
+ * Delete the removed connection's chats that the kept connection also has
+ * (same person, at least as many messages), so Conversations and the
+ * contact page don't show them twice. Returns how many were deleted.
+ */
+export async function dropDuplicateChats(
+  coachId: string,
+  fromAccountId: string,
+  keptAccountId: string
+): Promise<number> {
+  const load = async (accountId: string) =>
+    (
+      await supabaseAdmin
+        .from("messaging_conversations")
+        .select("id, prospect_linkedin_provider_id, prospect_name, last_message_at")
+        .eq("coach_id", coachId)
+        .eq("unipile_account_id", accountId)
+    ).data ?? [];
+  // The other person's LinkedIn id; without one, a copy shares the name and
+  // the exact time of the last message.
+  const personKey = (row: Record<string, unknown>) => {
+    const providerId = String(row.prospect_linkedin_provider_id ?? "").trim();
+    if (providerId) return `li:${providerId}`;
+    const name = String(row.prospect_name ?? "").trim();
+    const last = String(row.last_message_at ?? "").trim();
+    return name && last ? `name:${name}|${last}` : null;
+  };
+  const [from, kept] = await Promise.all([
+    load(fromAccountId),
+    load(keptAccountId),
+  ]);
+  const keptByPerson = new Map<string, string>();
+  for (const row of kept) {
+    const key = personKey(row);
+    if (key) keptByPerson.set(key, row.id as string);
+  }
+  const messageCount = async (conversationId: string) =>
+    (
+      await supabaseAdmin
+        .from("messaging_messages")
+        .select("id", { count: "exact", head: true })
+        .eq("conversation_id", conversationId)
+    ).count ?? 0;
+  let dropped = 0;
+  for (const row of from) {
+    const key = personKey(row);
+    const twin = key ? keptByPerson.get(key) : undefined;
+    if (!twin) continue;
+    if ((await messageCount(twin)) < (await messageCount(row.id as string))) {
+      continue;
+    }
+    const { error } = await supabaseAdmin
+      .from("messaging_conversations")
+      .delete()
+      .eq("id", row.id)
+      .eq("coach_id", coachId);
+    if (error) throw new Error(error.message);
+    dropped += 1;
+  }
+  return dropped;
+}
+
+/**
+ * One LinkedIn per coach. Keeps the best connection (still there, then
+ * Sales Navigator, then newest) and removes the rest. When a removed one is
+ * the same LinkedIn person, its campaigns move to the kept one and its
+ * copies of chats are dropped; a different person's campaigns are paused.
+ */
+export async function enforceOneLinkedInConnection(coachId: string): Promise<{
+  keptAccountId: string | null;
+  removedAccountIds: string[];
+}> {
+  const [keep, ...rest] = await rankLinkedInConnections(coachId);
+  if (!keep) return { keptAccountId: null, removedAccountIds: [] };
+
+  const removedAccountIds: string[] = [];
+  for (const other of rest) {
+    if (keep.personId && other.personId === keep.personId) {
+      await supabaseAdmin
+        .from("linkedin_campaigns")
+        .update({ outreach_account_id: keep.id })
+        .eq("coach_id", coachId)
+        .eq("outreach_account_id", other.id);
+      await dropDuplicateChats(
+        coachId,
+        other.unipileAccountId,
+        keep.unipileAccountId
+      );
+    }
+    await removeOutreachAccount(coachId, other.id);
+    removedAccountIds.push(other.unipileAccountId);
+  }
+
+  // A double sign-in can leave the kept row stuck on CONNECTING though
+  // LinkedIn reports it fine, and then nothing uses it.
+  if (removedAccountIds.length && keep.live) {
+    const status = mapAccountStatus(keep.live);
+    if (status !== keep.status) {
+      await supabaseAdmin
+        .from("linkedin_outreach_accounts")
+        .update({
+          status,
+          raw: keep.live,
+          last_synced_at: new Date().toISOString(),
+        })
+        .eq("id", keep.id);
+    }
+  }
+
+  return { keptAccountId: keep.unipileAccountId, removedAccountIds };
 }
 
 /**

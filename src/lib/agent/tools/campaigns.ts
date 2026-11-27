@@ -239,10 +239,10 @@ export const campaignTools: AgentToolDef[] = [
     name: "list_campaign_templates",
     label: "Looking at templates",
     description:
-      "Published campaign templates from the Campaign library, by kind: connector (Connection), reactivation, nurture (Ongoing nurture), positive_reply (Positive replies).",
+      "Campaign templates: the active coach's own saved ones (mine: true) and BCA's published ones from the Campaign library, by kind: connector (Connection), reactivation, nurture (Ongoing nurture), positive_reply (Positive replies).",
     input_schema: { type: "object", properties: {} },
-    run: async () => {
-      const templates = await listCoachCampaignTemplates();
+    run: async (_input, ctx) => {
+      const templates = await listCoachCampaignTemplates(ctx.coach?.id ?? null);
       return {
         templates: templates.map((t) => ({
           id: t.id,
@@ -250,6 +250,8 @@ export const campaignTools: AgentToolDef[] = [
           kind: CAMPAIGN_LIBRARY_KIND_LABEL[t.kind] ?? t.kind,
           description: t.description,
           steps: t.step_count,
+          mine: t.mine,
+          channel: t.channel,
         })),
       };
     },

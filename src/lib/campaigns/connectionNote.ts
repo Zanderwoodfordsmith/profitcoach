@@ -13,6 +13,7 @@ const FIELD_LENGTH: Record<string, number> = {
   location: 15,
   coach_name: 10,
   profile_hook: 120,
+  their_business: 35,
   assessment_url: 50,
   assessment_pro_url: 54,
   boss_score_report_link: 57,

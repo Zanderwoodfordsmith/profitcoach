@@ -89,7 +89,6 @@ function base() {
     blueprint: "ready · 90%",
     linkedin: "connected" as const,
     ssi: 50,
-    sales_robot: false,
     campaigns_running: 1,
     invites_7d: 120,
     invites_30d: 400,

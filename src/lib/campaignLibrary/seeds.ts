@@ -20,6 +20,7 @@ async function findExistingSeed(
     .select("id, name")
     .eq("item_type", seed.itemType)
     .eq("kind", seed.kind)
+    .is("coach_id", null)
     .in("name", names);
   if (error) throw new Error(error.message);
   const rows = data ?? [];

@@ -11,6 +11,7 @@ import {
   Check,
   ChevronRight,
   ChevronDown,
+  ListFilter,
   ListMinus,
   ListPlus,
   Loader2,
@@ -22,7 +23,12 @@ import {
 import { ImportPoolModal } from "@/components/campaigns/ImportPoolModal";
 import { PoolEmptyState } from "@/components/campaigns/PoolEmptyState";
 import type { PoolImportPreset } from "@/components/campaigns/PoolImportPicker";
-import { PoolFilterMenu } from "@/components/campaigns/PoolFilterMenu";
+import {
+  PoolFilterChips,
+  PoolFilterMenu,
+  type PoolFilterSection,
+} from "@/components/campaigns/PoolFilterMenu";
+import { SmartListRulesPanel } from "@/components/campaigns/SmartListRulesPanel";
 import { GoogleMapsImportWaitPanel } from "@/components/campaigns/GoogleMapsImportWaitPanel";
 import { SalesNavImportWaitPanel } from "@/components/campaigns/SalesNavImportWaitPanel";
 import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
@@ -104,35 +110,37 @@ import {
   poolDisplayName,
   poolLeadCompany,
   poolRowFitsCampaignChannel,
-  poolRowMatchesCityFilter,
-  poolRowMatchesContactFilter,
-  poolRowMatchesDateAddedFilter,
-  poolRowMatchesHeadcountFilter,
-  poolRowMatchesIndustryFilter,
-  poolRowMatchesFitFilter,
-  poolRowMatchesLinkedInFilter,
-  poolRowMatchesPostcodeFilter,
-  poolRowMatchesTagFilter,
-  poolRowPassesExcludedTags,
   poolSourceLabel,
   poolWebsiteHref,
   type PoolColumnKey,
   type PoolColumnVisibility,
-  type PoolContactFilter,
-  type PoolDateAddedFilter,
-  type PoolLinkedInFilter,
-  type PoolFitFilter,
   type PoolGroupField,
   type PoolGroupOrder,
   type PoolPerson,
   type PersistedPoolGrouping,
-  type PoolTagFilter,
 } from "@/lib/pool/poolPeople";
 import {
+  createDefaultPoolTableViewSettings,
   normalizePoolTableViewSettings,
   POOL_SORT_VERSION,
   type PoolTableViewSettings,
 } from "@/lib/pool/poolTableViews";
+import {
+  countActivePoolFilters,
+  createEmptyPoolFilters,
+  normalizePoolFilters,
+  poolRowMatchesFilters,
+  type PoolFilters,
+} from "@/lib/pool/poolFilters";
+import {
+  createEmptySmartRules,
+  poolRowMatchesSmartRules,
+  type PoolSmartRules,
+} from "@/lib/pool/smartListRules";
+import {
+  outreachAgeLabel,
+  poolOutreachStatusLabel,
+} from "@/lib/pool/outreachStatus";
 import {
   DEFAULT_TABLE_PAGE_SIZE,
   TablePaginationFooter,
@@ -167,6 +175,59 @@ type CampaignOption = {
   channel?: string;
   source_playbook_id?: string | null;
 };
+
+/** Campaign column: the first campaign's name, "+1" for each other one, all of them on hover. */
+function PoolCampaignNames({ names }: { names: string[] }) {
+  const more = names.length - 1;
+  return (
+    <span
+      className="flex min-w-0 items-center gap-1"
+      title={names.length ? names.join("\n") : undefined}
+    >
+      <span className={badgeClass("blue", "min-w-0")}>
+        <span className="truncate">{names[0] ?? "In campaign"}</span>
+      </span>
+      {more > 0 ? (
+        <span className="shrink-0 text-caption font-medium text-slate-500">
+          +{more}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+const STATUS_TONE: Record<string, "grey" | "blue" | "green" | "amber"> = {
+  invited: "amber",
+  connected: "blue",
+  replied: "green",
+  interested: "green",
+  booked: "green",
+};
+
+/** Status column (job 300): where they are, and for how long when we know. */
+function PoolStatusCell({
+  status,
+  at,
+}: {
+  status: NonNullable<PoolPerson["outreach_status"]>;
+  at: string | null;
+}) {
+  if (status === "none") return <span className="text-slate-400">—</span>;
+  const age = outreachAgeLabel(at);
+  return (
+    <span
+      className="flex min-w-0 items-center gap-1.5"
+      title={at ? `Since ${formatShortDate(at)}` : "Date not known"}
+    >
+      <span className={badgeClass(STATUS_TONE[status] ?? "grey", "shrink-0")}>
+        {poolOutreachStatusLabel(status)}
+      </span>
+      {age ? (
+        <span className="truncate text-caption text-slate-500">{age}</span>
+      ) : null}
+    </span>
+  );
+}
 
 type CampaignMenuState =
   | null
@@ -316,7 +377,9 @@ function getPoolColumnWidth(key: PoolColumnKey): number {
     case "source":
       return 128;
     case "campaign":
-      return 112;
+      return 168;
+    case "status":
+      return 184;
     case "created_at":
       return 112;
     case "linkedin":
@@ -418,24 +481,22 @@ export function CampaignPoolHub({
   } | null>(null);
   const [busy, setBusy] = useState(false);
   const [query, setQuery] = useState("");
-  const [sourceFilter, setSourceFilter] = useState("all");
-  const [campaignFilter, setCampaignFilter] = useState<
-    "all" | "in_campaign" | "not_in_campaign"
-  >("all");
-  const [campaignIdFilter, setCampaignIdFilter] = useState("");
+  const [filters, setFilters] = useState<PoolFilters>(createEmptyPoolFilters);
+  const updateFilters = useCallback(
+    (patch: Partial<PoolFilters>) => setFilters((current) => ({ ...current, ...patch })),
+    []
+  );
+  /** Filter menu opened on one filter's list (from its chip). */
+  const [filterSection, setFilterSection] = useState<PoolFilterSection | null>(null);
+  /** Set while a smart list tab is open (job 301). */
+  const [smartRules, setSmartRules] = useState<PoolSmartRules | null>(null);
+  const [rulesPanelOpen, setRulesPanelOpen] = useState(false);
+  const [newListKind, setNewListKind] = useState<"list" | "smart">("list");
+  /** "+ List" menu position (portalled: the tab bar scrolls sideways). */
+  const [newListMenuPos, setNewListMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const newListBtnRef = useRef<HTMLButtonElement | null>(null);
+  const newListMenuRef = useRef<HTMLDivElement | null>(null);
   const [matchMenuOpen, setMatchMenuOpen] = useState(false);
-  const [contactFilter, setContactFilter] = useState<PoolContactFilter>("all");
-  const [linkedinFilter, setLinkedinFilter] =
-    useState<PoolLinkedInFilter>("all");
-  const [fitFilter, setFitFilter] = useState<PoolFitFilter>("all");
-  const [dateAddedFilter, setDateAddedFilter] =
-    useState<PoolDateAddedFilter>("all");
-  const [headcountFilter, setHeadcountFilter] = useState<string[]>([]);
-  const [cityFilter, setCityFilter] = useState("");
-  const [postcodeFilter, setPostcodeFilter] = useState("");
-  const [industryFilter, setIndustryFilter] = useState("");
-  const [tagFilter, setTagFilter] = useState<PoolTagFilter>("all");
-  const [excludeTags, setExcludeTags] = useState<string[]>([]);
   const [sortField, setSortField] = useState<PoolTableViewSettings["sortField"]>("import_order");
   const [sortOrder, setSortOrder] = useState<PoolTableViewSettings["sortOrder"]>("asc");
   const [grouping, setGrouping] = useState<PersistedPoolGrouping>({
@@ -536,19 +597,9 @@ export function CampaignPoolHub({
 
   const applyViewSettings = useCallback((settings: PoolTableViewSettings) => {
     const next = normalizePoolTableViewSettings(settings);
-    setSourceFilter(next.sourceFilter);
-    setCampaignFilter(next.campaignFilter);
-    setCampaignIdFilter(next.campaignIdFilter);
-    setContactFilter(next.contactFilter);
-    setLinkedinFilter(next.linkedinFilter);
-    setFitFilter(next.fitFilter);
-    setDateAddedFilter(next.dateAddedFilter);
-    setHeadcountFilter(next.headcountFilter);
-    setCityFilter(next.cityFilter);
-    setPostcodeFilter(next.postcodeFilter);
-    setIndustryFilter(next.industryFilter);
-    setTagFilter(next.tagFilter);
-    setExcludeTags(next.excludeTags);
+    setFilters(normalizePoolFilters(next));
+    setSmartRules(next.smartRules);
+    if (!next.smartRules) setRulesPanelOpen(false);
     setSortField(next.sortField);
     setSortOrder(next.sortOrder);
     setGrouping(next.grouping);
@@ -559,19 +610,7 @@ export function CampaignPoolHub({
   const currentViewSettings = useMemo(
     (): PoolTableViewSettings =>
       normalizePoolTableViewSettings({
-        sourceFilter,
-        campaignFilter,
-        campaignIdFilter,
-        contactFilter,
-        linkedinFilter,
-        fitFilter,
-        dateAddedFilter,
-        headcountFilter,
-        cityFilter,
-        postcodeFilter,
-        industryFilter,
-        tagFilter,
-        excludeTags,
+        ...filters,
         sortField,
         sortOrder,
         sortVersion: POOL_SORT_VERSION,
@@ -579,27 +618,9 @@ export function CampaignPoolHub({
         columnVisibility,
         columnOrder,
         columnLayoutVersion: POOL_COLUMN_LAYOUT_VERSION,
+        smartRules,
       }),
-    [
-      campaignFilter,
-      campaignIdFilter,
-      columnOrder,
-      columnVisibility,
-      contactFilter,
-      dateAddedFilter,
-      excludeTags,
-      headcountFilter,
-      cityFilter,
-      postcodeFilter,
-      industryFilter,
-      grouping,
-      linkedinFilter,
-      fitFilter,
-      sortField,
-      sortOrder,
-      sourceFilter,
-      tagFilter,
-    ]
+    [filters, smartRules, columnOrder, columnVisibility, grouping, sortField, sortOrder]
   );
 
   const tableViews = usePoolTableViews({
@@ -638,6 +659,26 @@ export function CampaignPoolHub({
   useEffect(() => {
     if (addingList) addListInputRef.current?.focus();
   }, [addingList]);
+
+  useEffect(() => {
+    if (!newListMenuPos) return;
+    function onDoc(e: MouseEvent) {
+      const target = e.target as Node;
+      if (newListBtnRef.current?.contains(target) || newListMenuRef.current?.contains(target)) {
+        return;
+      }
+      setNewListMenuPos(null);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setNewListMenuPos(null);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [newListMenuPos]);
 
   const load = useCallback(async (opts?: { soft?: boolean }) => {
     const gen = ++loadGenRef.current;
@@ -963,27 +1004,17 @@ export function CampaignPoolHub({
     return values.sort();
   }, [people]);
 
+  /** Rules only shape the smart list's own tab, never an import list. */
+  const activeSmartRules = activeViewId === "pool" ? smartRules : null;
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const now = Date.now();
     const rows = people.filter((row) => {
-      if (sourceFilter !== "all" && row.source !== sourceFilter) return false;
-      if (campaignIdFilter) {
-        if (!(row.campaign_ids ?? []).includes(campaignIdFilter)) return false;
-      } else if (campaignFilter === "in_campaign" && !row.in_campaign) {
-        return false;
-      } else if (campaignFilter === "not_in_campaign" && row.in_campaign) {
+      if (activeSmartRules && !poolRowMatchesSmartRules(row, activeSmartRules, now)) {
         return false;
       }
-      if (!poolRowMatchesContactFilter(row, contactFilter)) return false;
-      if (!poolRowMatchesLinkedInFilter(row, linkedinFilter)) return false;
-      if (!poolRowMatchesFitFilter(row, fitFilter)) return false;
-      if (!poolRowMatchesDateAddedFilter(row, dateAddedFilter)) return false;
-      if (!poolRowMatchesHeadcountFilter(row, headcountFilter)) return false;
-      if (!poolRowMatchesCityFilter(row, cityFilter)) return false;
-      if (!poolRowMatchesPostcodeFilter(row, postcodeFilter)) return false;
-      if (!poolRowMatchesIndustryFilter(row, industryFilter)) return false;
-      if (!poolRowMatchesTagFilter(row, tagFilter)) return false;
-      if (!poolRowPassesExcludedTags(row, excludeTags)) return false;
+      if (!poolRowMatchesFilters(row, filters, now)) return false;
       if (!q) return true;
       const hay = [
         row.full_name,
@@ -1008,25 +1039,7 @@ export function CampaignPoolHub({
     return rows
       .slice()
       .sort((a, b) => comparePoolPeople(a, b, sortField, sortOrder));
-  }, [
-    campaignFilter,
-    campaignIdFilter,
-    contactFilter,
-    dateAddedFilter,
-    excludeTags,
-    headcountFilter,
-    cityFilter,
-    industryFilter,
-    linkedinFilter,
-    fitFilter,
-    postcodeFilter,
-    people,
-    query,
-    sortField,
-    sortOrder,
-    sourceFilter,
-    tagFilter,
-  ]);
+  }, [activeSmartRules, filters, people, query, sortField, sortOrder]);
 
   const groupField: PoolGroupField | null = grouping.field;
   const groupSections = useMemo(() => {
@@ -1115,25 +1128,45 @@ export function CampaignPoolHub({
     []
   );
 
-  const filterCount =
-    (sourceFilter !== "all" ? 1 : 0) +
-    (campaignIdFilter || campaignFilter !== "all" ? 1 : 0) +
-    (contactFilter !== "all" ? 1 : 0) +
-    (linkedinFilter !== "all" ? 1 : 0) +
-    (fitFilter !== "all" ? 1 : 0) +
-    (dateAddedFilter !== "all" ? 1 : 0) +
-    (headcountFilter.length > 0 ? 1 : 0) +
-    (cityFilter.trim() ? 1 : 0) +
-    (postcodeFilter.trim() ? 1 : 0) +
-    (industryFilter.trim() ? 1 : 0) +
-    (tagFilter !== "all" ? 1 : 0) +
-    (excludeTags.length > 0 ? 1 : 0);
+  /** Everyone each smart list holds right now (rules only), for the tab counts. */
+  const smartListCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    if (activeViewId !== "pool" || loading) return counts;
+    const now = Date.now();
+    for (const view of tableViews.views) {
+      const rules =
+        view.id === tableViews.activeViewId ? smartRules : view.settings.smartRules;
+      if (!rules) continue;
+      counts.set(
+        view.id,
+        people.filter((row) => poolRowMatchesSmartRules(row, rules, now)).length
+      );
+    }
+    return counts;
+  }, [activeViewId, loading, people, smartRules, tableViews.activeViewId, tableViews.views]);
+
+  const filterCount = countActivePoolFilters(filters);
   const sortActive = sortField !== "import_order" || sortOrder !== "asc";
   const activeCampaigns = campaigns.filter(
     (campaign) =>
       campaign.status !== "archived" &&
       !isMagnetPlaybookId(campaign.source_playbook_id)
   );
+  const filterCampaigns = activeCampaigns.map((campaign) => ({
+    id: campaign.id,
+    name: campaign.name,
+  }));
+  const campaignById = new Map(campaigns.map((campaign) => [campaign.id, campaign]));
+  /** Names of the campaigns this person is in, archived ones last. */
+  const rowCampaignNames = (row: PoolPerson) =>
+    (row.campaign_ids ?? [])
+      .map((id) => campaignById.get(id))
+      .filter((campaign): campaign is CampaignOption => Boolean(campaign))
+      .sort(
+        (a, b) =>
+          Number(a.status === "archived") - Number(b.status === "archived")
+      )
+      .map((campaign) => campaign.name);
 
   const allPageSelected =
     pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
@@ -1271,8 +1304,12 @@ export function CampaignPoolHub({
   }, [pageSize]);
 
   useEffect(() => {
+    if (menu !== "filter") setFilterSection(null);
+  }, [menu]);
+
+  useEffect(() => {
     setPage(1);
-  }, [query, sourceFilter, campaignFilter, campaignIdFilter, contactFilter, linkedinFilter, fitFilter, dateAddedFilter, headcountFilter, cityFilter, postcodeFilter, industryFilter, tagFilter, excludeTags, sortField, sortOrder, grouping.field]);
+  }, [query, filters, activeSmartRules, sortField, sortOrder, grouping.field]);
 
   useEffect(() => {
     if (page > totalPages) setPage(totalPages);
@@ -1956,6 +1993,23 @@ export function CampaignPoolHub({
     }
   }
 
+  /** A tab that fills itself from rules (job 301). Opens the rules straight away. */
+  async function createSmartList(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setAddingList(false);
+    setNewTabListName("");
+    setNewListKind("list");
+    setActiveViewId("pool");
+    await tableViews.addViewWithSettings(trimmed, {
+      ...createDefaultPoolTableViewSettings(),
+      columnVisibility,
+      columnOrder,
+      smartRules: createEmptySmartRules(),
+    });
+    setRulesPanelOpen(true);
+  }
+
   async function duplicateImportList(id: string) {
     setBusy(true);
     setError(null);
@@ -2019,6 +2073,8 @@ export function CampaignPoolHub({
         else if (key === "source") cells.push(poolSourceLabel(row.source));
         else if (key === "campaign") {
           cells.push(row.in_campaign ? "In campaign" : "Not in campaign");
+        } else if (key === "status") {
+          cells.push(poolOutreachStatusLabel(row.outreach_status ?? "none"));
         } else if (key === "created_at") {
           cells.push(row.created_at ? formatShortDate(row.created_at) : "");
         } else if (key === "linkedin") cells.push(row.linkedin_url ?? "");
@@ -2213,9 +2269,7 @@ export function CampaignPoolHub({
               poolSourceLabel(row.source)
             ) : option.key === "campaign" ? (
               row.in_campaign ? (
-                <span className={badgeClass("blue")}>
-                  In campaign
-                </span>
+                <PoolCampaignNames names={rowCampaignNames(row)} />
               ) : (
                 <div className="flex items-center gap-1.5">
                   <button
@@ -2281,6 +2335,8 @@ export function CampaignPoolHub({
                   </button>
                 </div>
               )
+            ) : option.key === "status" ? (
+              <PoolStatusCell status={row.outreach_status ?? "none"} at={row.outreach_status_at ?? null} />
             ) : option.key === "created_at" ? (
               row.created_at ? formatShortDate(row.created_at) : "—"
             ) : option.key === "website" ? (
@@ -2398,8 +2454,30 @@ export function CampaignPoolHub({
       );
     });
 
+  const activeSmartView =
+    activeSmartRules && rulesPanelOpen
+      ? tableViews.views.find((view) => view.id === tableViews.activeViewId) ?? null
+      : null;
+
   return (
     <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col gap-4">
+      {activeSmartView && activeSmartRules ? (
+        <SmartListRulesPanel
+          name={activeSmartView.name}
+          rules={activeSmartRules}
+          onChange={setSmartRules}
+          onClose={() => setRulesPanelOpen(false)}
+          matchCount={smartListCounts.get(activeSmartView.id) ?? 0}
+          totalCount={people.length}
+          loading={loading}
+          tagOptions={tagFilterOptions}
+          campaigns={activeCampaigns.map((campaign) => ({
+            id: campaign.id,
+            name: campaign.name,
+          }))}
+          sourceOptions={sourceOptions}
+        />
+      ) : null}
       {fitCheckOpen && listId ? (
         <FitCheck
           rows={filtered}
@@ -2423,44 +2501,14 @@ export function CampaignPoolHub({
           filterCount={filterCount}
           filterMenu={
             <PoolFilterMenu
-              sourceFilter={sourceFilter}
-              sourceOptions={sourceOptions}
-              onSourceFilter={setSourceFilter}
-              campaignFilter={campaignFilter}
-              campaignIdFilter={campaignIdFilter}
-              campaigns={activeCampaigns.map((campaign) => ({
-                id: campaign.id,
-                name: campaign.name,
-              }))}
-              onCampaignFilter={(value) => {
-                setCampaignIdFilter("");
-                setCampaignFilter(value);
-              }}
-              onCampaignIdFilter={(value) => {
-                setCampaignIdFilter(value);
-                if (value) setCampaignFilter("all");
-              }}
-              headcountFilter={headcountFilter}
-              onHeadcountFilter={setHeadcountFilter}
-              cityFilter={cityFilter}
-              onCityFilter={setCityFilter}
-              postcodeFilter={postcodeFilter}
-              onPostcodeFilter={setPostcodeFilter}
-              industryFilter={industryFilter}
-              onIndustryFilter={setIndustryFilter}
-              contactFilter={contactFilter}
-              onContactFilter={setContactFilter}
-              linkedinFilter={linkedinFilter}
-              onLinkedinFilter={setLinkedinFilter}
-              fitFilter={fitFilter}
-              onFitFilter={setFitFilter}
-              dateAddedFilter={dateAddedFilter}
-              onDateAddedFilter={setDateAddedFilter}
-              tagFilter={tagFilter}
+              filters={filters}
+              onChange={updateFilters}
               tagOptions={tagFilterOptions}
-              onTagFilter={setTagFilter}
-              excludeTags={excludeTags}
-              onExcludeTags={setExcludeTags}
+              sourceOptions={sourceOptions}
+              campaigns={filterCampaigns}
+              showStatus
+              section={filterSection}
+              onSectionChange={setFilterSection}
             />
           }
           sortActive={sortActive}
@@ -2832,7 +2880,7 @@ export function CampaignPoolHub({
                         <Ban className="h-5 w-5 text-slate-500" aria-hidden />
                       }
                     />
-                    {activeViewId === "pool" ? (
+                    {activeViewId === "pool" && !activeSmartRules ? (
                       <TableToolbarButton
                         label="Delete"
                         disabled={actionBusy}
@@ -3002,34 +3050,83 @@ export function CampaignPoolHub({
                   Check fit
                 </button>
               ) : null}
-              <button
-                type="button"
-                data-tour="pool-add-people"
-                onClick={() => {
-                  setMatchMenuOpen(false);
-                  setImportPreset({});
-                  setImportOpen(true);
-                }}
-                className={buttonClass("main", "normal", "shrink-0")}
-              >
-                <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
-                Add people
-              </button>
+              {activeSmartRules ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMatchMenuOpen(false);
+                    setRulesPanelOpen(true);
+                  }}
+                  className={buttonClass("main", "normal", "shrink-0")}
+                  title="Rules decide who is on a smart list"
+                >
+                  <ListFilter className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+                  Edit rules
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  data-tour="pool-add-people"
+                  onClick={() => {
+                    setMatchMenuOpen(false);
+                    setImportPreset({});
+                    setImportOpen(true);
+                  }}
+                  className={buttonClass("main", "normal", "shrink-0")}
+                >
+                  <Plus className="h-4 w-4" strokeWidth={2.25} aria-hidden />
+                  Add people
+                </button>
+              )}
             </>
           }
         />
+        {filterCount > 0 ? (
+          <div className="mt-2.5">
+            <PoolFilterChips
+              filters={filters}
+              onChange={updateFilters}
+              tagOptions={tagFilterOptions}
+              sourceOptions={sourceOptions}
+              campaigns={filterCampaigns}
+              showStatus
+              onOpen={(section) => {
+                setFilterSection(section);
+                setMenu("filter");
+              }}
+            />
+          </div>
+        ) : null}
       </div>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       <div className="border-b border-slate-200">
         <ProspectsTableViewBar
-          views={tableViews.views}
+          views={tableViews.views.map((view) => {
+            const smart = Boolean(
+              view.id === tableViews.activeViewId
+                ? smartRules
+                : view.settings.smartRules
+            );
+            return {
+              id: view.id,
+              name: view.name,
+              canEdit: view.canEdit,
+              smart,
+              count: smart ? (smartListCounts.get(view.id) ?? null) : null,
+            };
+          })}
           activeViewId={
             activeViewId === "pool" ? tableViews.activeViewId : null
           }
           onSwitchView={(viewId) => {
             setActiveViewId("pool");
             void tableViews.switchView(viewId);
+          }}
+          onEditRules={(viewId) => {
+            setActiveViewId("pool");
+            if (viewId !== tableViews.activeViewId) void tableViews.switchView(viewId);
+            setRulesPanelOpen(true);
           }}
           onAddView={(name) => {
             setActiveViewId("pool");
@@ -3216,9 +3313,13 @@ export function CampaignPoolHub({
                     className="flex items-center gap-2 rounded-tl-md rounded-tr-md border-b-[3px] border-transparent px-2 py-1.5"
                     onSubmit={(e) => {
                       e.preventDefault();
-                      void createEmptyPoolList(newTabListName);
+                      if (newListKind === "smart") void createSmartList(newTabListName);
+                      else void createEmptyPoolList(newTabListName);
                     }}
                   >
+                    {newListKind === "smart" ? (
+                      <ListFilter className="h-3.5 w-3.5 shrink-0 text-slate-500" aria-hidden />
+                    ) : null}
                     <input
                       ref={addListInputRef}
                       type="text"
@@ -3236,10 +3337,10 @@ export function CampaignPoolHub({
                           setNewTabListName("");
                         }
                       }}
-                      placeholder="List name"
+                      placeholder={newListKind === "smart" ? "Smart list name" : "List name"}
                       disabled={busy}
                       className={fieldClass("input", "small", "w-36!")}
-                      aria-label="New list name"
+                      aria-label={newListKind === "smart" ? "New smart list name" : "New list name"}
                     />
                     <button
                       type="submit"
@@ -3252,11 +3353,22 @@ export function CampaignPoolHub({
                   </form>
                 ) : (
                   <button
+                    ref={newListBtnRef}
                     type="button"
                     disabled={busy}
+                    aria-haspopup="menu"
+                    aria-expanded={Boolean(newListMenuPos)}
                     onClick={() => {
-                      setRenamingImportListId(null);
-                      setAddingList(true);
+                      if (newListMenuPos) {
+                        setNewListMenuPos(null);
+                        return;
+                      }
+                      const rect = newListBtnRef.current?.getBoundingClientRect();
+                      if (!rect) return;
+                      setNewListMenuPos({
+                        top: rect.bottom + 4,
+                        left: Math.max(8, Math.min(rect.left, window.innerWidth - 264)),
+                      });
                     }}
                     className={`${VIEW_BAR_ADD_TAB_CLASS} disabled:opacity-50`}
                     aria-label="Add list"
@@ -3269,6 +3381,43 @@ export function CampaignPoolHub({
           }
         />
       </div>
+      {newListMenuPos && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              ref={newListMenuRef}
+              role="menu"
+              className="fixed z-[85] w-64 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-[0_8px_24px_-8px_rgba(15,23,42,0.25)]"
+              style={{ top: newListMenuPos.top, left: newListMenuPos.left }}
+            >
+              {(
+                [
+                  { kind: "list", label: "List", hint: "Pick people for it by hand", icon: Plus },
+                  { kind: "smart", label: "Smart list", hint: "Fills itself from rules you set", icon: ListFilter },
+                ] as const
+              ).map((option) => (
+                <button
+                  key={option.kind}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    setNewListMenuPos(null);
+                    setRenamingImportListId(null);
+                    setNewListKind(option.kind);
+                    setAddingList(true);
+                  }}
+                  className="flex w-full items-start gap-2.5 px-3 py-2 text-left hover:bg-slate-50"
+                >
+                  <option.icon className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" aria-hidden />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-slate-800">{option.label}</span>
+                    <span className="block text-xs text-slate-500">{option.hint}</span>
+                  </span>
+                </button>
+              ))}
+            </div>,
+            document.body
+          )
+        : null}
 
       <div data-tour="pool-table" className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-xl border border-t-0 border-slate-200 bg-white shadow-sm">
 
@@ -3456,7 +3605,9 @@ export function CampaignPoolHub({
                             }
                             return "This list is empty.";
                           }
-                          return "No people match this smart list.";
+                          return activeSmartRules
+                            ? "Nobody matches this smart list's rules yet."
+                            : "No people match these filters.";
                         })()}
                       </div>
                     </td>

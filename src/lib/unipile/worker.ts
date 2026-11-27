@@ -1022,8 +1022,18 @@ export async function processOutreachJobsTick(options?: {
           });
           extras = { ...templateExtras, profile_hook: hook };
         }
+        const { usesTheirBusiness, theirBusinessForLead } = await import("@/lib/campaigns/theirBusiness");
+        if (usesTheirBusiness(picked.body)) {
+          extras = { ...extras, their_business: await theirBusinessForLead(lead.id as string) };
+        }
+        let text = buildMessageBody(picked.body, leadForMessage, extras);
+        // LinkedIn cuts a note at 300: drop the town before the ending gets cut.
+        if (step.step_type === "invite" && text.length > 300 && extras.their_business) {
+          const shorter = String(extras.their_business).replace(/ in .+$/, "");
+          text = buildMessageBody(picked.body, leadForMessage, { ...extras, their_business: shorter });
+        }
         return {
-          text: buildMessageBody(picked.body, leadForMessage, extras),
+          text,
           variantKey: picked.variantKey,
           variant: picked.variant,
         };
@@ -1034,8 +1044,13 @@ export async function processOutreachJobsTick(options?: {
       if (step.step_type === "invite") {
         const { text: note } = await renderedStepBody();
         const ownMessage = ownOpenProfileMessage(step.config);
+        const { usesTheirBusiness, theirBusinessForLead } = await import("@/lib/campaigns/theirBusiness");
+        const ownExtras =
+          ownMessage && usesTheirBusiness(ownMessage)
+            ? { ...templateExtras, their_business: await theirBusinessForLead(lead.id as string) }
+            : templateExtras;
         const inmailSource = ownMessage
-          ? buildMessageBody(ownMessage, leadForMessage, templateExtras)
+          ? buildMessageBody(ownMessage, leadForMessage, ownExtras)
           : note;
         let sentOpenProfile = false;
         if (

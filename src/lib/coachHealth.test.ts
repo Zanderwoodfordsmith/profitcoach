@@ -10,7 +10,6 @@ const base = {
   blueprint: "complete · 90%",
   linkedin: "connected" as const,
   ssi: 60,
-  sales_robot: false,
   campaigns_running: 1,
   invites_7d: 120,
   invites_30d: 480,
@@ -39,10 +38,5 @@ describe("coach health: fix first", () => {
     assert.equal(diagnose({ ...base, accept_rate: 0.06 }).stuck_at, "Few people accept");
     assert.equal(diagnose({ ...base, calls_30d: 0 }).stuck_at, "Interest isn't turning into calls");
     assert.equal(diagnose({ ...base, median_reply_hours: 9 }).stuck_at, "Slow replies");
-  });
-  it("doesn't call Sales Robot coaches stuck for not sending here", () => {
-    const r = diagnose({ ...base, linkedin: "none", sales_robot: true, invites_7d: 0, invites_30d: 0, campaigns_running: 0, accept_rate: null });
-    assert.equal(r.level, "green");
-    assert.match(r.stuck_at, /Sales Robot/);
   });
 });

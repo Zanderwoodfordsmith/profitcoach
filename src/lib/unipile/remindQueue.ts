@@ -109,8 +109,14 @@ export async function renderPreviewForJob(input: {
     coachId: input.coachId,
     contactId: (input.lead.contact_id as string | null) ?? null,
   });
+  const { usesTheirBusiness, theirBusinessForLead } = await import("@/lib/campaigns/theirBusiness");
+  const leadId = (input.lead.id as string | null) ?? null;
+  const anyBody = [input.draftBody, input.step.body, input.step.fallback_body, JSON.stringify(input.step.variants ?? null)]
+    .map((b) => (typeof b === "string" ? b : ""))
+    .join("\n");
   const extras = {
-    booking_link: await bookingLinkForCoachLead(input.coachId, (input.lead.id as string | null) ?? null),
+    their_business: leadId && usesTheirBusiness(anyBody) ? await theirBusinessForLead(leadId) : "",
+    booking_link: await bookingLinkForCoachLead(input.coachId, leadId),
     assessment_url: assessmentUrl,
     scorecard_url: assessmentUrl,
     scorecard_link: assessmentUrl,

@@ -236,6 +236,33 @@ export function usePoolTableViews({
     [currentSettings, runMutation]
   );
 
+  /** New tab with its own settings, e.g. a fresh smart list (job 301). */
+  const addViewWithSettings = useCallback(
+    async (name: string, settings: PoolTableViewSettings) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      applyingViewRef.current = true;
+      onApplySettingsRef.current(settings);
+      try {
+        setError(null);
+        await runMutation((headers) =>
+          createPoolTableViewRemote(headers, {
+            name: trimmed,
+            settings,
+            makeActive: true,
+          })
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unable to save list.");
+      } finally {
+        queueMicrotask(() => {
+          applyingViewRef.current = false;
+        });
+      }
+    },
+    [runMutation]
+  );
+
   const duplicateView = useCallback(
     async (viewId: string) => {
       const view = storage?.views.find((row) => row.id === viewId);
@@ -356,13 +383,31 @@ export function usePoolTableViews({
     async (viewId: string) => {
       const view = storage?.views.find((row) => row.id === viewId);
       if (!view?.canEdit || isDefaultProspectTableViewName(view.name)) return;
+      const wasActive = viewId === storage?.activeViewId;
       try {
-        await runMutation((headers) => deletePoolTableViewRemote(headers, viewId));
+        const payload = await runMutation((headers) =>
+          deletePoolTableViewRemote(headers, viewId)
+        );
+        // Load the tab that takes over, so the deleted tab's filters (or a
+        // smart list's rules) don't stay on screen and save into it.
+        if (wasActive) {
+          const next =
+            payload.views.find((row) => row.id === payload.activeViewId) ??
+            payload.views.find((row) => isDefaultProspectTableViewName(row.name)) ??
+            payload.views[0];
+          if (next) {
+            applyingViewRef.current = true;
+            onApplySettingsRef.current(next.settings);
+            queueMicrotask(() => {
+              applyingViewRef.current = false;
+            });
+          }
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Unable to delete view.");
       }
     },
-    [runMutation, storage?.views]
+    [runMutation, storage?.activeViewId, storage?.views]
   );
 
   const reorderViews = useCallback(
@@ -395,6 +440,7 @@ export function usePoolTableViews({
       ),
       switchView,
       addViewFromCurrent,
+      addViewWithSettings,
       duplicateView,
       saveView,
       saveAsNewView,
@@ -408,6 +454,7 @@ export function usePoolTableViews({
     [
       activeView,
       addViewFromCurrent,
+      addViewWithSettings,
       duplicateView,
       deleteView,
       error,

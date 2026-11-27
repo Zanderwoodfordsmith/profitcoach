@@ -7,22 +7,24 @@ import {
   poolTableViewSettingsEqual,
   uniquePoolViewCopyName,
 } from "./poolTableViews";
+import { POOL_CAMPAIGN_ANY, POOL_CAMPAIGN_NONE, POOL_NO_TAGS } from "./poolFilters";
 
 describe("pool table views", () => {
-  it("normalizes unknown filters to All", () => {
+  it("reads old one-choice filters as lists", () => {
     const settings = normalizePoolTableViewSettings({
       sourceFilter: "sales_nav",
       campaignFilter: "not_in_campaign",
       sortField: "company",
       sortOrder: "desc",
     });
-    assert.equal(settings.sourceFilter, "sales_nav");
-    assert.equal(settings.campaignFilter, "not_in_campaign");
-    assert.equal(settings.campaignIdFilter, "");
+    assert.deepEqual(settings.sourceFilter, ["sales_nav"]);
+    assert.deepEqual(settings.campaignFilter, [POOL_CAMPAIGN_NONE]);
     assert.equal(settings.contactFilter, "all");
     assert.equal(settings.linkedinFilter, "all");
     assert.equal(settings.dateAddedFilter, "all");
-    assert.equal(settings.tagFilter, "all");
+    assert.deepEqual(settings.tagFilter, []);
+    assert.deepEqual(settings.fitFilter, []);
+    assert.deepEqual(settings.statusFilter, []);
     assert.deepEqual(settings.headcountFilter, []);
     assert.equal(settings.cityFilter, "");
     assert.equal(settings.postcodeFilter, "");
@@ -30,6 +32,36 @@ describe("pool table views", () => {
     assert.equal(settings.sortField, "company");
     assert.equal(settings.sortOrder, "desc");
     assert.equal(settings.grouping.field, null);
+  });
+
+  it("maps old campaign, tag, fit and status picks", () => {
+    const one = normalizePoolTableViewSettings({
+      campaignFilter: "all",
+      campaignIdFilter: "c-123",
+      tagFilter: "none",
+      fitFilter: "good",
+      statusFilter: "connected",
+    });
+    assert.deepEqual(one.campaignFilter, ["c-123"]);
+    assert.deepEqual(one.tagFilter, [POOL_NO_TAGS]);
+    assert.deepEqual(one.fitFilter, ["good"]);
+    assert.deepEqual(one.statusFilter, ["connected"]);
+    assert.equal("campaignIdFilter" in one, false);
+    const any = normalizePoolTableViewSettings({ campaignFilter: "in_campaign" });
+    assert.deepEqual(any.campaignFilter, [POOL_CAMPAIGN_ANY]);
+  });
+
+  it("keeps lists and drops junk", () => {
+    const settings = normalizePoolTableViewSettings({
+      statusFilter: ["connected", "replied", "nope", 4],
+      fitFilter: ["good", "ok", "great"],
+      tagFilter: ["VIP", "vip", " Hot "],
+      sourceFilter: ["sales_nav", "google_maps"],
+    });
+    assert.deepEqual(settings.statusFilter, ["connected", "replied"]);
+    assert.deepEqual(settings.fitFilter, ["good", "ok"]);
+    assert.deepEqual(settings.tagFilter, ["VIP", "Hot"]);
+    assert.deepEqual(settings.sourceFilter, ["sales_nav", "google_maps"]);
   });
 
   it("keeps contact, LinkedIn, date, and tag filters", () => {
@@ -43,7 +75,7 @@ describe("pool table views", () => {
     assert.equal(settings.contactFilter, "both");
     assert.equal(settings.linkedinFilter, "has");
     assert.equal(settings.dateAddedFilter, "7d");
-    assert.equal(settings.tagFilter, "Hot");
+    assert.deepEqual(settings.tagFilter, ["Hot"]);
     assert.equal(settings.grouping.field, "tags");
     assert.equal(settings.columnVisibility.tags, true);
   });

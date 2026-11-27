@@ -21,7 +21,6 @@ export type AuditTarget = {
   coach_id: string;
   name: string;
   slug: string;
-  sales_robot: boolean;
   discreet: boolean;
   who_they_help: string;
   snapshot: LinkedInProfileSnapshot | null;
@@ -55,8 +54,8 @@ async function all<T>(build: (from: number, to: number) => PromiseLike<{ data: T
 }
 
 export async function loadAuditTargets(opts: { coachIds?: string[]; includeInactive?: boolean } = {}): Promise<AuditTarget[]> {
-  const coaches = await all<{ id: string; slug: string; membership_status: string | null; record_kind: string | null; has_sales_robot_account: boolean | null }>((f, t) =>
-    supabaseAdmin.from("coaches").select("id, slug, membership_status, record_kind, has_sales_robot_account").range(f, t)
+  const coaches = await all<{ id: string; slug: string; membership_status: string | null; record_kind: string | null }>((f, t) =>
+    supabaseAdmin.from("coaches").select("id, slug, membership_status, record_kind").range(f, t)
   );
   const wanted = coaches.filter((c) =>
     opts.coachIds?.length
@@ -80,7 +79,6 @@ export async function loadAuditTargets(opts: { coachIds?: string[]; includeInact
       coach_id: c.id,
       name: nameOf.get(c.id) || c.slug,
       slug: c.slug,
-      sales_robot: Boolean(c.has_sales_robot_account),
       discreet: textValue(payload?.identity?.linkedin_visibility ?? null) === "discreet",
       who_they_help: payload ? listValue(payload.market?.industries_credibility ?? null).join(", ") : "",
       snapshot: (lp?.snapshot as LinkedInProfileSnapshot | null) ?? null,
@@ -226,7 +224,7 @@ export async function auditCoach(target: AuditTarget): Promise<AuditPiece[]> {
   const campaigns = await loadCoachCampaigns(target.coach_id);
   if (!campaigns.connection) {
     const note = campaigns.sentAny ? "No connection campaign with copy found." : "No campaign has sent through Get Clients.";
-    const fix = target.sales_robot ? "Their campaigns run in Sales Robot, so BCA can't see the messages. Move their best campaign into Get Clients." : "Build and turn on their first connection campaign.";
+    const fix = "Build and turn on their first connection campaign.";
     pieces.push(gap(target, "campaign.connection", note, fix), gap(target, "campaign.followups", note, fix));
   } else {
     const c = campaigns.connection;
@@ -336,7 +334,6 @@ export const RESULT_TARGETS = { invitesPerMonth: 430, accept: 0.3, reply: 0.1, i
 
 export function activityScore(h: CoachHealthRow | undefined): number | null {
   if (!h) return null;
-  if (h.sales_robot && h.invites_30d === 0) return null;
   return Math.round(Math.min(1, h.invites_30d / RESULT_TARGETS.invitesPerMonth) * 1000) / 10;
 }
 

@@ -66,7 +66,7 @@ export async function handRoadmapJobToClaude(id: string): Promise<RoadmapJob> {
     `Key: ${token}`,
     `Supabase URL: ${supabaseUrl}`,
     `Supabase public key: ${anonKey}`,
-    `Branch: ${agentBranchFor(job.job_number)} (${again ? "already exists: continue on it" : "new: create it from origin/staging"})`,
+    `Branch: ${agentBranchFor(job.job_number)} (${again ? "already exists: continue on it" : "new: create it from origin/main"})`,
   ].join("\n");
 
   const res = await fetch(`https://api.anthropic.com/v1/claude_code/routines/${routineId}/fire`, {

@@ -6,7 +6,9 @@ import { Modal } from "@/components/ui/Modal";
 import { cardClass } from "@/components/ui/Card";
 import {
   CampaignTemplateList,
+  noTemplatesText,
   TemplatePickerBackButton,
+  templatesForChannel,
   usePublishedCampaignTemplates,
 } from "@/components/campaigns/CampaignTemplatePicker";
 import { fieldClass } from "@/components/ui/Field";
@@ -33,7 +35,7 @@ export function CampaignCreateModal({
   const [name, setName] = useState("");
   const [channel, setChannel] = useState<CampaignChannel>("linkedin");
   const [screen, setScreen] = useState<Screen>("choose");
-  const { templates, loading, error: templatesError } =
+  const { templates, loading, error: templatesError, rename, remove } =
     usePublishedCampaignTemplates(open && screen === "templates");
 
   useEffect(() => {
@@ -67,13 +69,18 @@ export function CampaignCreateModal({
               disabled={busy}
               onClick={() => setScreen("choose")}
             />
-            <CampaignTemplateList
-              templates={templates}
-              loading={loading}
-              error={templatesError}
-              busy={busy}
-              onPick={(template) => onCreateFromTemplate(name, template)}
-            />
+            <div className="-mx-1 max-h-[min(28rem,60vh)] overflow-y-auto px-1 py-1">
+              <CampaignTemplateList
+                templates={templatesForChannel(templates, channel)}
+                emptyText={noTemplatesText(channel)}
+                loading={loading}
+                error={templatesError}
+                busy={busy}
+                onPick={(template) => onCreateFromTemplate(name, template)}
+                onRename={rename}
+                onDelete={remove}
+              />
+            </div>
           </>
         ) : (
           <>
@@ -143,7 +150,7 @@ export function CampaignCreateModal({
               </button>
               <button
                 type="button"
-                disabled={busy || channel !== "linkedin"}
+                disabled={busy}
                 onClick={() => setScreen("templates")}
                 className={cardClass("raised", "flex min-h-[7.5rem] flex-col items-start gap-3 px-4 py-4 text-left hover:border-[#0c5290] hover:bg-sky-50/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c5290]/40 focus-visible:ring-offset-2")}
               >
@@ -161,7 +168,7 @@ export function CampaignCreateModal({
                   <span className="mt-0.5 block text-sm leading-snug text-slate-600">
                     {channel === "linkedin"
                       ? "Start from a sequence that is already written."
-                      : "Templates are LinkedIn sequences."}
+                      : "Start from one you saved before."}
                   </span>
                 </span>
               </button>

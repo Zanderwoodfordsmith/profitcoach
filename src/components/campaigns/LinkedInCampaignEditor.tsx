@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { ChevronRight, Pencil, SlidersHorizontal } from "lucide-react";
+import { ChevronRight, Copy, Pencil, Save, SlidersHorizontal } from "lucide-react";
 import { prospectDetailHref } from "@/lib/prospects/prospectDetailHref";
 import type { CampaignLeadProfile } from "@/lib/unipile/campaignLeadProfile";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
@@ -72,6 +72,9 @@ import {
   type CampaignAddChoice,
 } from "@/components/campaigns/CampaignAudienceEmpty";
 import { CampaignTemplatePickerModal } from "@/components/campaigns/CampaignTemplatePicker";
+import { SaveCampaignTemplateModal } from "@/components/campaigns/SaveCampaignTemplateModal";
+import { DuplicateCampaignModal, type DuplicateCopy } from "@/components/campaigns/DuplicateCampaignModal";
+import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import type { PoolImportMode } from "@/components/campaigns/poolImportOptions";
 import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
@@ -309,6 +312,19 @@ export function LinkedInCampaignEditor() {
   const [tab, setTab] = useState<TabId>("overview");
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [duplicateFor, setDuplicateFor] = useState<{
+    id: string;
+    name: string;
+    lead_count: number;
+  } | null>(null);
+  const [duplicateBusy, setDuplicateBusy] = useState(false);
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  // Set once on open: the Save window resets whenever this object changes.
+  const [saveTemplateFor, setSaveTemplateFor] = useState<{
+    id: string;
+    name: string;
+    channel?: string;
+  } | null>(null);
   const [abStats, setAbStats] = useState<Record<
     string,
     Record<string, AbVariantStats>
@@ -638,6 +654,45 @@ export function LinkedInCampaignEditor() {
     return null;
   }, [leadDrawer, drawerSections]);
 
+  // Settings in the campaign list's ⋯ menu lands here with ?settings=1.
+  const campaignLoaded = campaign != null;
+  useEffect(() => {
+    if (!campaignLoaded) return;
+    const query = new URLSearchParams(window.location.search);
+    if (query.get("settings") !== "1") return;
+    setSettingsOpen(true);
+    query.delete("settings");
+    const rest = query.toString();
+    router.replace(`${pathname}${rest ? `?${rest}` : ""}`, { scroll: false });
+  }, [campaignLoaded, pathname, router]);
+
+  async function duplicateThisCampaign(copy: DuplicateCopy) {
+    if (!campaignId) return;
+    setDuplicateBusy(true);
+    setDuplicateError(null);
+    try {
+      const headers = await authHeaders(impersonatingCoachId);
+      if (!headers) throw new Error("Sign in required.");
+      const res = await fetch(
+        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
+        {
+          method: "PATCH",
+          headers,
+          body: JSON.stringify({ action: "duplicate", copy }),
+        }
+      );
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Duplicate failed.");
+      invalidateHubQuery(hubQueryKey("campaigns", impersonatingCoachId));
+      setDuplicateFor(null);
+      if (body.campaign?.id) router.push(`${prefix}/campaigns/${body.campaign.id}`);
+    } catch (err) {
+      setDuplicateError(err instanceof Error ? err.message : "Duplicate failed.");
+    } finally {
+      setDuplicateBusy(false);
+    }
+  }
+
   async function saveSettings(patch: Record<string, unknown>) {
     if (!campaignId) return;
     const prev = campaign;
@@ -787,20 +842,28 @@ export function LinkedInCampaignEditor() {
     router.push(href);
   }
 
+  /** The server takes 100 people per call, so "Select all" goes in batches. */
+  async function patchLeadsInBatches(
+    id: string,
+    leadIds: string[],
+    body: Record<string, string>
+  ) {
+    const headers = await authHeaders(impersonatingCoachId);
+    if (!headers) return;
+    for (let i = 0; i < leadIds.length; i += 100) {
+      await fetch(`/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ ...body, lead_ids: leadIds.slice(i, i + 100) }),
+      });
+    }
+  }
+
   async function deleteLeads(leadIds: string[]) {
     if (!campaignId || leadIds.length === 0) return;
     setBusy(true);
     try {
-      const headers = await authHeaders(impersonatingCoachId);
-      if (!headers) return;
-      await fetch(
-        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
-        {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify({ action: "delete_leads", lead_ids: leadIds }),
-        }
-      );
+      await patchLeadsInBatches(campaignId, leadIds, { action: "delete_leads" });
       await load();
     } finally {
       setBusy(false);
@@ -811,16 +874,7 @@ export function LinkedInCampaignEditor() {
     if (!campaignId || leadIds.length === 0) return;
     setBusy(true);
     try {
-      const headers = await authHeaders(impersonatingCoachId);
-      if (!headers) return;
-      await fetch(
-        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
-        {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify({ action: "pause_leads", lead_ids: leadIds }),
-        }
-      );
+      await patchLeadsInBatches(campaignId, leadIds, { action: "pause_leads" });
       await load();
     } finally {
       setBusy(false);
@@ -831,16 +885,7 @@ export function LinkedInCampaignEditor() {
     if (!campaignId || leadIds.length === 0) return;
     setBusy(true);
     try {
-      const headers = await authHeaders(impersonatingCoachId);
-      if (!headers) return;
-      await fetch(
-        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
-        {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify({ action: "resume_leads", lead_ids: leadIds }),
-        }
-      );
+      await patchLeadsInBatches(campaignId, leadIds, { action: "resume_leads" });
       await load();
     } finally {
       setBusy(false);
@@ -851,20 +896,10 @@ export function LinkedInCampaignEditor() {
     if (!campaignId || leadIds.length === 0) return;
     setBusy(true);
     try {
-      const headers = await authHeaders(impersonatingCoachId);
-      if (!headers) return;
-      await fetch(
-        `/api/coach/linkedin-outreach/campaigns/${encodeURIComponent(campaignId)}`,
-        {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify({
-            action: "move_leads",
-            lead_ids: leadIds,
-            target_campaign_id: targetCampaignId,
-          }),
-        }
-      );
+      await patchLeadsInBatches(campaignId, leadIds, {
+        action: "move_leads",
+        target_campaign_id: targetCampaignId,
+      });
       await load();
     } finally {
       setBusy(false);
@@ -1145,8 +1180,9 @@ export function LinkedInCampaignEditor() {
         >
           ← Campaigns
         </Link>
-        <div className="mt-1.5 flex min-w-0 items-center gap-3">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+          {/* On a phone the buttons drop under the name rather than squash it. */}
+          <div className="flex min-w-[12rem] flex-1 flex-wrap items-center gap-x-3 gap-y-1">
             <CampaignOnOffToggle
               on={running}
               busy={busy}
@@ -1193,20 +1229,45 @@ export function LinkedInCampaignEditor() {
               </div>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            aria-haspopup="dialog"
-            aria-expanded={settingsOpen}
-            className={buttonClass("second", "small", "shrink-0")}
-          >
-            <SlidersHorizontal
-              className="h-3.5 w-3.5 text-slate-500"
-              strokeWidth={2.25}
-              aria-hidden
+          {/* Same icon-over-word buttons as the lead list toolbar. */}
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <TableToolbarButton
+              label="Save template"
+              icon={<Save className="h-5 w-5" strokeWidth={1.75} aria-hidden />}
+              aria-haspopup="true"
+              aria-expanded={saveTemplateFor != null}
+              onClick={() =>
+                setSaveTemplateFor({
+                  id: campaign.id,
+                  name: campaign.name,
+                  channel: campaign.channel ?? undefined,
+                })
+              }
             />
-            Settings
-          </button>
+            <TableToolbarButton
+              label="Duplicate"
+              icon={<Copy className="h-5 w-5" strokeWidth={1.75} aria-hidden />}
+              aria-haspopup="true"
+              aria-expanded={duplicateFor != null}
+              onClick={() => {
+                setDuplicateError(null);
+                setDuplicateFor({
+                  id: campaign.id,
+                  name: campaign.name,
+                  lead_count: leads.length,
+                });
+              }}
+            />
+            <TableToolbarButton
+              label="Settings"
+              icon={
+                <SlidersHorizontal className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+              }
+              aria-haspopup="true"
+              aria-expanded={settingsOpen}
+              onClick={() => setSettingsOpen(true)}
+            />
+          </div>
         </div>
       </div>
 
@@ -1351,8 +1412,29 @@ export function LinkedInCampaignEditor() {
         />
       ) : null}
 
+      <SaveCampaignTemplateModal
+        campaign={saveTemplateFor}
+        onClose={() => setSaveTemplateFor(null)}
+      />
+
+      <DuplicateCampaignModal
+        campaign={duplicateFor}
+        busy={duplicateBusy}
+        error={duplicateError}
+        onClose={() => {
+          if (duplicateBusy) return;
+          setDuplicateFor(null);
+        }}
+        onDuplicate={(copy) => void duplicateThisCampaign(copy)}
+      />
+
       <CampaignTemplatePickerModal
         open={templatePickerOpen}
+        channel={
+          campaign?.channel === "email" || campaign?.channel === "whatsapp"
+            ? campaign.channel
+            : "linkedin"
+        }
         busy={busy}
         error={templatePickerOpen ? error : null}
         onClose={() => {

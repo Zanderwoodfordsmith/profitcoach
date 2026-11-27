@@ -375,7 +375,6 @@ type CoachRow = {
 type ConferenceFilter = "all" | "yes" | "maybe" | "no" | "not_set";
 type CrmNameFilter = "all" | "has_name" | "no_name";
 type LastLoginFilter = "all" | "has_login" | "never" | "last_30_days" | "over_90_days";
-type SalesRobotFilter = "all" | "has_sales_robot" | "no_sales_robot";
 type RecurringBillingFilter = "all" | "active" | "inactive";
 
 type CoachTableColumnVisibility = {
@@ -392,7 +391,6 @@ type CoachTableColumnVisibility = {
   lastLogin: boolean;
   lastActive: boolean;
   crm: boolean;
-  salesRobot: boolean;
   profitCoachEmail: boolean;
   accessTier: boolean;
   level: boolean;
@@ -426,7 +424,6 @@ type PersistedCoachTableSettings = {
   conferenceFilter: ConferenceFilter;
   crmNameFilter: CrmNameFilter;
   lastLoginFilter: LastLoginFilter;
-  salesRobotFilter: SalesRobotFilter;
   recurringBillingFilter: RecurringBillingFilter;
   joinDateAfter: string;
   joinDateBefore: string;
@@ -486,7 +483,6 @@ const COACH_TABLE_COLUMN_OPTIONS: CoachColumnOption[] = [
   { key: "crm", label: "CRM", category: "integrations" },
   { key: "calendarEmbed", label: "Calendar embed", category: "integrations" },
   { key: "leadWebhook", label: "Lead webhook", category: "integrations" },
-  { key: "salesRobot", label: "Sales Robot", category: "billing" },
   { key: "profitCoachEmail", label: "PC email", category: "billing" },
   // Access tier comes off the table (21 Nov): Access shows the planned level; tiers are set on the coach's page.
   { key: "level", label: "Access", category: "billing" },
@@ -534,42 +530,6 @@ function isLastLoginFilter(value: unknown): value is LastLoginFilter {
     value === "last_30_days" ||
     value === "over_90_days"
   );
-}
-
-function isSalesRobotFilter(value: unknown): value is SalesRobotFilter {
-  return (
-    value === "all" ||
-    value === "has_sales_robot" ||
-    value === "no_sales_robot"
-  );
-}
-
-function matchesSalesRobotFilter(
-  coach: CoachRow,
-  filter: SalesRobotFilter
-): boolean {
-  if (filter === "all") return true;
-  if (filter === "has_sales_robot") return coach.has_sales_robot_account;
-  return !coach.has_sales_robot_account;
-}
-
-function parseSalesRobotFilter(
-  parsed: Partial<PersistedCoachTableSettings> & {
-    connectorSubsidyFilter?: unknown;
-  }
-): SalesRobotFilter {
-  const raw = parsed.salesRobotFilter ?? parsed.connectorSubsidyFilter;
-  if (
-    raw === "paying" ||
-    raw === "active_paying" ||
-    raw === "active_campaigns" ||
-    raw === "connector_subsidy"
-  ) {
-    return "has_sales_robot";
-  }
-  if (raw === "not_paying") return "no_sales_robot";
-  if (isSalesRobotFilter(raw)) return raw;
-  return "all";
 }
 
 function isRecurringBillingFilter(
@@ -642,7 +602,6 @@ function parsePersistedCoachTableSettings(
       conferenceFilter: parsed.conferenceFilter,
       crmNameFilter: parsed.crmNameFilter,
       lastLoginFilter: parsed.lastLoginFilter,
-      salesRobotFilter: parseSalesRobotFilter(parsed),
       recurringBillingFilter: parseRecurringBillingFilter(parsed),
       joinDateAfter: isOptionalIsoDate(parsed.joinDateAfter)
         ? parsed.joinDateAfter
@@ -896,8 +855,6 @@ export default function AdminPage() {
   const [crmNameFilter, setCrmNameFilter] = useState<CrmNameFilter>("all");
   const [lastLoginFilter, setLastLoginFilter] =
     useState<LastLoginFilter>("all");
-  const [salesRobotFilter, setSalesRobotFilter] =
-    useState<SalesRobotFilter>("all");
   const [recurringBillingFilter, setRecurringBillingFilter] =
     useState<RecurringBillingFilter>("all");
   const [joinDateAfter, setJoinDateAfter] = useState("");
@@ -930,7 +887,6 @@ export default function AdminPage() {
     const normalized = normalizeCoachTableViewSettings(settings);
     setCrmNameFilter(normalized.crmNameFilter);
     setLastLoginFilter(normalized.lastLoginFilter);
-    setSalesRobotFilter(normalized.salesRobotFilter);
     setRecurringBillingFilter(normalized.recurringBillingFilter);
     setJoinDateAfter(normalized.joinDateAfter);
     setJoinDateBefore(normalized.joinDateBefore);
@@ -988,7 +944,6 @@ export default function AdminPage() {
       conferenceFilter: "all",
       crmNameFilter,
       lastLoginFilter,
-      salesRobotFilter,
       recurringBillingFilter,
       joinDateAfter,
       joinDateBefore,
@@ -1000,7 +955,6 @@ export default function AdminPage() {
     [
       crmNameFilter,
       lastLoginFilter,
-      salesRobotFilter,
       recurringBillingFilter,
       joinDateAfter,
       joinDateBefore,
@@ -1292,7 +1246,6 @@ export default function AdminPage() {
     (crmNameFilter !== "all" ? 1 : 0) +
     (joinDateAfter !== "" ? 1 : 0) +
     (joinDateBefore !== "" ? 1 : 0) +
-    (salesRobotFilter !== "all" ? 1 : 0) +
     (recurringBillingFilter !== "all" ? 1 : 0);
   const hasActiveSort = !coachSortsEqual(sorts, DEFAULT_COACH_SORTS);
   const visibleColumnCount =
@@ -1414,10 +1367,6 @@ export default function AdminPage() {
         joinDateAfter,
         joinDateBefore
       );
-      const matchesSalesRobot = matchesSalesRobotFilter(
-        coach,
-        salesRobotFilter
-      );
       const matchesRecurringBilling =
         recurringBillingFilter === "all"
           ? true
@@ -1429,7 +1378,6 @@ export default function AdminPage() {
         matchesCrmName &&
         matchesLastLogin &&
         matchesJoinDate &&
-        matchesSalesRobot &&
         matchesRecurringBilling
       );
     })
@@ -1691,16 +1639,6 @@ export default function AdminPage() {
     }
     if (key === "crm") {
       return <th className="sticky top-0 z-10 bg-slate-50 px-2 py-2">CRM</th>;
-    }
-    if (key === "salesRobot") {
-      return (
-        <th
-          className="sticky top-0 z-10 w-24 bg-slate-50 px-2 py-2 text-center"
-          title="Sales Robot account"
-        >
-          Sales Robot
-        </th>
-      );
     }
     if (key === "profitCoachEmail") {
       return (
@@ -2103,24 +2041,6 @@ export default function AdminPage() {
               </a>
             ) : null}
           </div>
-        </td>
-      );
-    }
-    if (key === "salesRobot") {
-      return (
-        <td className="px-2 py-2 text-center">
-          <input
-            type="checkbox"
-            title="Sales Robot account"
-            checked={coach.has_sales_robot_account}
-            disabled={directorySavingId === coach.id}
-            onChange={(e) =>
-              void patchCoachRow(coach.id, {
-                has_sales_robot_account: e.target.checked,
-              })
-            }
-            className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-          />
         </td>
       );
     }
@@ -2606,28 +2526,6 @@ export default function AdminPage() {
                         <option value="all">All</option>
                         <option value="has_name">Has CRM name</option>
                         <option value="no_name">No CRM name</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="sales-robot-filter"
-                        className={`${fieldLabelClass} mb-1`}
-                      >
-                        Sales Robot
-                      </label>
-                      <select
-                        id="sales-robot-filter"
-                        value={salesRobotFilter}
-                        onChange={(e) =>
-                          setSalesRobotFilter(
-                            e.target.value as SalesRobotFilter
-                          )
-                        }
-                        className={fieldClass("select", "small")}
-                      >
-                        <option value="all">All</option>
-                        <option value="has_sales_robot">Has account</option>
-                        <option value="no_sales_robot">No account</option>
                       </select>
                     </div>
                     <div>

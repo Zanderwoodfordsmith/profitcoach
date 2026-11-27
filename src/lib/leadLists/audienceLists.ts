@@ -819,6 +819,89 @@ export async function insertPeopleOnList(opts: {
   };
 }
 
+export type CampaignPersonForPool = {
+  linkedin_url: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  company: string | null;
+  title: string | null;
+  contact_id: string | null;
+};
+
+/**
+ * Put campaign people into the coach's Pool so Lead Lists can find them.
+ * Skips people already in the Pool, blacklisted people and anyone without
+ * a LinkedIn link. Returns the identity keys now in the Pool (new or not).
+ */
+export async function addCampaignPeopleToPool(
+  coachId: string,
+  people: CampaignPersonForPool[]
+): Promise<{ added: number; identityKeys: string[] }> {
+  const byUrl = new Map<string, CampaignPersonForPool>();
+  for (const person of people) {
+    const url = normalizeLinkedInProfileUrl(String(person.linkedin_url ?? ""));
+    if (url && !byUrl.has(url)) byUrl.set(url, person);
+  }
+  if (!byUrl.size) return { added: 0, identityKeys: [] };
+
+  const pool = await ensureCoachPool(coachId);
+  const blacklisted = await loadBlacklistedLinkedInUrls(coachId);
+  const inPool = new Set<string>();
+  for (const chunk of toChunks(
+    [...byUrl.keys()].map((url) => `li:${url}`),
+    100
+  )) {
+    const { data, error } = await supabaseAdmin
+      .from("coach_lead_list_items")
+      .select("identity_key")
+      .eq("coach_id", coachId)
+      .eq("list_id", pool.id)
+      .in("identity_key", chunk);
+    if (error) throw new Error(error.message);
+    for (const row of data ?? []) {
+      if (typeof row.identity_key === "string") inPool.add(row.identity_key);
+    }
+  }
+
+  const { count } = await supabaseAdmin
+    .from("coach_lead_list_items")
+    .select("id", { count: "exact", head: true })
+    .eq("list_id", pool.id);
+  let room = Math.max(0, MAX_POOL_ITEMS_TOTAL - (count ?? 0));
+
+  const rows: Record<string, unknown>[] = [];
+  for (const [url, person] of byUrl) {
+    const key = `li:${url}`;
+    if (inPool.has(key) || blacklisted.has(url) || room <= 0) continue;
+    room -= 1;
+    rows.push({
+      list_id: pool.id,
+      coach_id: coachId,
+      source: "manual",
+      leadrocks_id: null,
+      full_name: displayListPersonName(person),
+      first_name: person.first_name,
+      last_name: person.last_name,
+      job_title: person.title,
+      company: person.company,
+      linkedin_url: url,
+      contact_id: person.contact_id,
+      identity_key: key,
+      match_reason: "From a campaign",
+      raw: {},
+    });
+  }
+
+  const inserted = rows.length
+    ? await insertLeadListItemRows(rows)
+    : { inserted: 0, skipped: 0 };
+  if (inserted.inserted) await recountLeadListItems(pool.id);
+  const identityKeys = [...byUrl.keys()]
+    .filter((url) => !blacklisted.has(url))
+    .map((url) => `li:${url}`);
+  return { added: inserted.inserted, identityKeys };
+}
+
 /**
  * Ensure the coach has a pool list.
  * Backfill from legacy audience lists only when the pool is first created,

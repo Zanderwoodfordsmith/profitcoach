@@ -462,8 +462,18 @@ export async function createCampaign(
   return data;
 }
 
-/** Copy settings + steps into a new draft. Does not copy leads. */
-export async function duplicateCampaign(coachId: string, campaignId: string) {
+export type DuplicateCampaignCopy = "steps" | "people" | "both";
+
+/**
+ * Copy a campaign into a new draft: always its settings, plus its steps, its
+ * people, or both. People start fresh at the first step (blocked and bad-fit
+ * people stay out, as with any import), and nothing sends until it's turned on.
+ */
+export async function duplicateCampaign(
+  coachId: string,
+  campaignId: string,
+  copy: DuplicateCampaignCopy = "steps"
+) {
   const detail = await getCampaign(coachId, campaignId, { includeJobs: false });
   if (!detail) throw new Error("Campaign not found.");
 
@@ -541,8 +551,12 @@ export async function duplicateCampaign(coachId: string, campaignId: string) {
     })
   );
 
-  if (stepInputs.length > 0) {
+  if (copy !== "people" && stepInputs.length > 0) {
     await replaceCampaignSteps(data.id, stepInputs);
+  }
+
+  if (copy !== "steps") {
+    await copyCampaignPeople(coachId, campaignId, data.id);
   }
 
   if (data?.id) {
@@ -553,6 +567,59 @@ export async function duplicateCampaign(coachId: string, campaignId: string) {
     }
   }
   return data;
+}
+
+/** Everyone in one campaign, added to another as new people. */
+async function copyCampaignPeople(
+  coachId: string,
+  fromCampaignId: string,
+  toCampaignId: string
+) {
+  const { data: leads, error } = await fetchAllSupabasePages<{
+    contact_id: string | null;
+    linkedin_url: string | null;
+    linkedin_provider_id: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    company: string | null;
+    title: string | null;
+    open_profile: boolean | null;
+    metadata: Record<string, unknown> | null;
+  }>(async (from, to) =>
+    supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select(
+        "contact_id, linkedin_url, linkedin_provider_id, first_name, last_name, company, title, open_profile, metadata"
+      )
+      .eq("campaign_id", fromCampaignId)
+      .eq("coach_id", coachId)
+      .order("created_at", { ascending: true })
+      .range(from, to)
+  );
+  if (error) throw new Error(error.message ?? "Could not read the people.");
+  const text = (value: unknown) =>
+    typeof value === "string" && value.trim() ? value : null;
+  const rows: LeadImportRow[] = (leads ?? []).map((lead) => {
+    const meta = lead.metadata ?? {};
+    return {
+      contact_id: lead.contact_id,
+      linkedin_url: lead.linkedin_url,
+      linkedin_provider_id: lead.linkedin_provider_id,
+      first_name: lead.first_name,
+      last_name: lead.last_name,
+      company: lead.company,
+      title: lead.title,
+      open_profile: lead.open_profile,
+      email: text(meta.email),
+      phone: text(meta.phone),
+      instagram_url: text(meta.instagram_url),
+      facebook_url: text(meta.facebook_url),
+    };
+  });
+  // addCampaignLeads takes up to 2,500 at a time.
+  for (let i = 0; i < rows.length; i += 2500) {
+    await addCampaignLeads(coachId, toCampaignId, rows.slice(i, i + 2500));
+  }
 }
 
 export async function updateCampaign(
@@ -1464,6 +1531,18 @@ export async function addCampaignLeads(
 
   if (campaign.status === "running" && addedIds.length > 0) {
     await enqueuePendingJobsForCampaign(coachId, campaignId, addedIds);
+  }
+
+  // Campaign people also live in the Pool, so Lead Lists can find them.
+  if (added > 0) {
+    try {
+      const { addCampaignPeopleToPool } = await import(
+        "@/lib/leadLists/audienceLists"
+      );
+      await addCampaignPeopleToPool(coachId, inserts);
+    } catch (error) {
+      console.warn("campaign people to Pool:", error);
+    }
   }
 
   return { added, skipped, blacklisted, badFit };

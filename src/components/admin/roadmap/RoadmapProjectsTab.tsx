@@ -8,6 +8,7 @@ import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
 import { StickyPageHeader } from "@/components/layout/StickyPageHeader";
 import { NewProjectSheet } from "./NewProjectSheet";
 import { RoadmapProjectsView, type ProjectsShow } from "./RoadmapProjectsView";
+import { RoadmapSpacePicker, readSpaceChoice, saveSpaceChoice, type SpaceChoice } from "./RoadmapSpacePicker";
 import { ViewToggle } from "./roadmapUi";
 import { projectHref, roadmapAuthHeaders, useRoadmapData } from "./useRoadmapData";
 
@@ -37,6 +38,13 @@ export function RoadmapProjectsTab() {
     return () => observer.disconnect();
   }, []);
 
+  // The space picked last time on this browser, like the view below.
+  const [space, setSpace] = useState<SpaceChoice>(readSpaceChoice);
+  const pickSpace = (next: SpaceChoice) => {
+    setSpace(next);
+    saveSpaceChoice(next);
+  };
+
   const pick = (next: ProjectsShow) => {
     setShow(next);
     try {
@@ -55,6 +63,7 @@ export function RoadmapProjectsTab() {
         tabs={<LessonImportTabs />}
       />
       <div className="mt-5 flex flex-wrap items-center gap-3 border-b border-slate-200/80 pb-4">
+        <RoadmapSpacePicker value={space} onChange={pickSpace} />
         <ViewToggle
           value={show}
           onChange={pick}
@@ -75,6 +84,7 @@ export function RoadmapProjectsTab() {
       {jobs ? (
         <RoadmapProjectsView
           show={show}
+          space={space}
           jobs={jobs}
           stickyTop={headerHeight}
           authHeaders={roadmapAuthHeaders}

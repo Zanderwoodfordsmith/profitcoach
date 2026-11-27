@@ -287,6 +287,7 @@ export function expandCommunityCalendar(
       recordingVideoUrl: string | null;
       rescheduledStartsAt: string | null;
       rescheduledEndsAt: string | null;
+      noRecordingNote: string | null;
     }
   >();
   for (const ex of exceptions) {
@@ -298,6 +299,7 @@ export function expandCommunityCalendar(
       recordingVideoUrl: ex.recording_video_url ?? null,
       rescheduledStartsAt: ex.rescheduled_starts_at ?? null,
       rescheduledEndsAt: ex.rescheduled_ends_at ?? null,
+      noRecordingNote: ex.no_recording_note?.trim() || null,
     });
   }
 
@@ -311,6 +313,7 @@ export function expandCommunityCalendar(
     | "recording_video_url"
     | "isCancelled"
     | "cancellationReason"
+    | "noRecordingNote"
   > {
     const ex = exceptionByKey.get(occurrenceKey);
     const isCancelled = ex?.isCancelled ?? false;
@@ -320,6 +323,7 @@ export function expandCommunityCalendar(
         recording_video_url: ex?.recordingVideoUrl ?? null,
         isCancelled,
         cancellationReason: ex?.cancellationReason ?? null,
+        noRecordingNote: ex?.noRecordingNote ?? null,
       };
     }
     return {
@@ -327,6 +331,7 @@ export function expandCommunityCalendar(
       recording_video_url: ex?.recordingVideoUrl ?? row.recording_video_url,
       isCancelled,
       cancellationReason: ex?.cancellationReason ?? null,
+      noRecordingNote: ex?.noRecordingNote ?? null,
     };
   }
   const out: CommunityCalendarOccurrence[] = [];

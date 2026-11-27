@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, Video, X } from "lucide-react";
+import { CalendarDays, Video, VideoOff, X } from "lucide-react";
 import { DateTime } from "luxon";
 
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -64,6 +64,7 @@ type CallItem = {
   cancellationReason: string | null;
   isLive: boolean;
   hasRecording: boolean;
+  noRecordingNote: string | null;
 };
 
 export function ThisWeeksCallsCard() {
@@ -148,6 +149,7 @@ export function ThisWeeksCallsCard() {
         cancellationReason: reason,
         isLive: isLiveCommunityCalendarOccurrence(o),
         hasRecording: communityCalendarHasRecording(o),
+        noRecordingNote: o.noRecordingNote?.trim() || null,
       };
     });
   }, [events, exceptions, tz, nowTick]);
@@ -269,6 +271,17 @@ export function ThisWeeksCallsCard() {
                         />
                         Recording available
                       </span>
+                    ) : c.isPast && c.noRecordingNote ? (
+                      <p
+                        className="mt-0.5 flex items-center gap-1 truncate text-caption font-medium leading-snug text-slate-500"
+                        title={c.noRecordingNote}
+                      >
+                        <VideoOff
+                          className="h-2.5 w-2.5 shrink-0"
+                          aria-hidden
+                        />
+                        <span className="truncate">{c.noRecordingNote}</span>
+                      </p>
                     ) : null}
                   </div>
                 </li>

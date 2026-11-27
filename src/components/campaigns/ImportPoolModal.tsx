@@ -632,7 +632,6 @@ export function ImportPoolModal({
         headers,
         body: JSON.stringify({
           salesNavUrl: importUrl,
-          name: "Pool import",
           ...(cap ? { poolLimit: cap } : {}),
         }),
       });

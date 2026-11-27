@@ -15,7 +15,6 @@ type CoachRow = {
   coach_id: string;
   name: string;
   slug: string;
-  sales_robot: boolean;
   profile_as_of: string | null;
   pillars: Pillars;
   overall: number | null;
@@ -372,7 +371,7 @@ export function CoachQualityBoard() {
               Ava&apos;s own scores
             </Link>
             ). Profile = LinkedIn basics, headline, About and current role. Messaging = the campaign that reached the most people, plus nurture. Activity and results come from the Get clients
-            board (last 30 days); coaches on Sales Robot show a dash because BCA can&apos;t see their sending.
+            board (last 30 days).
           </p>
           <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
             <Tile label="BCA overall" value={s.benchmarks.overall} hint="Median coach" />
@@ -427,7 +426,7 @@ export function CoachQualityBoard() {
                       <td className="px-3 py-2">
                         <ScoreChip score={r.pillars.messaging} />
                       </td>
-                      <td className="px-3 py-2">{r.sales_robot && r.pillars.activity == null ? <span className="text-xs text-slate-500">Sales Robot</span> : <ScoreChip score={r.pillars.activity} />}</td>
+                      <td className="px-3 py-2"><ScoreChip score={r.pillars.activity} /></td>
                       <td className="px-3 py-2">
                         <ScoreChip score={r.pillars.results} />
                       </td>

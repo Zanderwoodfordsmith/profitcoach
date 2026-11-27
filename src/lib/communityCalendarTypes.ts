@@ -54,6 +54,8 @@ export type CommunityCalendarOccurrence = {
   /** True when this occurrence was cancelled but kept visible on the calendar. */
   isCancelled?: boolean;
   cancellationReason?: string | null;
+  /** Shown instead of the recording when there isn't one (e.g. an apology). */
+  noRecordingNote?: string | null;
 };
 
 /** Per-occurrence overrides (cancellation, recording) for recurring events. */
@@ -69,6 +71,8 @@ export type CommunityCalendarEventExceptionRow = {
   rescheduled_ends_at: string | null;
   /** When true, this occurrence is skipped entirely (not shown as cancelled). */
   omit_from_calendar?: boolean;
+  /** Shown to coaches on a past session with no recording (e.g. an apology). */
+  no_recording_note?: string | null;
   created_at: string;
 };
 

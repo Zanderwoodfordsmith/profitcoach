@@ -75,7 +75,6 @@ export type CoachExportColumnKey =
   | "lastActive"
   | "crm"
   | "crmLocationId"
-  | "salesRobot"
   | "profitCoachEmail"
   | "accessTier"
   | "accessTierLocked"
@@ -110,7 +109,6 @@ const EXPORT_COLUMN_DEFS: Array<{ key: CoachExportColumnKey; label: string }> =
     { key: "lastActive", label: "Last active" },
     { key: "crm", label: "CRM" },
     { key: "crmLocationId", label: "CRM location ID" },
-    { key: "salesRobot", label: "Sales Robot" },
     { key: "profitCoachEmail", label: "PC email" },
     { key: "accessTier", label: "Access tier" },
     { key: "accessTierLocked", label: "Access tier locked" },
@@ -142,7 +140,6 @@ const TABLE_KEY_TO_EXPORT: Partial<
   lastLogin: ["lastLogin"],
   lastActive: ["lastActive"],
   crm: ["crm"],
-  salesRobot: ["salesRobot"],
   profitCoachEmail: ["profitCoachEmail"],
   accessTier: ["accessTier", "accessTierLocked"],
   recurringPayment: ["recurringPayment"],
@@ -269,8 +266,6 @@ function getExportCellValue(
       return row.crm_profile_name ?? "";
     case "crmLocationId":
       return row.crm_location_id ?? "";
-    case "salesRobot":
-      return yesNo(row.has_sales_robot_account);
     case "profitCoachEmail":
       return yesNo(row.has_profit_coach_email_account);
     case "accessTier":

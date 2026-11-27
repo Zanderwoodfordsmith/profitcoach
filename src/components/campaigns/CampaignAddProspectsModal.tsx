@@ -25,23 +25,13 @@ import { CsvUploadDropzone } from "@/components/prospects/CsvUploadDropzone";
 import { PoolFilterMenu } from "@/components/campaigns/PoolFilterMenu";
 import { fieldClass } from "@/components/ui/Field";
 import { isMagnetPlaybookId } from "@/lib/leadMagnets/catalog";
+import type { PoolPerson } from "@/lib/pool/poolPeople";
 import {
-  poolRowMatchesCityFilter,
-  poolRowMatchesContactFilter,
-  poolRowMatchesDateAddedFilter,
-  poolRowMatchesHeadcountFilter,
-  poolRowMatchesIndustryFilter,
-  poolRowMatchesFitFilter,
-  poolRowMatchesLinkedInFilter,
-  poolRowMatchesPostcodeFilter,
-  poolRowMatchesTagFilter,
-  poolRowPassesExcludedTags,
-  type PoolContactFilter,
-  type PoolDateAddedFilter,
-  type PoolFitFilter,
-  type PoolLinkedInFilter,
-  type PoolPerson,
-} from "@/lib/pool/poolPeople";
+  countActivePoolFilters,
+  createEmptyPoolFilters,
+  poolRowMatchesFilters,
+  type PoolFilters,
+} from "@/lib/pool/poolFilters";
 import {
   DEFAULT_PROSPECT_TAGS,
   mergeProspectTagCatalog,
@@ -266,48 +256,13 @@ export function CampaignAddProspectsModal({
     Array<{ id: string; name: string }>
   >([]);
   const [poolMenuOpen, setPoolMenuOpen] = useState(false);
-  const [poolSourceFilter, setPoolSourceFilter] = useState("all");
-  const [poolCampaignFilter, setPoolCampaignFilter] = useState<
-    "all" | "in_campaign" | "not_in_campaign"
-  >("all");
-  const [poolCampaignIdFilter, setPoolCampaignIdFilter] = useState("");
-  const [poolHeadcountFilter, setPoolHeadcountFilter] = useState<string[]>([]);
-  const [poolCityFilter, setPoolCityFilter] = useState("");
-  const [poolPostcodeFilter, setPoolPostcodeFilter] = useState("");
-  const [poolIndustryFilter, setPoolIndustryFilter] = useState("");
-  const [poolContactFilter, setPoolContactFilter] =
-    useState<PoolContactFilter>("all");
-  const [poolLinkedinFilter, setPoolLinkedinFilter] =
-    useState<PoolLinkedInFilter>("all");
-  const [poolFitFilter, setPoolFitFilter] = useState<PoolFitFilter>("all");
-  const [poolDateAddedFilter, setPoolDateAddedFilter] =
-    useState<PoolDateAddedFilter>("all");
-  const [poolTagFilter, setPoolTagFilter] = useState("all");
-  const [poolExcludeTags, setPoolExcludeTags] = useState<string[]>([]);
+  const [poolFilters, setPoolFilters] = useState<PoolFilters>(createEmptyPoolFilters);
 
   const visibleNamedItems = useMemo(() => {
     const term = namedQuery.trim().toLowerCase();
+    const now = Date.now();
     return namedItems.filter((row) => {
-      if (poolSourceFilter !== "all" && row.source !== poolSourceFilter) {
-        return false;
-      }
-      if (poolCampaignIdFilter) {
-        if (!(row.campaign_ids ?? []).includes(poolCampaignIdFilter)) return false;
-      } else if (poolCampaignFilter === "in_campaign" && !row.in_campaign) {
-        return false;
-      } else if (poolCampaignFilter === "not_in_campaign" && row.in_campaign) {
-        return false;
-      }
-      if (!poolRowMatchesContactFilter(row, poolContactFilter)) return false;
-      if (!poolRowMatchesLinkedInFilter(row, poolLinkedinFilter)) return false;
-      if (!poolRowMatchesFitFilter(row, poolFitFilter)) return false;
-      if (!poolRowMatchesDateAddedFilter(row, poolDateAddedFilter)) return false;
-      if (!poolRowMatchesHeadcountFilter(row, poolHeadcountFilter)) return false;
-      if (!poolRowMatchesCityFilter(row, poolCityFilter)) return false;
-      if (!poolRowMatchesPostcodeFilter(row, poolPostcodeFilter)) return false;
-      if (!poolRowMatchesIndustryFilter(row, poolIndustryFilter)) return false;
-      if (!poolRowMatchesTagFilter(row, poolTagFilter)) return false;
-      if (!poolRowPassesExcludedTags(row, poolExcludeTags)) return false;
+      if (!poolRowMatchesFilters(row, poolFilters, now)) return false;
       if (!term) return true;
       const hay = [
         row.full_name,
@@ -327,23 +282,7 @@ export function CampaignAddProspectsModal({
         .toLowerCase();
       return hay.includes(term);
     });
-  }, [
-    namedItems,
-    namedQuery,
-    poolCampaignFilter,
-    poolCampaignIdFilter,
-    poolCityFilter,
-    poolContactFilter,
-    poolDateAddedFilter,
-    poolExcludeTags,
-    poolHeadcountFilter,
-    poolIndustryFilter,
-    poolLinkedinFilter,
-    poolFitFilter,
-    poolPostcodeFilter,
-    poolSourceFilter,
-    poolTagFilter,
-  ]);
+  }, [namedItems, namedQuery, poolFilters]);
 
   const existingContactSet = useMemo(
     () => new Set(existingContactIds),
@@ -389,19 +328,7 @@ export function CampaignAddProspectsModal({
     poolCampaignsLoadedRef.current = false;
     setPoolCampaigns([]);
     setPoolMenuOpen(false);
-    setPoolSourceFilter("all");
-    setPoolCampaignFilter("all");
-    setPoolCampaignIdFilter("");
-    setPoolHeadcountFilter([]);
-    setPoolCityFilter("");
-    setPoolPostcodeFilter("");
-    setPoolIndustryFilter("");
-    setPoolContactFilter("all");
-    setPoolLinkedinFilter("all");
-    setPoolFitFilter("all");
-    setPoolDateAddedFilter("all");
-    setPoolTagFilter("all");
-    setPoolExcludeTags([]);
+    setPoolFilters(createEmptyPoolFilters());
     setAddCountPreset(250);
     setCustomAddCount("");
     setSelectionMode("count");
@@ -798,19 +725,7 @@ export function CampaignAddProspectsModal({
     [namedItems]
   );
 
-  const poolFilterCount =
-    (poolSourceFilter !== "all" ? 1 : 0) +
-    (poolCampaignIdFilter || poolCampaignFilter !== "all" ? 1 : 0) +
-    (poolContactFilter !== "all" ? 1 : 0) +
-    (poolLinkedinFilter !== "all" ? 1 : 0) +
-    (poolFitFilter !== "all" ? 1 : 0) +
-    (poolDateAddedFilter !== "all" ? 1 : 0) +
-    (poolHeadcountFilter.length > 0 ? 1 : 0) +
-    (poolCityFilter.trim() ? 1 : 0) +
-    (poolPostcodeFilter.trim() ? 1 : 0) +
-    (poolIndustryFilter.trim() ? 1 : 0) +
-    (poolTagFilter !== "all" ? 1 : 0) +
-    (poolExcludeTags.length > 0 ? 1 : 0);
+  const poolFilterCount = countActivePoolFilters(poolFilters);
 
   const eligibleNamedIds = useMemo(
     () => visibleNamedItems.filter((row) => poolCanJoin(row)).map((row) => row.id),
@@ -1303,41 +1218,13 @@ export function CampaignAddProspectsModal({
                       {poolMenuOpen ? (
                         <PoolFilterMenu
                           align="end"
-                          sourceFilter={poolSourceFilter}
+                          filters={poolFilters}
+                          onChange={(patch) =>
+                            setPoolFilters((current) => ({ ...current, ...patch }))
+                          }
                           sourceOptions={poolSourceOptions}
-                          onSourceFilter={setPoolSourceFilter}
-                          campaignFilter={poolCampaignFilter}
-                          campaignIdFilter={poolCampaignIdFilter}
-                          campaigns={poolCampaigns}
-                          onCampaignFilter={(value) => {
-                            setPoolCampaignIdFilter("");
-                            setPoolCampaignFilter(value);
-                          }}
-                          onCampaignIdFilter={(value) => {
-                            setPoolCampaignIdFilter(value);
-                            if (value) setPoolCampaignFilter("all");
-                          }}
-                          headcountFilter={poolHeadcountFilter}
-                          onHeadcountFilter={setPoolHeadcountFilter}
-                          cityFilter={poolCityFilter}
-                          onCityFilter={setPoolCityFilter}
-                          postcodeFilter={poolPostcodeFilter}
-                          onPostcodeFilter={setPoolPostcodeFilter}
-                          industryFilter={poolIndustryFilter}
-                          onIndustryFilter={setPoolIndustryFilter}
-                          contactFilter={poolContactFilter}
-                          onContactFilter={setPoolContactFilter}
-                          linkedinFilter={poolLinkedinFilter}
-                          onLinkedinFilter={setPoolLinkedinFilter}
-                          fitFilter={poolFitFilter}
-                          onFitFilter={setPoolFitFilter}
-                          dateAddedFilter={poolDateAddedFilter}
-                          onDateAddedFilter={setPoolDateAddedFilter}
-                          tagFilter={poolTagFilter}
                           tagOptions={poolTagOptions}
-                          onTagFilter={setPoolTagFilter}
-                          excludeTags={poolExcludeTags}
-                          onExcludeTags={setPoolExcludeTags}
+                          campaigns={poolCampaigns}
                         />
                       ) : null}
                     </div>

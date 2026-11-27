@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Check, ChevronRight, Loader2, Search, Users } from "lucide-react";
 
 import { useDashboardProfile } from "@/components/layout/useDashboardProfile";
@@ -63,6 +63,19 @@ function rememberRecentId(id: string): string[] {
   return next;
 }
 
+/**
+ * Load the page fresh after switching person. Pages fetch once and keep data in
+ * memory, so swapping in place left the last person's data on screen.
+ * The choice is already in sessionStorage, so the reload picks it up.
+ */
+function openFresh(path: string) {
+  if (path === window.location.pathname) {
+    window.location.reload();
+  } else {
+    window.location.assign(path);
+  }
+}
+
 function coachDisplayName(coach: CoachListRow): string {
   return (
     coach.full_name?.trim() ||
@@ -113,7 +126,6 @@ export function UseAsMenu({
   isAdmin: isAdminProp = false,
 }: Props) {
   const pathname = usePathname();
-  const router = useRouter();
   const { profile } = useDashboardProfile();
   const {
     impersonatingCoachId: storedCoachId,
@@ -352,8 +364,8 @@ export function UseAsMenu({
     setBusyId("admin");
     setError(null);
     clearImpersonation();
-    router.push(pathAfterDemoCoachToggle(pathname ?? "/coach", "admin"));
     finish();
+    openFresh(pathAfterDemoCoachToggle(pathname ?? "/coach", "admin"));
   }
 
   async function selectDemo(demo: DemoCoachToggleUser) {
@@ -378,8 +390,8 @@ export function UseAsMenu({
       }
       rememberCoachAccountLabel(coachId, demo.label);
       setImpersonatingCoachId(coachId);
-      router.push(pathAfterDemoCoachToggle(pathname ?? "/admin", "coach"));
       finish();
+      openFresh(pathAfterDemoCoachToggle(pathname ?? "/admin", "coach"));
     } catch {
       setBusyId(null);
       setError(`Could not switch to ${demo.label}.`);
@@ -396,10 +408,8 @@ export function UseAsMenu({
     rememberCoachAccountLabel(coach.id, coachDisplayName(coach));
     setImpersonatingCoachId(coach.id);
     const path = pathname ?? "/admin";
-    if (!path.startsWith("/coach")) {
-      router.push(pathAfterDemoCoachToggle(path, "coach"));
-    }
     finish();
+    openFresh(path.startsWith("/coach") ? path : pathAfterDemoCoachToggle(path, "coach"));
   }
 
   if (!show) return null;

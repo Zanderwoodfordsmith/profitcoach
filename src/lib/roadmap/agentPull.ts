@@ -75,10 +75,10 @@ async function pull(id: string) {
   }
 
   try {
-    await git(["fetch", "--quiet", "origin", row.agent_branch, "staging"]);
+    await git(["fetch", "--quiet", "origin", row.agent_branch, "main"]);
     const sha = row.agent_head_sha;
     await git(["cat-file", "-e", `${sha}^{commit}`]);
-    const from = row.agent_applied_sha ?? (await git(["merge-base", "origin/staging", sha])).trim();
+    const from = row.agent_applied_sha ?? (await git(["merge-base", "origin/main", sha])).trim();
     const files = (await git(["diff", "--name-only", from, sha])).split("\n").filter(Boolean);
     const patch = await git(["diff", "--binary", from, sha]);
     if (patch.trim()) {
@@ -137,6 +137,9 @@ export function startRoadmapAgentPull() {
     .subscribe((status) => {
       // Also on every reconnect: anything that finished while we weren't listening.
       if (status === "SUBSCRIBED") void catchUp();
+      else console.log(`[roadmap] Live connection: ${status}`);
     });
+  // Backstop: the live connection can go quiet without reconnecting (job 309 was missed that way).
+  setInterval(() => void catchUp(), 60_000);
   console.log("[roadmap] Listening for cards Claude finishes.");
 }

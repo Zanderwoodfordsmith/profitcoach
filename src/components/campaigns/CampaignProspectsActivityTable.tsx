@@ -408,6 +408,12 @@ export function CampaignProspectsActivityTable({
   const selectedCount = selectedIds.length;
   const allVisibleSelected =
     visibleIds.length > 0 && visibleIds.every((id) => selectedIdSet.has(id));
+  const allRowsSelected =
+    rows.length > 0 && rows.every((row) => selectedIdSet.has(row.lead.id));
+  const countLabel =
+    rows.length === leads.length
+      ? `${leads.length.toLocaleString("en-GB")} ${leads.length === 1 ? "person" : "people"}`
+      : `${rows.length.toLocaleString("en-GB")} of ${leads.length.toLocaleString("en-GB")}`;
   const selectedLeads = useMemo(
     () => leads.filter((lead) => selectedIdSet.has(lead.id)),
     [leads, selectedIdSet]
@@ -625,6 +631,7 @@ export function CampaignProspectsActivityTable({
               ) : null}
             </div>
           </div>
+          <span className="text-sm tabular-nums text-slate-500">{countLabel}</span>
         </div>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-1">
           {selectedCount > 0 ? (
@@ -741,6 +748,19 @@ export function CampaignProspectsActivityTable({
           className={cardClass("plain", "overflow-hidden")}
           aria-label="Campaign prospect activity"
         >
+          {allVisibleSelected && !allRowsSelected ? (
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-sky-100 bg-sky-50 px-4 py-2 text-sm">
+              <span className="font-medium text-sky-900">{selectedCount} selected</span>
+              <button
+                type="button"
+                onClick={() => setSelectedIds(rows.map((row) => row.lead.id))}
+                className="font-medium text-sky-700 hover:text-sky-900"
+              >
+                Select all {rows.length.toLocaleString("en-GB")}
+                {rows.length === leads.length ? "" : " matching"}
+              </button>
+            </div>
+          ) : null}
           <div className="overflow-x-auto">
           <div className={`${ROW} border-b border-slate-200 bg-slate-50 py-2.5 text-kicker font-semibold uppercase text-slate-500`}>
             <div className="flex w-8 shrink-0 items-center justify-center">

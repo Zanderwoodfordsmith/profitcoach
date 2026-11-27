@@ -85,7 +85,13 @@ export async function createProviderConnectLink(
   const expires = new Date(Date.now() + 60 * 60 * 1000).toISOString();
   const returnPrefix = settingsReturnPrefix(request);
   const returnTo = options?.returnTo ?? "settings";
-  const reconnectAccountId = options?.reconnectAccountId?.trim() || "";
+  let reconnectAccountId = options?.reconnectAccountId?.trim() || "";
+  if (provider === "LINKEDIN") {
+    // One LinkedIn per coach: sign in again to the one they have instead
+    // of adding a second. (Dynamic import: outreachAccounts re-exports us.)
+    const { linkedInToReconnect } = await import("@/lib/unipile/outreachAccounts");
+    reconnectAccountId = (await linkedInToReconnect(coachId)) ?? "";
+  }
   const successPath =
     returnTo === "campaigns"
       ? `${returnPrefix}/campaigns?linkedin=connected`

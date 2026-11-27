@@ -1,5 +1,9 @@
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import type { CampaignStepInput } from "@/lib/unipile/campaigns";
+import {
+  campaignChannelFrom,
+  type CampaignChannel,
+  type CampaignStepInput,
+} from "@/lib/unipile/campaigns";
 import { mediaFromStepConfig, signCampaignStepMedia } from "@/lib/unipile/campaignStepMedia";
 import {
   blankLibraryMessageStep,
@@ -26,6 +30,8 @@ type ItemRow = {
   description: string | null;
   settings: unknown;
   status: CampaignLibraryStatus;
+  coach_id: string | null;
+  channel: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -45,7 +51,7 @@ type StepRow = {
 };
 
 const ITEM_SELECT =
-  "id, item_type, kind, name, description, settings, status, created_at, updated_at";
+  "id, item_type, kind, name, description, settings, status, coach_id, channel, created_at, updated_at";
 
 function asSettings(
   itemType: CampaignLibraryItemType,
@@ -87,6 +93,8 @@ function summaryFrom(
     name: row.name,
     description: row.description,
     status: row.status,
+    coach_id: row.coach_id ?? null,
+    channel: campaignChannelFrom(row.channel ?? undefined),
     settings: asSettings(row.item_type, row.settings),
     step_count: steps.length,
     step_types: stepTypes,
@@ -182,6 +190,7 @@ export async function listLibraryItems(input: {
     .from("campaign_library_items")
     .select(ITEM_SELECT)
     .eq("item_type", input.itemType)
+    .is("coach_id", null)
     .order("updated_at", { ascending: false });
   if (input.kind) query = query.eq("kind", input.kind);
   if (input.status) query = query.eq("status", input.status);
@@ -370,6 +379,59 @@ export async function duplicateLibraryItem(
   });
   await replaceLibrarySteps(copy.id, steps);
   return getLibraryItem(copy.id);
+}
+
+/** A coach's own saved templates, newest first. Never in the admin library. */
+export async function listCoachOwnTemplates(
+  coachId: string
+): Promise<CampaignLibraryItemSummary[]> {
+  const { data, error } = await supabaseAdmin
+    .from("campaign_library_items")
+    .select(ITEM_SELECT)
+    .eq("item_type", "template")
+    .eq("coach_id", coachId)
+    .order("updated_at", { ascending: false });
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as ItemRow[];
+  const stepTypes = await loadStepTypesByItem(rows.map((row) => row.id));
+  return rows.map((row) =>
+    summaryFrom(
+      row,
+      (stepTypes.get(row.id) ?? []).map((step_type) => ({ step_type }))
+    )
+  );
+}
+
+/** Save a coach's own template: ready to use straight away, only they see it. */
+export async function createCoachTemplate(input: {
+  coachId: string;
+  name: string;
+  kind: CampaignLibraryKind;
+  channel: CampaignChannel;
+  settings: unknown;
+  steps: CampaignStepInput[];
+}): Promise<CampaignLibraryItemDetail> {
+  const { data, error } = await supabaseAdmin
+    .from("campaign_library_items")
+    .insert({
+      item_type: "template",
+      kind: input.kind,
+      name: normalizeLibraryName("template", input.name),
+      description: null,
+      settings: sanitizeLibraryItemSettings("template", input.settings),
+      status: "published",
+      coach_id: input.coachId,
+      channel: input.channel,
+      created_by: input.coachId,
+    })
+    .select(ITEM_SELECT)
+    .single();
+  if (error) throw new Error(error.message);
+  const row = data as ItemRow;
+  await replaceLibrarySteps(row.id, input.steps);
+  const detail = await getLibraryItem(row.id);
+  if (!detail) throw new Error("Failed to load saved template.");
+  return detail;
 }
 
 export const LIBRARY_MEDIA_COACH_ID = "library";

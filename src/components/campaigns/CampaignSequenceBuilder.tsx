@@ -86,6 +86,7 @@ import {
   type MergeFieldPickerContext,
 } from "@/lib/unipile/mergeFields";
 import { CONNECTION_NOTE_MAX } from "@/lib/campaigns/connectionNote";
+import { TheirBusinessPreview } from "@/components/campaigns/TheirBusinessPreview";
 import {
   ContentWithRail,
   ContentWithRailAside,
@@ -2044,6 +2045,13 @@ export function StepInlineEditor({
             onCommit={onCommit}
           />
         </div>
+      ) : null}
+
+      {!libraryMode && campaignStepHasCopy(step.step_type) ? (
+        <TheirBusinessPreview
+          campaignId={campaignId}
+          body={(hasAb || levelBranch ? activeVariant?.body : step.body) ?? ""}
+        />
       ) : null}
 
       {step.step_type === "invite" ? (

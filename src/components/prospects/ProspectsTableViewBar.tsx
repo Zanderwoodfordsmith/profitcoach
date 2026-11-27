@@ -24,7 +24,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Lock, Plus } from "lucide-react";
+import { GripVertical, ListFilter, Lock, Plus } from "lucide-react";
 import { TabOverflowMenu } from "@/components/table/TabOverflowMenu";
 import { fieldClass } from "@/components/ui/Field";
 import {
@@ -41,6 +41,10 @@ type SavedViewTab = {
   id: string;
   name: string;
   canEdit: boolean;
+  /** Smart list (Lead Lists, job 301): fills itself from rules. */
+  smart?: boolean;
+  /** People on it right now, when known. */
+  count?: number | null;
 };
 
 type Props = {
@@ -57,6 +61,8 @@ type Props = {
   addViewLabel?: string;
   showAddView?: boolean;
   onDuplicateView?: (viewId: string) => void;
+  /** Smart lists only: open the rules. */
+  onEditRules?: (viewId: string) => void;
 };
 
 function SortableViewTab({
@@ -75,6 +81,7 @@ function SortableViewTab({
   canRename,
   canDuplicate,
   onDuplicate,
+  onEditRules,
 }: {
   view: SavedViewTab;
   active: boolean;
@@ -91,6 +98,7 @@ function SortableViewTab({
   canRename: boolean;
   canDuplicate?: boolean;
   onDuplicate?: () => void;
+  onEditRules?: () => void;
 }) {
   const isAllView = isDefaultProspectTableViewName(view.name);
   const isProtected = isProtectedProspectViewName(view.name);
@@ -163,22 +171,31 @@ function SortableViewTab({
             type="button"
             onClick={() => onSwitchView(view.id)}
             className={`inline-flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium transition-colors ${
-              canRename || canDelete || canDuplicate ? "pr-6" : ""
+              canRename || canDelete || canDuplicate || onEditRules ? "pr-6" : ""
             }`}
             title={
               isAllView
                 ? "Built-in list. Everyone in this list."
                 : isProtected
                   ? `${view.name}. Built-in list. Cannot be renamed or deleted.`
-                  : view.name
+                  : view.smart
+                    ? `${view.name}. Smart list: updates itself from its rules.`
+                    : view.name
             }
           >
             {isProtected ? (
               <Lock className="h-3 w-3 shrink-0 opacity-70" aria-hidden />
+            ) : view.smart ? (
+              <ListFilter className="h-3.5 w-3.5 shrink-0 opacity-80" aria-label="Smart list" />
             ) : null}
             <span className={active ? "whitespace-nowrap" : "max-w-[12rem] truncate"}>
               {isAllView ? DEFAULT_PROSPECT_TABLE_VIEW_NAME : view.name}
             </span>
+            {view.smart && typeof view.count === "number" ? (
+              <span className="shrink-0 text-xs font-normal text-slate-500">
+                {view.count.toLocaleString()}
+              </span>
+            ) : null}
           </button>
           <div
             className="absolute right-0.5 top-1/2 -translate-y-1/2"
@@ -192,6 +209,7 @@ function SortableViewTab({
               onRename={() => onStartRename(view)}
               onDelete={() => onDeleteView(view.id)}
               onDuplicate={onDuplicate}
+              onEditRules={onEditRules}
             />
           </div>
         </div>
@@ -212,6 +230,7 @@ export function ProspectsTableViewBar({
   addViewLabel = "View",
   showAddView = true,
   onDuplicateView,
+  onEditRules,
 }: Props) {
   const [addingView, setAddingView] = useState(false);
   const [newViewName, setNewViewName] = useState("");
@@ -345,6 +364,11 @@ export function ProspectsTableViewBar({
                 onDuplicate={
                   onDuplicateView
                     ? () => onDuplicateView(view.id)
+                    : undefined
+                }
+                onEditRules={
+                  onEditRules && view.smart && view.canEdit
+                    ? () => onEditRules(view.id)
                     : undefined
                 }
               />

@@ -32,7 +32,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Archive, ChevronDown, Copy, GripVertical, MoreVertical, Pencil, Plus, RotateCcw, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Archive, ChevronDown, Copy, GripVertical, MoreVertical, Pencil, Plus, RotateCcw, Save, SlidersHorizontal, Trash2 } from "lucide-react";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { fetchHubQuery, invalidateHubQuery, patchHubQuery, peekHubQuery } from "@/lib/getClients/hubQueryCache";
@@ -48,6 +48,8 @@ import { CampaignOverviewHero } from "@/components/campaigns/CampaignOverviewHer
 import { CampaignActivityPane } from "@/components/campaigns/CampaignActivityPane";
 import { CampaignSsiCard } from "@/components/campaigns/CampaignSsiCard";
 import { AccountSendingModal } from "@/components/campaigns/AccountSendingModal";
+import { SaveCampaignTemplateModal } from "@/components/campaigns/SaveCampaignTemplateModal";
+import { DuplicateCampaignModal, type DuplicateCopy } from "@/components/campaigns/DuplicateCampaignModal";
 import { CampaignInvitesRailCard } from "@/components/campaigns/CampaignInvitesRailCard";
 import { CampaignOnOffToggle } from "@/components/campaigns/CampaignOnOffToggle";
 import { CampaignsSubTabs } from "@/components/campaigns/CampaignsSubTabs";
@@ -73,7 +75,10 @@ import {
   CampaignReplyMix,
 } from "@/components/campaigns/CampaignOverviewMetrics";
 import { orderCampaignsForDisplay } from "@/lib/campaigns/campaignListOrder";
-import { partitionOutreachCampaigns } from "@/lib/leadMagnets/catalog";
+import {
+  isMagnetPlaybookId,
+  partitionOutreachCampaigns,
+} from "@/lib/leadMagnets/catalog";
 import {
   DEMO_PREVIEW_ACCOUNT,
   campaignSamplePreviewActive,
@@ -172,7 +177,9 @@ function RowMenu({
   open,
   onOpenChange,
   onEdit,
+  onSettings,
   onDuplicate,
+  onSaveTemplate,
   onArchive,
   onUnarchive,
   onDelete,
@@ -181,7 +188,9 @@ function RowMenu({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onEdit: () => void;
+  onSettings: () => void;
   onDuplicate: () => void;
+  onSaveTemplate?: () => void;
   onArchive?: () => void;
   onUnarchive?: () => void;
   onDelete: () => void;
@@ -284,12 +293,42 @@ function RowMenu({
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenChange(false);
+                onSettings();
+              }}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+              Settings
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              disabled={busy}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenChange(false);
                 onDuplicate();
               }}
             >
               <Copy className="h-3.5 w-3.5 text-slate-400" aria-hidden />
               Duplicate
             </button>
+            {onSaveTemplate ? (
+              <button
+                type="button"
+                role="menuitem"
+                disabled={busy}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenChange(false);
+                  onSaveTemplate();
+                }}
+              >
+                <Save className="h-3.5 w-3.5 text-slate-400" aria-hidden />
+                Save as template
+              </button>
+            ) : null}
             {onUnarchive ? (
               <button
                 type="button"
@@ -388,7 +427,9 @@ function CampaignTableRow({
   onToggle,
   onEdit,
   onPrefetch,
+  onSettings,
   onDuplicate,
+  onSaveTemplate,
   onArchive,
   onUnarchive,
   onDelete,
@@ -409,7 +450,9 @@ function CampaignTableRow({
   onToggle: () => void;
   onEdit: () => void;
   onPrefetch?: () => void;
+  onSettings: () => void;
   onDuplicate: () => void;
+  onSaveTemplate?: () => void;
   onArchive?: () => void;
   onUnarchive?: () => void;
   onDelete: () => void;
@@ -546,7 +589,9 @@ function CampaignTableRow({
           onOpenChange={onMenuOpenChange}
           busy={busy || isDemo}
           onEdit={onEdit}
+          onSettings={onSettings}
           onDuplicate={onDuplicate}
+          onSaveTemplate={onSaveTemplate}
           onArchive={onArchive}
           onUnarchive={onUnarchive}
           onDelete={onDelete}
@@ -626,6 +671,8 @@ export function LinkedInCampaignsOverview() {
   const [showSending, setShowSending] = useState(false);
   const [configured, setConfigured] = useState(() => cached?.configured ?? true);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [saveTemplateFor, setSaveTemplateFor] = useState<Campaign | null>(null);
+  const [duplicateFor, setDuplicateFor] = useState<Campaign | null>(null);
   // In-app confirmation. window.confirm is unreliable (embedded browsers can
   // suppress it or not implement it), which made Delete look like a no-op.
   const [confirmRequest, setConfirmRequest] = useState<{
@@ -675,7 +722,15 @@ export function LinkedInCampaignsOverview() {
   );
   const poolCampaigns = useMemo(() => {
     const partitioned = partitionOutreachCampaigns(campaigns);
-    return [...partitioned.ordered, ...partitioned.more];
+    // Lead magnet follow-ups go last: Lead Lists names them in the Campaign
+    // column but leaves them out of its menus.
+    return [
+      ...partitioned.ordered,
+      ...partitioned.more,
+      ...campaigns.filter((campaign) =>
+        isMagnetPlaybookId(campaign.source_playbook_id)
+      ),
+    ];
   }, [campaigns]);
   const rates = useMemo(() => {
     let connected = 0;
@@ -954,7 +1009,7 @@ export function LinkedInCampaignsOverview() {
     }
   }
 
-  async function duplicateCampaign(campaign: Campaign) {
+  async function duplicateCampaign(campaign: Campaign, copy: DuplicateCopy) {
     if (isDemoPreviewId(campaign.id)) return;
     setBusy(true);
     setError(null);
@@ -966,11 +1021,12 @@ export function LinkedInCampaignsOverview() {
         {
           method: "PATCH",
           headers,
-          body: JSON.stringify({ action: "duplicate" }),
+          body: JSON.stringify({ action: "duplicate", copy }),
         }
       );
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Duplicate failed.");
+      setDuplicateFor(null);
       await load(true);
       if (body.campaign?.id) {
         router.push(`${prefix}/campaigns/${body.campaign.id}`);
@@ -1266,7 +1322,16 @@ export function LinkedInCampaignsOverview() {
                                       /* prefetch is best-effort */
                                     }
                                   }}
-                                  onDuplicate={() => void duplicateCampaign(c)}
+                                  onSettings={() =>
+                                    router.push(
+                                      `${prefix}/campaigns/${c.id}?settings=1`
+                                    )
+                                  }
+                                  onDuplicate={() => {
+                                    setError(null);
+                                    setDuplicateFor(c);
+                                  }}
+                                  onSaveTemplate={() => setSaveTemplateFor(c)}
                                   onArchive={() =>
                                     setConfirmRequest({
                                       kind: "archive",
@@ -1345,9 +1410,16 @@ export function LinkedInCampaignsOverview() {
                                           /* prefetch is best-effort */
                                         }
                                       }}
-                                      onDuplicate={() =>
-                                        void duplicateCampaign(c)
+                                      onSettings={() =>
+                                        router.push(
+                                          `${prefix}/campaigns/${c.id}?settings=1`
+                                        )
                                       }
+                                      onDuplicate={() => {
+                                        setError(null);
+                                        setDuplicateFor(c);
+                                      }}
+                                      onSaveTemplate={() => setSaveTemplateFor(c)}
                                       onUnarchive={() =>
                                         void unarchiveCampaign(c)
                                       }
@@ -1490,6 +1562,25 @@ export function LinkedInCampaignsOverview() {
         onCreateFromTemplate={(name, template) =>
           void createCampaign({ name, libraryTemplateId: template.id })
         }
+      />
+
+      <DuplicateCampaignModal
+        campaign={duplicateFor}
+        busy={busy}
+        error={duplicateFor ? error : null}
+        onClose={() => {
+          if (busy) return;
+          setDuplicateFor(null);
+          setError(null);
+        }}
+        onDuplicate={(copy) => {
+          if (duplicateFor) void duplicateCampaign(duplicateFor, copy);
+        }}
+      />
+
+      <SaveCampaignTemplateModal
+        campaign={saveTemplateFor}
+        onClose={() => setSaveTemplateFor(null)}
       />
 
       <AccountSendingModal

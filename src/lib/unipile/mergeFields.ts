@@ -112,6 +112,13 @@ export const MERGE_FIELD_CATALOG: MergeField[] = [
     aliases: ["city"],
   },
   {
+    key: "their_business",
+    label: "Business type and location",
+    group: "Prospect",
+    hint: "What they run and where, written by Ava from their LinkedIn. Use it after \"I see you run\"",
+    example: "an Italian restaurant in Leeds",
+  },
+  {
     key: "profile_hook",
     label: "Line from their profile",
     group: "Prospect",
@@ -267,6 +274,7 @@ export function isInsertableMergeField(
 ): boolean {
   if (field.insertable === false) return false;
   if (IDENTITY_KEYS.has(field.key)) return true;
+  if (field.key === "their_business") return true;
   // Links in a note cut acceptance, and results are blank before they take it.
   if (picker.connectionNote && field.group === "Scorecard") return false;
 

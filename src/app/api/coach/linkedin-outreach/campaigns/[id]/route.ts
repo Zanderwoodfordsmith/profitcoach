@@ -272,7 +272,9 @@ export async function PATCH(request: Request, ctx: Ctx) {
     }
 
     if (body.action === "duplicate") {
-      const campaign = await duplicateCampaign(auth.coachId, id);
+      const copy =
+        body.copy === "people" || body.copy === "both" ? body.copy : "steps";
+      const campaign = await duplicateCampaign(auth.coachId, id, copy);
       return NextResponse.json({ campaign });
     }
 
