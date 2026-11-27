@@ -1,8 +1,2 @@
-import { redirect } from "next/navigation";
-
-type Props = { params: Promise<{ courseId: string }> };
-
-export default async function CoachAcademyExperiencesCourseRedirectPage({ params }: Props) {
-  const { courseId } = await params;
-  redirect(`/coach/academy/archive/${encodeURIComponent(courseId)}`);
-}
+/** Old URL: land on the Classroom card for this programme. */
+export { default } from "@/app/coach/academy/programs/[courseId]/page";
