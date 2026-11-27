@@ -1562,11 +1562,7 @@ function CleanJobCard({
   const commentCount = job.comments?.length ?? 0;
   const imageCount = job.images?.length ?? 0;
   const missingDoneWhen = !job.done_when?.trim() && NEEDS_DONE_WHEN.includes(job.status);
-  const edge = job.blocked_by
-    ? "bg-rose-500"
-    : job.status === "up_next"
-      ? "bg-orange-400"
-      : null;
+  const edge = job.blocked_by ? "bg-rose-500" : null;
   return (
     <div
       draggable
@@ -1731,9 +1727,7 @@ function JobCard({
         onOpen();
       }}
       className={`cursor-pointer rounded-lg border bg-white px-3 py-2.5 outline-none transition focus-visible:ring-2 focus-visible:ring-sky-400 hover:shadow-sm active:cursor-grabbing ${
-        job.status === "up_next"
-          ? "border-orange-200 border-l-2 border-l-orange-400 hover:border-orange-300"
-          : job.status === "review"
+        job.status === "review"
             ? "border-yellow-200 border-l-2 border-l-yellow-400 hover:border-yellow-300"
             : job.status === "vetoed"
               ? "border-slate-200 opacity-60 hover:border-slate-300 hover:opacity-100"
