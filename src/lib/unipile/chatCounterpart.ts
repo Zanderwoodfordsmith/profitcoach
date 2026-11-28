@@ -56,17 +56,21 @@ export function parseUnipileAttendee(raw: unknown): UnipileChatAttendee | null {
     ? (contactInfo.emails as unknown[])
     : [];
   return {
-    id: asString(rec.id) ?? undefined,
-    provider_id: asString(rec.provider_id) ?? undefined,
-    name: asString(rec.name) ?? undefined,
+    // Webhooks name these attendee_* (chat listings don't).
+    id: asString(rec.id) ?? asString(rec.attendee_id) ?? undefined,
+    provider_id:
+      asString(rec.provider_id) ?? asString(rec.attendee_provider_id) ?? undefined,
+    name: asString(rec.name) ?? asString(rec.attendee_name) ?? undefined,
     picture_url:
       asString(rec.picture_url) ??
       asString(rec.profile_picture_url) ??
       asString(rec.profile_pic_url) ??
+      asString(rec.attendee_picture_url) ??
       undefined,
     profile_url:
       asString(rec.profile_url) ??
       asString(rec.public_profile_url) ??
+      asString(rec.attendee_profile_url) ??
       undefined,
     public_identifier:
       asString(rec.public_identifier) ??
@@ -218,13 +222,26 @@ export function identityFromUnipileWebhook(
   body: Record<string, unknown>,
   channel?: string | null
 ): ChatCounterpart {
+  const isSender = Boolean(body.is_sender);
+  // When the coach sent the message, the sender is the coach: never use them
+  // as the other person, and leave them out of the attendees too.
+  const rawSender = asRecord(body.sender);
+  const sender = isSender ? null : rawSender;
+  const selfIds = new Set(
+    [
+      asString(asRecord(body.account_info)?.user_id),
+      isSender
+        ? asString(rawSender?.attendee_provider_id) || asString(rawSender?.provider_id)
+        : null,
+    ].filter((v): v is string => Boolean(v))
+  );
   const attendees = Array.isArray(body.attendees)
     ? body.attendees
         .map(parseUnipileAttendee)
         .filter((a): a is UnipileChatAttendee => Boolean(a))
+        .filter((a) => !a.provider_id || !selfIds.has(a.provider_id))
     : [];
   const fromAttendees = counterpartFromAttendees(attendees);
-  const sender = asRecord(body.sender);
   const senderName =
     asString(sender?.attendee_name) ||
     asString(sender?.name) ||
@@ -236,7 +253,6 @@ export function identityFromUnipileWebhook(
   const senderProfile = hrefFromUnipileLinkedIn(
     asString(sender?.attendee_profile_url) || asString(sender?.profile_url)
   );
-  const isSender = Boolean(body.is_sender);
 
   const webhookPhone =
     fromAttendees.phone ||

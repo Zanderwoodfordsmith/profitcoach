@@ -1234,6 +1234,28 @@ async function syncMessagingAccount(input: {
     }
   }
 
+  // Leads must match the inbox: link chats the loop skipped as unchanged, and
+  // mark leads replied whose chat holds a reply their status missed.
+  if (input.channel === "linkedin" && !rateLimited) {
+    try {
+      const { linkChatsToLeads, markMissedLeadReplies } = await import(
+        "@/lib/unipile/leadReplyReconcile"
+      );
+      await linkChatsToLeads(
+        input.coachId,
+        items.map((chat) => ({
+          chatId: String(chat.id || chat.chat_id || ""),
+          providerId: String(chat.attendee_provider_id || "").trim() || null,
+        }))
+      );
+      await markMissedLeadReplies(input.coachId, {
+        sinceDays: input.skipUnchanged ? 14 : null,
+      });
+    } catch (err) {
+      console.error("[inboxSync] lead reply reconcile failed", err);
+    }
+  }
+
   // Name/photo repair re-asks the provider about the same people, so it
   // runs only on the nightly pass (skipUnchanged off), with time to spare.
   if (

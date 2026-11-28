@@ -307,6 +307,24 @@ function isHttp429(err: unknown): boolean {
   return /too many requests|\b429\b/i.test(message);
 }
 
+/** LinkedIn's account-wide limits, which arrive as plain sentences, not codes. */
+function isProviderLimit(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /temporary provider limit|usage limit set by the provider/i.test(message);
+}
+
+/** The note is longer than this account allows (200 on free LinkedIn, 300 on Premium). */
+function isNoteTooLong(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /exceeds the character limit/i.test(message);
+}
+
+/** A follow-up into an Open Profile message they haven't answered: LinkedIn blocks it. */
+function isInmailNotAccepted(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /hasn't accepted your inmail|has not accepted your inmail/i.test(message);
+}
+
 /**
  * At most one due outbound job per outreach account (and per coach without one).
  * Prefer earlier scheduled_for, then higher-priority campaigns.
@@ -1531,6 +1549,86 @@ export async function processOutreachJobsTick(options?: {
           .eq("id", job.campaign_id)
           .maybeSingle();
         const accId = camp?.outreach_account_id as string | null;
+        const { data: jobStep } = await supabaseAdmin
+          .from("linkedin_campaign_steps")
+          .select("step_type")
+          .eq("id", job.step_id)
+          .maybeSingle();
+        const jobStepType = String(jobStep?.step_type || "");
+
+        // The whole campaign's note is too long: failing lead after lead would
+        // use up the list. Pause the campaign, keep the lead, tell BCA once.
+        if (jobStepType === "invite" && isNoteTooLong(err)) {
+          const { data: paused } = await supabaseAdmin
+            .from("linkedin_campaigns")
+            .update({ status: "paused" })
+            .eq("id", job.campaign_id)
+            .eq("status", "running")
+            .select("name")
+            .maybeSingle();
+          await supabaseAdmin
+            .from("linkedin_send_jobs")
+            .update({
+              status: "cancelled",
+              last_error: "Connection note too long for this LinkedIn account; campaign paused.",
+            })
+            .eq("id", job.id);
+          if (paused) {
+            const { cancelOpenSendJobsForCampaign } = await import("@/lib/unipile/remindQueue");
+            await cancelOpenSendJobsForCampaign(
+              String(job.coach_id),
+              String(job.campaign_id),
+              "Campaign paused: connection note too long"
+            );
+            const names = await coachNames([String(job.coach_id)]);
+            await raiseOutreachAlert({
+              title: `Sales Robot: ${names.get(String(job.coach_id)) ?? "A coach"}'s connection note is too long`,
+              details: `LinkedIn refused the connection note in "${paused.name ?? "a campaign"}" as too long, so the campaign is paused and no one was marked failed. Free LinkedIn accounts allow 200 characters (Premium allows 300), counted after names are filled in. Shorten the note, then start the campaign again.`,
+            });
+          }
+          return;
+        }
+
+        // LinkedIn's account-wide limit: hold the sends, don't fail the people.
+        if (accId && isProviderLimit(err)) {
+          const until = new Date(
+            Date.now() + (jobStepType === "invite" ? 24 : 2) * 3600 * 1000
+          );
+          if (jobStepType === "invite") {
+            await pauseInvitesUntil(accId, until, "provider_limit");
+          } else {
+            await setRateLimitedUntil(accId, until);
+          }
+          await supabaseAdmin
+            .from("linkedin_send_jobs")
+            .update({
+              status: "pending",
+              scheduled_for: until.toISOString(),
+              last_error: "LinkedIn limit reached; trying again later.",
+            })
+            .eq("id", job.id);
+          return;
+        }
+
+        // Their Open Profile message went out; LinkedIn allows nothing more
+        // until they answer. That's the end of the sequence, not a failure.
+        if (isInmailNotAccepted(err)) {
+          await supabaseAdmin
+            .from("linkedin_send_jobs")
+            .update({ status: "cancelled", last_error: message })
+            .eq("id", job.id);
+          await supabaseAdmin
+            .from("linkedin_campaign_leads")
+            .update({
+              status: "completed",
+              next_action_at: null,
+              last_error: "Open Profile message sent. LinkedIn allows no more until they reply.",
+            })
+            .eq("id", job.lead_id)
+            .not("status", "in", "(replied,interested,call_offered,assessment_sent,assessment_done)");
+          return;
+        }
+
         if (accId && isCannotResendYet(err)) {
           const until = new Date(Date.now() + 24 * 3600 * 1000);
           await pauseInvitesUntil(accId, until, "cannot_resend_yet");

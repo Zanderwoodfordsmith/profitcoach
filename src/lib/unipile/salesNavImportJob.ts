@@ -24,6 +24,7 @@ import {
   shouldProbeSalesNavExtractCap,
   spliceSegmentPlan,
   subSplitOverExtractCap,
+  withCatchUpSegment,
   SALES_NAV_EXTRACT_CAP,
   type SalesNavImportSegmentPlan,
 } from "@/lib/salesNavigator/importSegments";
@@ -411,7 +412,7 @@ async function syncUnipileSalesNavImportJobInner(
           segmentPlan = spliceSegmentPlan(
             segmentPlan,
             segmentIndex,
-            children
+            withCatchUpSegment(current, children)
           );
           cursor = null;
           await persistProgress(job, {
@@ -521,7 +522,9 @@ async function syncUnipileSalesNavImportJobInner(
       stalledCursor,
       itemsLength: items.length,
       newUniqueCount,
-      duplicatePages: zeroUniquePages,
+      // The catch-up step starts on people the splits already found, so
+      // pages of repeats are expected; run it to its cap.
+      duplicatePages: current?.catchUp ? 0 : zeroUniquePages,
     });
 
     if (segmentDone) {

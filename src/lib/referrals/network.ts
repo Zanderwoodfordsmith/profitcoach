@@ -151,6 +151,14 @@ export async function syncCoachNetwork(
     .lt("synced_at", syncedAt);
   if (pruneError) return { ok: false, error: pruneError.message };
 
+  // Invites accepted that the webhook missed: move those leads on now.
+  try {
+    const { advanceAcceptedInvites } = await import("@/lib/unipile/leadReplyReconcile");
+    await advanceAcceptedInvites(coachId);
+  } catch (err) {
+    console.error("[network] advancing accepted invites failed", err);
+  }
+
   return { ok: true, total };
 }
 

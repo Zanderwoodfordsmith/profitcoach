@@ -506,12 +506,34 @@ export async function handleUnipileMessageReceived(
       .update({ unread_count: (conv?.unread_count ?? 0) + 1 })
       .eq("id", conversationId);
 
-    const { data: lead } = await supabaseAdmin
+    let { data: lead } = await supabaseAdmin
       .from("linkedin_campaign_leads")
       .select("id, campaign_id, contact_id")
       .eq("coach_id", coachId)
       .eq("unipile_chat_id", chatId)
       .maybeSingle();
+
+    // A chat that starts when someone accepts an invite has no chat id on the
+    // lead yet. Match by their LinkedIn id and save the chat id, or the reply
+    // is missed (the hourly sync then skips the chat as already up to date).
+    if (!lead && channel !== "whatsapp" && identity.providerId) {
+      const { data: byProvider } = await supabaseAdmin
+        .from("linkedin_campaign_leads")
+        .select("id, campaign_id, contact_id")
+        .eq("coach_id", coachId)
+        .eq("linkedin_provider_id", identity.providerId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (byProvider?.id) {
+        lead = byProvider;
+        await supabaseAdmin
+          .from("linkedin_campaign_leads")
+          .update({ unipile_chat_id: chatId })
+          .eq("id", byProvider.id)
+          .is("unipile_chat_id", null);
+      }
+    }
 
     if (lead?.id) {
       const { data: campaign } = await supabaseAdmin

@@ -143,3 +143,20 @@ describe("shouldFinishUnipileSegment", () => {
     );
   });
 });
+
+describe("jobDisplayTargetCount with a catch-up step", () => {
+  it("does not count the catch-up search on top of its splits", () => {
+    assert.equal(
+      jobDisplayTargetCount({
+        pageTarget: 2500,
+        importAll: true,
+        segmentPlan: [
+          { searchTotalCount: 200 },
+          { searchTotalCount: 300 },
+          { searchTotalCount: 3264, catchUp: true },
+        ],
+      }),
+      500
+    );
+  });
+});

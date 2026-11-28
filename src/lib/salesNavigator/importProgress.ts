@@ -36,10 +36,14 @@ export function segmentScrapedCap(opts: {
 export function jobDisplayTargetCount(opts: {
   pageTarget: number;
   progressCount?: number;
-  segmentPlan?: Array<{ searchTotalCount?: number | null }> | null;
+  segmentPlan?: Array<{
+    searchTotalCount?: number | null;
+    catchUp?: boolean;
+  }> | null;
   importAll: boolean;
 }): number {
-  const plan = opts.segmentPlan ?? [];
+  // A catch-up step re-runs its splits' search, so its total would count twice.
+  const plan = (opts.segmentPlan ?? []).filter((s) => !s.catchUp);
   const totals = plan
     .map((s) => s.searchTotalCount)
     .filter(

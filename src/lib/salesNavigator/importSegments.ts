@@ -49,6 +49,12 @@ export type SalesNavImportSegmentPlan = {
   searchTotalCount?: number | null;
   /** Consecutive pages that added no new unique people. */
   zeroUniquePages?: number;
+  /**
+   * The unsplit search, run after its tenure splits. People with no start
+   * date on their current job fall outside every tenure bucket; this picks
+   * them up (up to 2,500). Never split again.
+   */
+  catchUp?: boolean;
 };
 
 type SalesNavImportSegmentDraft = Omit<
@@ -189,7 +195,29 @@ export function subSplitOverExtractCap(
 export function shouldProbeSalesNavExtractCap(
   segment: SalesNavImportSegmentPlan | SalesNavImportSegmentDraft
 ): boolean {
+  if (segment.catchUp) return false;
   return subSplitOverExtractCap(segment) != null;
+}
+
+/**
+ * Tenure splits, then the unsplit search as a last "rest" step. The tenure
+ * buckets miss people with no start date (a 3,264 band came back as 1,331),
+ * so the rest step pulls the plain search too; repeats dedupe in the snapshot.
+ */
+export function withCatchUpSegment(
+  parent: SalesNavImportSegmentPlan | SalesNavImportSegmentDraft,
+  children: SalesNavImportSegmentDraft[]
+): SalesNavImportSegmentDraft[] {
+  const draft = asDraft(parent);
+  return [
+    ...children,
+    {
+      ...draft,
+      id: segmentId([draft.id, "rest"]),
+      label: `${draft.label} · rest`,
+      catchUp: true,
+    },
+  ];
 }
 
 /** LinkedIn Sales Nav silently caps extractable people at this many per query. */

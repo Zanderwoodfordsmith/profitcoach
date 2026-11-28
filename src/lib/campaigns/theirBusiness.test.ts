@@ -25,7 +25,9 @@ describe("business type and location", () => {
 
   it("steps down the ladder: town, then UK, then nothing", () => {
     assert.equal(joinBusinessLine("an Italian restaurant", { place: "Leeds", uk: true }), "an Italian restaurant in Leeds");
-    assert.equal(joinBusinessLine("an Italian restaurant", { place: null, uk: true }), "an Italian restaurant in the UK");
+    assert.equal(joinBusinessLine("an Italian restaurant", { place: null, uk: true }), "a UK Italian restaurant");
+    assert.equal(joinBusinessLine("a chocolate company", { place: null, uk: true }), "a UK chocolate company");
+    assert.equal(joinBusinessLine("a group of pubs", { place: null, uk: true }), "a group of UK pubs");
     assert.equal(joinBusinessLine("an Italian restaurant", { place: null, uk: false }), "an Italian restaurant");
     assert.equal(joinBusinessLine("a hospitality business", { place: "Bath", uk: true }), "a hospitality business in Bath");
   });
