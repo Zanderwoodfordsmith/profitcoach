@@ -33,42 +33,27 @@ function index(partial: Partial<KnownContactIndex> = {}): KnownContactIndex {
 }
 
 describe("whatsAppThreadAllowed", () => {
-  it("keeps a pool number, a prospect, or a client", () => {
-    assert.equal(
-      whatsAppThreadAllowed({ blocked: false, onPool: true, contactType: null }),
-      true
-    );
-    assert.equal(
-      whatsAppThreadAllowed({
-        blocked: false,
-        onPool: false,
-        contactType: "prospect",
-      }),
-      true
-    );
-    assert.equal(
-      whatsAppThreadAllowed({
-        blocked: false,
-        onPool: false,
-        contactType: "client",
-      }),
-      true
-    );
+  const allowed = (input: Partial<Parameters<typeof whatsAppThreadAllowed>[0]>) =>
+    whatsAppThreadAllowed({
+      blocked: false,
+      ownNumber: false,
+      contactType: null,
+      ...input,
+    });
+
+  it("keeps a prospect or a client", () => {
+    assert.equal(allowed({ contactType: "prospect" }), true);
+    assert.equal(allowed({ contactType: "client" }), true);
   });
 
-  it("drops personal chats and anyone the coach blocked", () => {
-    assert.equal(
-      whatsAppThreadAllowed({ blocked: false, onPool: false, contactType: null }),
-      false
-    );
-    assert.equal(
-      whatsAppThreadAllowed({
-        blocked: true,
-        onPool: true,
-        contactType: "prospect",
-      }),
-      false
-    );
+  it("drops personal chats, lead-list numbers and anyone the coach blocked", () => {
+    assert.equal(allowed({ contactType: null }), false);
+    assert.equal(allowed({ contactType: "lead" }), false);
+    assert.equal(allowed({ blocked: true, contactType: "prospect" }), false);
+  });
+
+  it("never keeps the coach's own number, even if it's on a test prospect", () => {
+    assert.equal(allowed({ ownNumber: true, contactType: "prospect" }), false);
   });
 });
 

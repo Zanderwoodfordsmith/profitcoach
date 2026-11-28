@@ -14,6 +14,23 @@ const CLIENT_CAL = /90-minute coaching|coaching session|extra call|next steps/i;
 
 export type HealthLevel = "red" | "amber" | "green";
 
+/**
+ * A current coach: a live Stripe subscription, or a new Programme coach who
+ * paid their first 6 months outside Stripe (Bruce, Paul Elson, Maciej, Mark
+ * Hennessey on 28 Nov). Those have no membership_status, so they were missing
+ * from coach health and Ava's nudges while they were being launched.
+ */
+export function isCurrentCoach(c: {
+  membership_status: string | null;
+  recurring_payment_status: string | null;
+  access_tier?: string | null;
+  record_kind: string | null;
+}): boolean {
+  if (c.record_kind === "historical") return false;
+  if (c.membership_status === "active" || c.membership_status === "past_due" || c.membership_status === "trialing") return true;
+  return c.membership_status == null && c.recurring_payment_status === "first_6_months" && c.access_tier === "programme";
+}
+
 export type CoachHealthRow = {
   coach_id: string;
   name: string;
@@ -38,6 +55,10 @@ export type CoachHealthRow = {
   days_to_first_call: number | null;
   days_to_first_client: number | null;
   median_reply_hours: number | null;
+  /** Launch = the coach's first invite or campaign send (Customer Activation Ramp). Null until something has sent. */
+  days_since_launch: number | null;
+  /** Interested people, any time and any campaign. Only counted 14+ days after launch. */
+  interested_since_launch: number;
   /** From their imported LinkedIn history; null until it has been imported. */
   posts_30d: number | null;
   last_post_days: number | null;
@@ -84,6 +105,11 @@ export function diagnose(r: Omit<CoachHealthRow, "level" | "stuck_at" | "next_st
   }
   if (r.accept_rate != null && r.invites_30d >= 100 && r.accept_rate < 0.1) {
     return { level: "amber", stuck_at: "Few people accept", next_step: "Check targeting (sector, Open Profile first) and remove links from the note." };
+  }
+  // Early warning (CAR, 28 Nov): two weeks after launch and nobody interested yet.
+  // The first weeks send less while LinkedIn warms up, so this is a check, not a failure.
+  if (r.days_since_launch != null && r.days_since_launch >= 14 && r.interested_since_launch === 0) {
+    return { level: "amber", stuck_at: "No interest 14 days after launch", next_step: "Check who is accepting and what they say; sharpen the note or try a warmer list." };
   }
   if (r.interested_30d >= 3 && r.calls_30d === 0) {
     return { level: "amber", stuck_at: "Interest isn't turning into calls", next_step: "Review their replies; switch on Ava alerts and offer two times." };
@@ -165,16 +191,53 @@ async function loadFirsts(
   return out;
 }
 
+/**
+ * Launch day per coach: their first invite or campaign send, whichever is
+ * earlier. For coaches two weeks or more past launch, also how many people
+ * have ever shown interest (archived Sales Robot history included, so a coach
+ * with a track record isn't treated as brand new).
+ */
+async function loadLaunches(ids: string[]): Promise<Map<string, { days: number; interested: number }>> {
+  const out = new Map<string, { days: number; interested: number }>();
+  await Promise.all(
+    ids.map(async (id) => {
+      const [invite, job] = await Promise.all([
+        supabaseAdmin.from("linkedin_campaign_leads").select("invited_at").eq("coach_id", id).not("invited_at", "is", null).order("invited_at", { ascending: true }).limit(1),
+        supabaseAdmin.from("linkedin_send_jobs").select("updated_at").eq("coach_id", id).eq("status", "succeeded").order("updated_at", { ascending: true }).limit(1),
+      ]);
+      const times = [invite.data?.[0]?.invited_at, job.data?.[0]?.updated_at].map((t) => (t ? Date.parse(t as string) : NaN)).filter(Number.isFinite);
+      if (!times.length) return;
+      const days = Math.floor((Date.now() - Math.min(...times)) / DAY);
+      let interested = 0;
+      if (days >= 14) {
+        const { count } = await supabaseAdmin
+          .from("linkedin_campaign_leads")
+          .select("id", { count: "exact", head: true })
+          .eq("coach_id", id)
+          .or(`status.in.(${[...INTERESTED].join(",")}),interest_outcome.eq.positive`);
+        interested = count ?? 0;
+      }
+      out.set(id, { days, interested });
+    })
+  );
+  return out;
+}
+
 export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
   const since30 = new Date(Date.now() - 30 * DAY).toISOString();
   const since7 = Date.now() - 7 * DAY;
 
-  const coaches = await all<{ id: string; slug: string; membership_status: string | null; recurring_payment_status: string | null; record_kind: string | null; membership_started_at: string | null }>(
-    (f, t) => supabaseAdmin.from("coaches").select("id, slug, membership_status, recurring_payment_status, record_kind, membership_started_at").range(f, t)
+  const coaches = await all<{ id: string; slug: string; membership_status: string | null; recurring_payment_status: string | null; access_tier: string | null; record_kind: string | null; membership_started_at: string | null; created_at: string | null }>(
+    (f, t) =>
+      supabaseAdmin
+        .from("coaches")
+        .select("id, slug, membership_status, recurring_payment_status, access_tier, record_kind, membership_started_at, created_at")
+        .range(f, t)
   );
-  const active = coaches.filter(
-    (c) => (c.membership_status === "active" || c.membership_status === "past_due" || c.membership_status === "trialing") && c.record_kind !== "historical"
-  );
+  const active = coaches
+    .filter(isCurrentCoach)
+    // Paid outside Stripe: no subscription start, so day 1 is the day their account was made.
+    .map((c) => (c.membership_started_at || c.membership_status ? c : { ...c, membership_started_at: c.created_at }));
   const ids = active.map((c) => c.id);
   if (!ids.length) return [];
 
@@ -274,6 +337,7 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
   }
 
   const firsts = await loadFirsts(active);
+  const launches = await loadLaunches(ids);
 
   const lastActive = new Map<string, number>();
   for (const s of sessions) {
@@ -339,6 +403,8 @@ export async function loadCoachHealth(): Promise<CoachHealthRow[]> {
         days_to_first_call: firsts.get(c.id)?.call ?? null,
         days_to_first_client: firsts.get(c.id)?.client ?? null,
         median_reply_hours: median(waits.get(c.id) ?? []),
+        days_since_launch: launches.get(c.id)?.days ?? null,
+        interested_since_launch: launches.get(c.id)?.interested ?? 0,
         posts_30d: imported.has(c.id) ? posts30.get(c.id) ?? 0 : null,
         last_post_days: imported.get(c.id) ? Math.floor((Date.now() - Date.parse(imported.get(c.id)!)) / DAY) : null,
         issues_90d: imported.has(c.id) ? issues90.get(c.id) ?? 0 : null,

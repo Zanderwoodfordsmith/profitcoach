@@ -9,6 +9,7 @@ import { DashboardTopActions } from "./DashboardTopActions";
 import { SearchTopBarTrigger } from "@/components/search/SearchTopBarTrigger";
 import { BlueprintVersionSwitch } from "@/components/practice/BlueprintVersionSwitch";
 import { AvaChatsVersionSwitch } from "@/components/admin/ava/AvaChatsVersionSwitch";
+import { LaunchColumnsSwitch } from "@/components/admin/LaunchColumnsSwitch";
 import { BcaChatTopBarButton } from "@/components/support/BcaChatTopBarButton";
 import { useDashboardProfile } from "./useDashboardProfile";
 import { profileInitialsFromName } from "@/lib/communityProfile";
@@ -40,6 +41,7 @@ export function DashboardChromeActions({
         <Suspense fallback={null}>
           <BlueprintVersionSwitch />
           <AvaChatsVersionSwitch />
+          <LaunchColumnsSwitch />
         </Suspense>
       ) : null}
       {/* Phones open search from the photo sheet, which leaves room for the page tabs. */}

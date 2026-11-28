@@ -665,6 +665,7 @@ export function PracticeShell({
                   ) : null}
                 </div>
                 <PageBlurb page={page} className="mt-2.5 max-w-[62ch] text-[1.0625rem] leading-[1.55] text-[#475569]" />
+                {ready ? <LivesInApp page={page} to={href} /> : null}
               </header>
               <div className="pt-6">
                 {ready ? children : <p className="text-sm text-slate-600">{error || "Opening your blueprint…"}</p>}
@@ -695,6 +696,7 @@ export function PracticeShell({
           {page ? (
             <PageBlurb page={page} className="mt-2.5 text-lg leading-[1.55] text-[#475569]" />
           ) : null}
+          {ready && page ? <LivesInApp page={page} to={href} /> : null}
         </header>
         )}
         <div className={isDocumentPage ? "" : "pt-8"}>
@@ -886,6 +888,38 @@ function AvaNavMark({ mark }: { mark: "open" | "ready" | null }) {
 }
 
 /** A page whose work runs elsewhere in the app (Lead lists → Pool, Campaigns) links there beside its title. */
+/**
+ * Where the real work lives (28 Nov, while the Blueprint and the app overlap):
+ * the Blueprint keeps the plan; the live lists and campaigns are changed in
+ * the app. Phased out as drafts move to where they live (job 322).
+ */
+const LIVES_IN_APP: Record<string, { text: string; href: string; label: string }> = {
+  lists: {
+    text: "Your lists live in Prospects. This page shows the plan and what came in. To change who's on a list, or to tag people VIP or Referral, use Prospects.",
+    href: "/coach/campaigns?tab=pool",
+    label: "Open Prospects",
+  },
+  campaigns: {
+    text: "Your campaigns run in Get Calls, under Campaigns. Changes on this page don't change a campaign that's already running, so make them in Campaigns.",
+    href: "/coach/campaigns",
+    label: "Open Campaigns",
+  },
+};
+
+function LivesInApp({ page, to }: { page: { slug: string }; to: (path: string) => string }) {
+  const note = LIVES_IN_APP[page.slug];
+  if (!note) return null;
+  return (
+    <div className="bp-no-print mt-4 flex max-w-[62ch] flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-sky-100 bg-sky-50/70 px-4 py-3">
+      <p className="min-w-0 flex-1 text-sm leading-relaxed text-slate-700">{note.text}</p>
+      <Link href={to(note.href)} className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-sky-700 hover:text-sky-800">
+        {note.label}
+        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+      </Link>
+    </div>
+  );
+}
+
 function OpenInApp({ link, to }: { link: { href: string; label: string }; to: (path: string) => string }) {
   return (
     <Link

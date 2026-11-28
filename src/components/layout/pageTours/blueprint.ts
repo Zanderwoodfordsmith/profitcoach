@@ -20,7 +20,7 @@ export const BLUEPRINT_TOURS: Record<string, PageTourStep[]> = {
     {
       selector: '[data-tour="blueprint-bca-pages"]',
       title: "The pages BCA builds",
-      body: "Your ideal client, LinkedIn profile, lead lists, campaigns, content, offer and pitch. We write them for you, then you check each one.",
+      body: "Your ideal client, LinkedIn profile, prospect lists, campaigns, content, offer and pitch. We write them for you, then you check each one.",
     },
   ],
 

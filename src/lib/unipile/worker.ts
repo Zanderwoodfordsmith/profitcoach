@@ -1214,12 +1214,11 @@ export async function processOutreachJobsTick(options?: {
         // Already talking (e.g. replied before this campaign was imported):
         // a sequence message would read as a cold, repeated message. Stop here.
         if (
-          campaign.stop_on_reply !== false &&
-          (await leadHasWrittenInChat({
+          await leadHasWrittenInChat({
             chatId: (lead.unipile_chat_id as string | null) ?? null,
             providerId,
             accountId,
-          }))
+          })
         ) {
           await supabaseAdmin
             .from("linkedin_campaign_leads")

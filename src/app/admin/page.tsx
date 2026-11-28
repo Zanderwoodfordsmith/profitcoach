@@ -817,14 +817,14 @@ export default function AdminPage() {
   );
   // The Launch view's filter and sort, set from the same toolbar row as the table (21 Nov).
   const [launchEveryone, setLaunchEveryone] = useState(false);
-  const [launchSort, setLaunchSortState] = useState<LaunchSort>("check");
+  const [launchSort, setLaunchSortState] = useState<LaunchSort>("order");
   const [launchAddSlot, setLaunchAddSlot] = useState<HTMLSpanElement | null>(null);
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem("admin-coaches-launch-sort");
       if (LAUNCH_SORTS.some((o) => o.id === saved)) setLaunchSortState(saved as LaunchSort);
     } catch {
-      /* storage blocked: most to check first */
+      /* storage blocked: your order */
     }
   }, []);
   const setLaunchSort = (next: LaunchSort) => {
@@ -2592,7 +2592,7 @@ export default function AdminPage() {
                   </div>
                 </div>
             )}
-            sortActive={launchView ? launchSort !== "check" : hasActiveSort}
+            sortActive={launchView ? launchSort !== "order" : hasActiveSort}
             sortMenu={launchView ? (
                 <div
                   role="menu"

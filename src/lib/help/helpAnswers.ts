@@ -77,9 +77,9 @@ export const HELP_TOPICS: HelpTopic[] = [
   {
     id: "get-clients",
     name: "Get Calls and Win Clients",
-    blurb: "Lead lists, campaigns, the BOSS Score, calls and your pipeline.",
+    blurb: "Prospects, campaigns, the BOSS Score, calls and your pipeline.",
     groups: [
-      { id: "prospects", name: "Lead lists and pipeline" },
+      { id: "prospects", name: "Prospects and pipeline" },
       { id: "campaigns", name: "Campaigns and replies" },
       { id: "boss-score", name: "BOSS Score" },
       { id: "calls", name: "Calls and scripts" },
@@ -461,9 +461,9 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     id: "pool-vs-prospects",
     topic: "get-clients",
     group: "prospects",
-    question: "What's the difference between Lead Lists and Pipeline?",
+    question: "What's the difference between Prospects and Pipeline?",
     answer:
-      "The [Lead Lists](/coach/campaigns?tab=pool) is everyone you might contact: imports, searches and spreadsheets. You sort it into lists and add people from it to campaigns.\n\n[Pipeline](/coach/prospects) is the people you have added, or who took your BOSS Score. Open someone there to see their score, their messages and what happens next.",
+      "[Prospects](/coach/campaigns?tab=pool) is everyone you might contact: imports, searches and spreadsheets. You sort it into lists and add people from it to campaigns.\n\n[Pipeline](/coach/prospects) is the people you have added, or who took your BOSS Score. Open someone there to see their score, their messages and what happens next.",
     aliases: ["what is the pool", "pool or prospects", "where are my leads"],
     sources: ["ticket 20 Nov", "app"],
   },
@@ -481,9 +481,9 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     id: "fill-pool",
     topic: "get-clients",
     group: "prospects",
-    question: "How do I add people to my lead lists?",
+    question: "How do I add people to my prospect lists?",
     answer:
-      "Open [Lead Lists](/coach/campaigns?tab=pool) and click Add people. Choose how. Your connections brings in owners you already know on LinkedIn. Sales Navigator uses a search we build from your Blueprint, or one you paste in. Google Maps and Google Search find businesses by trade and town. Upload CSV takes a spreadsheet, and Add one person is for someone you met.\n\nEveryone lands in Lead Lists. You can also put them on a list as they come in. If someone is already in your Pool, they stay as one person, however many times you add them.",
+      "Open [Prospects](/coach/campaigns?tab=pool) and click Add people. Choose how. Your connections brings in owners you already know on LinkedIn. Sales Navigator uses a search we build from your Blueprint, or one you paste in. Google Maps and Google Search find businesses by trade and town. Upload CSV takes a spreadsheet, and Add one person is for someone you met.\n\nEveryone lands in Prospects. You can also put them on a list as they come in. If someone is already in your Pool, they stay as one person, however many times you add them.",
     aliases: ["import prospects", "import linkedin connections", "google maps import", "upload csv", "add leads", "build my list"],
     sources: ["SUP-508", "SUP-511", "ticket 19 Nov", "app"],
   },
@@ -493,7 +493,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "prospects",
     question: "Do I need Sales Navigator, and when should I get it?",
     answer:
-      "If LinkedIn is your main way of finding clients, yes, and for most of our coaches it is. Get it before your first campaign goes live.\n\nIt helps in three ways:\n\n1. You can send about twice as many connection requests each week, so your campaign reaches twice as many owners. See [how many messages go out](/coach/support?tab=help&a=campaign-sending-limits).\n2. You can search and filter owners properly: by job title, industry, company size and area. Plain LinkedIn search can't do that.\n3. Those searches fill your lead lists. You bring them in, sort them into lead lists, and add the lists to your campaigns. See [how to import a Sales Navigator search](/coach/support?tab=help&a=sales-nav-import) and [Lead Lists and Pipeline](/coach/support?tab=help&a=pool-vs-prospects).\n\nThe app also uses it to bring in your own LinkedIn connections. If you mostly find clients another way, such as calls, email or events, you can fill your lead lists without it, using Google Maps, Google Search or a spreadsheet.\n\nYou can [get your first two months free](/coach/support?tab=help&a=sales-nav-free) with our link. Once you have it, connect it in [Settings](/coach/settings?tab=integrations).",
+      "If LinkedIn is your main way of finding clients, yes, and for most of our coaches it is. Get it before your first campaign goes live.\n\nIt helps in three ways:\n\n1. You can send about twice as many connection requests each week, so your campaign reaches twice as many owners. See [how many messages go out](/coach/support?tab=help&a=campaign-sending-limits).\n2. You can search and filter owners properly: by job title, industry, company size and area. Plain LinkedIn search can't do that.\n3. Those searches fill your prospect lists. You bring them in, sort them into lists, and add the lists to your campaigns. See [how to import a Sales Navigator search](/coach/support?tab=help&a=sales-nav-import) and [Prospects and Pipeline](/coach/support?tab=help&a=pool-vs-prospects).\n\nThe app also uses it to bring in your own LinkedIn connections. If you mostly find clients another way, such as calls, email or events, you can fill your prospect lists without it, using Google Maps, Google Search or a spreadsheet.\n\nYou can [get your first two months free](/coach/support?tab=help&a=sales-nav-free) with our link. Once you have it, connect it in [Settings](/coach/settings?tab=integrations).",
     aliases: ["should I get sales nav", "sales navigator subscription", "do I have to pay for sales navigator", "is sales navigator worth it"],
     sources: ["ticket 17 Nov", "app"],
   },
@@ -503,7 +503,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "prospects",
     question: "How do I get Sales Navigator free for two months?",
     answer:
-      "Use [our Sales Navigator link](https://www.linkedin.com/premium/redeem/?upsellOrderOrigin=sn_referral_promotion&coupon=rbt8JKG-x&customKey=ref_s&redeemTypeV2=REFERRAL_COUPON). It gives you the first two months free.\n\n1. Open the link while you are signed in to LinkedIn.\n2. Follow the steps. LinkedIn asks for a card, but takes nothing for two months.\n3. Connect it in [Settings](/coach/settings?tab=integrations) so we can build your lead lists.\n\nAfter two months it carries on at LinkedIn's normal price. If you want to stop, cancel in LinkedIn before then.\n\nIf LinkedIn says you can't use the offer, message Support and we help you.",
+      "Use [our Sales Navigator link](https://www.linkedin.com/premium/redeem/?upsellOrderOrigin=sn_referral_promotion&coupon=rbt8JKG-x&customKey=ref_s&redeemTypeV2=REFERRAL_COUPON). It gives you the first two months free.\n\n1. Open the link while you are signed in to LinkedIn.\n2. Follow the steps. LinkedIn asks for a card, but takes nothing for two months.\n3. Connect it in [Settings](/coach/settings?tab=integrations) so we can build your prospect lists.\n\nAfter two months it carries on at LinkedIn's normal price. If you want to stop, cancel in LinkedIn before then.\n\nIf LinkedIn says you can't use the offer, message Support and we help you.",
     aliases: ["sales navigator free trial", "sales nav referral link", "sales navigator discount", "2 months free", "free sales navigator", "sales navigator coupon"],
     sources: ["Zander, 20 Nov", "coach setup bar"],
   },
@@ -513,7 +513,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "prospects",
     question: "How do I import a Sales Navigator search?",
     answer:
-      "1. Open [Lead Lists](/coach/campaigns?tab=pool), click Add people, then Sales Navigator.\n2. Click Base search. It opens Sales Navigator with our filters set.\n3. Change the area or anything else you want, then copy the web address.\n4. Back here, paste it under Custom URL. A saved search link works too.\n5. Pick an Import size and click Import to pool.\n\nSales Navigator needs to be connected in [Settings](/coach/settings?tab=integrations) first.",
+      "1. Open [Prospects](/coach/campaigns?tab=pool), click Add people, then Sales Navigator.\n2. Click Base search. It opens Sales Navigator with our filters set.\n3. Change the area or anything else you want, then copy the web address.\n4. Back here, paste it under Custom URL. A saved search link works too.\n5. Pick an Import size and click Import to pool.\n\nSales Navigator needs to be connected in [Settings](/coach/settings?tab=integrations) first.",
     aliases: ["sales navigator url", "import saved search", "custom url", "base search"],
     sources: ["ticket 19 Nov", "SUP-505", "SUP-563", "app"],
   },
@@ -555,7 +555,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     topic: "get-clients",
     group: "prospects",
     fix: true,
-    question: "The Lead Lists search found the wrong kind of businesses. What can I do?",
+    question: "The Prospects search found the wrong kind of businesses. What can I do?",
     answer:
       "A broad term pulls in everything nearby that mentions it. \"IT services\" finds electricians and carpet cleaners who list IT work. Use the words the owner would use for their own business, and add the town or area.\n\nIf you are stuck on wording, tell us who you want and we run the search with you.",
     aliases: ["google maps import", "pool import wrong results"],
@@ -565,9 +565,9 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     id: "filtered-pool-next",
     topic: "get-clients",
     group: "prospects",
-    question: "I've filtered my lead lists. What's the next step?",
+    question: "I've filtered my prospects. What's the next step?",
     answer:
-      "1. In [Lead Lists](/coach/campaigns?tab=pool), tick the people you want.\n2. Click Add to campaign and pick the campaign.\n\nA LinkedIn campaign needs people with a LinkedIn profile, and an email campaign needs an email address. Anyone on your blacklist is left out on its own. You can also add them from inside the campaign: open its Prospects tab, click Add prospects and choose Already in the system.\n\nRather we did it? Tell us in Support which list to start with and we add them for you.",
+      "1. In [Prospects](/coach/campaigns?tab=pool), tick the people you want.\n2. Click Add to campaign and pick the campaign.\n\nA LinkedIn campaign needs people with a LinkedIn profile, and an email campaign needs an email address. Anyone on your blacklist is left out on its own. You can also add them from inside the campaign: open its Prospects tab, click Add prospects and choose Already in the system.\n\nRather we did it? Tell us in Support which list to start with and we add them for you.",
     aliases: ["pool ready", "start my campaign", "marketing campaign going", "add to campaign", "add list to campaign", "add prospects"],
     sources: ["SUP-608"],
   },
@@ -577,7 +577,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "prospects",
     question: "Can I export my prospects?",
     answer:
-      "Yes. On [Lead Lists](/coach/campaigns?tab=pool) or [Pipeline](/coach/prospects), click Export. Choose Shown columns for what you see on screen, or All columns for everything. If you have ticked some people, you can export just those.\n\nYou get a CSV file that opens in Excel or Google Sheets.",
+      "Yes. On [Prospects](/coach/campaigns?tab=pool) or [Pipeline](/coach/prospects), click Export. Choose Shown columns for what you see on screen, or All columns for everything. If you have ticked some people, you can export just those.\n\nYou get a CSV file that opens in Excel or Google Sheets.",
     aliases: ["export to excel", "download prospects", "download my list", "csv export"],
     sources: ["ticket 21 May", "app"],
   },
@@ -597,7 +597,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "prospects",
     question: "Someone asked not to be contacted. How do I stop everything?",
     answer:
-      "1. Open each campaign they are in, go to the Prospects tab, tick them and click Remove. Nothing more goes out to them.\n2. In [Lead Lists](/coach/campaigns?tab=pool), tick them and click Blacklist, so no campaign takes them again.\n3. If they took your BOSS Score, stop their follow-up emails too. See [stop a prospect's follow-up emails](/coach/support?tab=help&a=stop-scorecard-emails).",
+      "1. Open each campaign they are in, go to the Prospects tab, tick them and click Remove. Nothing more goes out to them.\n2. In [Prospects](/coach/campaigns?tab=pool), tick them and click Blacklist, so no campaign takes them again.\n3. If they took your BOSS Score, stop their follow-up emails too. See [stop a prospect's follow-up emails](/coach/support?tab=help&a=stop-scorecard-emails).",
     aliases: ["unsubscribe", "do not contact", "dnd", "opt out", "remove from campaign", "blacklist", "stop messaging someone"],
     sources: ["ticket 12 Jun", "app"],
   },
@@ -608,7 +608,7 @@ export const HELP_ANSWERS: HelpAnswer[] = [
     group: "campaigns",
     question: "How do I start a new campaign myself?",
     answer:
-      "Open [Campaigns](/coach/campaigns), then:\n\n1. Click Create campaign.\n2. Type a name, such as \"Owners in Leeds, November\", and pick LinkedIn, Email or WhatsApp.\n3. Choose Templates to start from one we wrote, or Blank to write it yourself. Templates are for LinkedIn.\n4. If you chose Templates, pick one from Choose a template.\n5. Open the Steps tab. Click each step and read or change the words. Change the parts in square brackets to fit you and the people you are writing to.\n6. Open the Prospects tab, click Add prospects and bring people in from your Pool or a lead list.\n7. Go back to the Campaigns list and flip the switch next to its name to start it.\n\nWhich template? Connection sends a blank request, then short messages. Tribe connection sends a short note to a group people feel part of, such as owners in one town. Warm network and Reactivation write to people you already know, so run one of those first. Ongoing nurture keeps in touch over months, and Positive replies helps you answer people who are keen. To choose between a note and no note, see [connection requests with a note or without](/coach/support?tab=help&a=connection-note).\n\nFor a seasonal campaign, such as Christmas, click the three dots on a campaign that works and choose Duplicate. Then change the words for the season.\n\nLinkedIn needs to be connected first. An email campaign needs Gmail or Outlook connected. Once it runs, check [the numbers to watch](/coach/support?tab=help&a=campaign-kpis).",
+      "Open [Campaigns](/coach/campaigns), then:\n\n1. Click Create campaign.\n2. Type a name, such as \"Owners in Leeds, November\", and pick LinkedIn, Email or WhatsApp.\n3. Choose Templates to start from one we wrote, or Blank to write it yourself. Templates are for LinkedIn.\n4. If you chose Templates, pick one from Choose a template.\n5. Open the Steps tab. Click each step and read or change the words. Change the parts in square brackets to fit you and the people you are writing to.\n6. Open the Prospects tab, click Add prospects and bring people in from your Prospects or one of your lists.\n7. Go back to the Campaigns list and flip the switch next to its name to start it.\n\nWhich template? Connection sends a blank request, then short messages. Tribe connection sends a short note to a group people feel part of, such as owners in one town. Warm network and Reactivation write to people you already know, so run one of those first. Ongoing nurture keeps in touch over months, and Positive replies helps you answer people who are keen. To choose between a note and no note, see [connection requests with a note or without](/coach/support?tab=help&a=connection-note).\n\nFor a seasonal campaign, such as Christmas, click the three dots on a campaign that works and choose Duplicate. Then change the words for the season.\n\nLinkedIn needs to be connected first. An email campaign needs Gmail or Outlook connected. Once it runs, check [the numbers to watch](/coach/support?tab=help&a=campaign-kpis).",
     aliases: ["launch a campaign", "create campaign", "set up a new campaign", "use a template", "turn my campaign on", "christmas campaign", "seasonal campaign", "which template"],
     sources: ["ticket 19 Nov", "SUP-608", "app"],
   },

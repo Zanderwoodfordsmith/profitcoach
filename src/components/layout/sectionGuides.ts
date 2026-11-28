@@ -98,7 +98,7 @@ export const SECTION_GUIDES: SectionGuide[] = [
     key: "blueprint",
     title: "My Blueprint",
     headline: "Your practice plan, built for you.",
-    body: "You fill in About You and BCA builds the rest: who you help, your LinkedIn profile, lead lists, campaigns, content, offer and pitch. Each page feeds the tools in Get Calls and Win Clients.",
+    body: "You fill in About You and BCA builds the rest: who you help, your LinkedIn profile, prospect lists, campaigns, content, offer and pitch. Each page feeds the tools in Get Calls and Win Clients.",
     // Only the two pages the coach works on; BCA builds the rest.
     tabs: (prefix) =>
       BLUEPRINT_PAGES.filter((page) => page.slug === "command" || page.slug === "about").map((page) => ({

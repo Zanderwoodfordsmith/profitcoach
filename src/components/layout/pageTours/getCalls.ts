@@ -21,7 +21,7 @@ export const GET_CALLS_TOURS: Record<string, PageTourStep[]> = {
     {
       selector: '[aria-label="Start a conversation"]',
       title: "Start a new chat",
-      body: "Message anyone in your lead lists, pipeline or clients, on whichever channel suits them.",
+      body: "Message anyone in your prospects, pipeline or clients, on whichever channel suits them.",
     },
     {
       selector: '[aria-label="Filter conversations"]',
@@ -70,10 +70,10 @@ export const GET_CALLS_TOURS: Record<string, PageTourStep[]> = {
       body: "Their company, where they are in your pipeline, any calls booked and the campaigns they're in. All here, so you never reply blind.",
     },
   ],
-  "get-calls/Lead Lists": [
+  "get-calls/Prospects": [
     {
       selector: '[aria-label="Saved prospect views"]',
-      title: "Your lead lists",
+      title: "Your prospect lists",
       body: "Each tab is one list of owners. The first tab holds everyone. Tap + List to start a new one, say for one town or trade.",
     },
     {
@@ -135,7 +135,7 @@ export const GET_CALLS_TOURS: Record<string, PageTourStep[]> = {
     {
       selector: '[data-tour="campaigns-new"]',
       title: "Start a new campaign",
-      body: "Start from a ready-made campaign or a blank one. Then add your steps and the people from your lead lists.",
+      body: "Start from a ready-made campaign or a blank one. Then add your steps and the people from your prospect lists.",
     },
     {
       selector: '[aria-label="Sending settings"]',

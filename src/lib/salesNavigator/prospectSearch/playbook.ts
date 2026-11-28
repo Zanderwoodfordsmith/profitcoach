@@ -22,6 +22,7 @@ Keep these on every Sales Nav strategy (unless expanding after exhaustion):
 - Current titles (include): Owner, co-owner, Founder, co-founder, CEO, Managing director, co-managing director, Managing partner, co-managing partner (+ industry-specific titles e.g. Head Architect).
 - Exclude on BOTH Current Company AND Current Title (unless that IS the niche): coach, coaching, consultant, consulting, consultants, psychologist, recruiter, recruiting, recruitment, recruit.
 - Also exclude Current Company: consultancy.
+- Never search for, or include, the coach's own company or a business they still work for (Zander, 28 Nov): no list may name it, and their colleagues are not prospects. Mark Hennessey's 20 Nov plan searched "autogate", his own firm.
 - Zander rarely uses the LinkedIn Industry filter — prefer Current Company name / Keywords. Never put Industry and Current Company includes on the same search (Zander, 21 Nov): together they shrink the list far too much, and LinkedIn's industry labels are often wrong. An industry-only list is fine when the industry holds only the market (Distilleries, Wineries). Rarely, an industry list may take a few company words; a company-name list almost never gets an industry.
 
 Save reusable searches: "Base Search – [Location]", then "[Industry] prospects – [count]".

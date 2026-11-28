@@ -28,6 +28,28 @@ export function phoneDigitsFromWhatsAppJid(
 }
 
 /**
+ * The other person's phone digits in a one-to-one WhatsApp chat (a Unipile
+ * chat object, GET /chats/{id}). Null for groups (type 1 or 2, `@g.us`) and
+ * chats with no real number. The chat object always names the other person,
+ * unlike a message webhook, which can name the coach. Support and the coach
+ * inbox both use this.
+ */
+export function whatsAppChatPhone(chat: Record<string, unknown>): string | null {
+  if (Number(chat.type) !== 0) return null;
+  const candidates = [
+    chat.attendee_public_identifier,
+    chat.provider_id,
+    chat.attendee_provider_id,
+  ].map((v) => (typeof v === "string" ? v : ""));
+  if (candidates.some((v) => v.toLowerCase().includes("@g.us"))) return null;
+  for (const c of candidates) {
+    const digits = phoneDigitsFromWhatsAppJid(c);
+    if (digits) return digits;
+  }
+  return null;
+}
+
+/**
  * Real WhatsApp phone digits (no leading +), never a Linked ID.
  * Prefer explicit phone fields, then `@s.whatsapp.net`, then legacy
  * phone-shaped provider ids (not `@lid`).

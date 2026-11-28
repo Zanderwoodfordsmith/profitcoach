@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { PoolPerson } from "./poolPeople";
 import {
+  SMART_LIST_TEMPLATES,
   createSmartRule,
   normalizeSmartRules,
   poolRowMatchesSmartRules,
@@ -166,5 +167,39 @@ describe("outreach status", () => {
     assert.equal(mergeOutreach(a, { status: "replied", at: null }).status, "replied");
     assert.equal(mergeOutreach({ status: "invited", at: null }, a).status, "connected");
     assert.equal(mergeOutreach({ status: "interested", at: null }, { status: "booked", at: null }).status, "booked");
+  });
+});
+
+describe("smart list templates (28 Nov)", () => {
+  const template = (key: string) => {
+    const t = SMART_LIST_TEMPLATES.find((x) => x.key === key)!;
+    // Saved and loaded the way a real tab is.
+    return normalizeSmartRules(t.rules())!;
+  };
+  const match = (key: string, patch: Partial<PoolPerson>) => poolRowMatchesSmartRules(person(patch), template(key), NOW);
+
+  it("Connections: connected or further on, not invited or never contacted", () => {
+    assert.equal(match("connections", { outreach_status: "connected" }), true);
+    assert.equal(match("connections", { outreach_status: "replied" }), true);
+    assert.equal(match("connections", { outreach_status: "booked" }), true);
+    assert.equal(match("connections", { outreach_status: "invited" }), false);
+    assert.equal(match("connections", { outreach_status: "none" }), false);
+  });
+
+  it("Connected owners: connected, an owner-type title, and not a bad fit", () => {
+    assert.equal(match("connected-owners", { outreach_status: "connected", job_title: "Managing Director" }), true);
+    assert.equal(match("connected-owners", { outreach_status: "replied", job_title: "Co-owner" }), true);
+    assert.equal(match("connected-owners", { outreach_status: "connected", job_title: "MD at Acme" }), true);
+    assert.equal(match("connected-owners", { outreach_status: "connected", job_title: "Sales Director" }), false);
+    assert.equal(match("connected-owners", { outreach_status: "connected", job_title: "MDF supplier" }), false);
+    assert.equal(match("connected-owners", { outreach_status: "invited", job_title: "Founder" }), false);
+    assert.equal(match("connected-owners", { outreach_status: "connected", job_title: "Founder", fit: "bad" }), false);
+  });
+
+  it("VIP and Referral: only people tagged by the coach", () => {
+    assert.equal(match("vip", { tags: ["vip"] }), true);
+    assert.equal(match("vip", { tags: [] }), false);
+    assert.equal(match("referral", { tags: ["Referral"] }), true);
+    assert.equal(match("referral", { tags: ["VIP"] }), false);
   });
 });

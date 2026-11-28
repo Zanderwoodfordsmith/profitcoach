@@ -38,7 +38,7 @@ function memberDestinations(prefix: "/coach" | "/admin"): NotFoundDestination[] 
     {
       href: `${prefix}/conversations`,
       label: "Get Calls",
-      description: "Lead lists, campaigns, conversations and content",
+      description: "Prospects, campaigns, conversations and content",
       keywords: ["conversations", "campaign", "campaigns", "pool", "linkedin", "content", "message", "messages", "lead", "leads", "lists", "magnet", "magnets", "newsletter", "share", "toolkit"],
       listed: true,
     },

@@ -23,7 +23,7 @@ const FRESH_BUDGET_MS = 500;
 const CLICK_BUDGET_MS = 100;
 
 const TABS: [string, string][] = [
-  ["Lead Lists", "/coach/campaigns?tab=pool"],
+  ["Prospects", "/coach/campaigns?tab=pool"],
   ["Campaigns", "/coach/campaigns"],
   ["Conversations", "/coach/conversations"],
   ["Content", "/coach/linkedin"],

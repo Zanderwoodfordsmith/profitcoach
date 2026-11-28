@@ -343,6 +343,15 @@
         ],
         "createdAt": "2026-11-27T07:43:38.607Z",
         "reason": "Claude triage 27 Nov: false positives, not in lines I changed: five are near-black slate-900 on pale sky-50/100 selected states, one is slate-700 on the amber-100 page-number pill; all high contrast"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/academy/NewCurriculumPlan.tsx"
+        ],
+        "createdAt": "2026-11-28T13:29:15.329Z",
+        "reason": "Claude: icon buttons are grey on a clear background; the coloured fill only shows on hover, when the text turns rose/slate-700"
       }
     ]
   }

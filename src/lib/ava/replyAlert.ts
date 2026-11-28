@@ -32,6 +32,49 @@ export type TriageOutcome =
   | { done: false; reason: string }
   | { done: true; triageId: string; disposition: string; nextStep: string; alerted: boolean };
 
+/**
+ * Ava's Positive or Deselect becomes the reply's mark, the same as if
+ * the coach had pressed it, unless the coach (or BCA) has already marked this
+ * person. They can still change it.
+ */
+async function copyVerdictWhereUnmarked(input: {
+  coachId: string;
+  contactId: string | null;
+  unipileChatId: string | null;
+  disposition: TriageResult["disposition"];
+}): Promise<void> {
+  if (!input.contactId && !input.unipileChatId) return;
+  // Unmarked replies already show as Neutral. Saving Neutral on a campaign
+  // lead sets its status to "interested", which counts it as Positive.
+  if (input.disposition === "neutral") return;
+  if (input.contactId) {
+    const { data: contact } = await supabaseAdmin
+      .from("contacts")
+      .select("reply_disposition")
+      .eq("id", input.contactId)
+      .eq("coach_id", input.coachId)
+      .maybeSingle();
+    if (contact?.reply_disposition) return;
+  }
+  if (input.unipileChatId) {
+    const { data: marked } = await supabaseAdmin
+      .from("linkedin_campaign_leads")
+      .select("id")
+      .eq("coach_id", input.coachId)
+      .eq("unipile_chat_id", input.unipileChatId)
+      .not("interest_outcome", "is", null)
+      .limit(1);
+    if (marked?.length) return;
+  }
+  const { applyReplyDisposition } = await import("@/lib/prospects/replyDisposition");
+  await applyReplyDisposition({
+    coachId: input.coachId,
+    contactId: input.contactId,
+    unipileChatId: input.unipileChatId,
+    disposition: input.disposition,
+  });
+}
+
 export async function triageLatestInbound(input: {
   coachId: string;
   conversationId: string;
@@ -46,7 +89,7 @@ export async function triageLatestInbound(input: {
 }): Promise<TriageOutcome> {
   const { data: conv } = await supabaseAdmin
     .from("messaging_conversations")
-    .select("id, coach_id, contact_id, prospect_name, last_channel, hidden_at")
+    .select("id, coach_id, contact_id, prospect_name, last_channel, hidden_at, unipile_chat_id")
     .eq("id", input.conversationId)
     .eq("coach_id", input.coachId)
     .maybeSingle();
@@ -140,6 +183,16 @@ export async function triageLatestInbound(input: {
   }
 
   const live = input.alert !== false;
+  if (live) {
+    await copyVerdictWhereUnmarked({
+      coachId: input.coachId,
+      contactId: (conv.contact_id as string | null) ?? null,
+      unipileChatId: (conv.unipile_chat_id as string | null) ?? null,
+      disposition: triage.disposition,
+    }).catch((err) => {
+      console.error("ava verdict copy:", err instanceof Error ? err.message : err);
+    });
+  }
   const settings = await getAvaSettings(input.coachId);
   let alerted = false;
   let autopilotText: string | null = null;

@@ -40,7 +40,6 @@ export function LibraryTemplateSettingsModal({
 
   if (!open) return null;
 
-  const stopOnReply = settings.stop_on_reply !== false;
 
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/40 p-4 pb-24 sm:pb-4">
@@ -73,35 +72,6 @@ export function LibraryTemplateSettingsModal({
           </button>
         </div>
         <div className="space-y-6 px-5 py-5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-slate-900">
-                Stop when they reply
-              </p>
-              <p className="mt-0.5 text-xs leading-snug text-slate-500">
-                Cancels remaining steps for that person. Everyone else keeps
-                going.
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={stopOnReply}
-              aria-label="Stop when they reply"
-              disabled={busy}
-              onClick={() => onChange({ stop_on_reply: !stopOnReply })}
-              className={`relative h-6 w-11 shrink-0 rounded-full transition ${
-                stopOnReply ? "bg-[#0c5290]" : "bg-slate-300"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
-                  stopOnReply ? "left-[1.375rem]" : "left-0.5"
-                }`}
-              />
-            </button>
-          </div>
-
           <CampaignLimitSlider
             label="Daily invites"
             value={settings.daily_invite_limit}

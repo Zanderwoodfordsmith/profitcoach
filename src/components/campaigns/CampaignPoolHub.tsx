@@ -21,6 +21,7 @@ import {
   UserSearch,
 } from "lucide-react";
 import { ImportPoolModal } from "@/components/campaigns/ImportPoolModal";
+import { SmartListEmptyState, TagGauge } from "@/components/campaigns/SmartListEmptyState";
 import { PoolEmptyState } from "@/components/campaigns/PoolEmptyState";
 import type { PoolImportPreset } from "@/components/campaigns/PoolImportPicker";
 import {
@@ -134,6 +135,7 @@ import {
 } from "@/lib/pool/poolFilters";
 import {
   createEmptySmartRules,
+  SMART_LIST_TEMPLATES,
   poolRowMatchesSmartRules,
   type PoolSmartRules,
 } from "@/lib/pool/smartListRules";
@@ -490,6 +492,37 @@ export function CampaignPoolHub({
   const [filterSection, setFilterSection] = useState<PoolFilterSection | null>(null);
   /** Set while a smart list tab is open (job 301). */
   const [smartRules, setSmartRules] = useState<PoolSmartRules | null>(null);
+  const [smartTemplate, setSmartTemplate] = useState<string | null>(null);
+  /** They chose not to use their network for referrals for now (28 Nov). */
+  const [referralOff, setReferralOff] = useState(false);
+  useEffect(() => {
+    if (smartTemplate !== "referral") return;
+    let cancelled = false;
+    void (async () => {
+      const headers = await getAuthHeaders();
+      if (!headers) return;
+      const res = await fetch("/api/coach/prospects/setup", { headers }).catch(() => null);
+      const body = (await res?.json().catch(() => null)) as { referral_off?: boolean } | null;
+      if (!cancelled && res?.ok) setReferralOff(Boolean(body?.referral_off));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [smartTemplate]);
+  const saveReferralOff = useCallback(async (off: boolean) => {
+    setReferralOff(off);
+    const headers = await getAuthHeaders();
+    if (!headers) return;
+    const res = await fetch("/api/coach/prospects/setup", {
+      method: "PATCH",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ referral_off: off }),
+    }).catch(() => null);
+    if (!res?.ok) {
+      setReferralOff(!off);
+      setError("Could not save that.");
+    }
+  }, []);
   const [rulesPanelOpen, setRulesPanelOpen] = useState(false);
   const [newListKind, setNewListKind] = useState<"list" | "smart">("list");
   /** "+ List" menu position (portalled: the tab bar scrolls sideways). */
@@ -599,6 +632,7 @@ export function CampaignPoolHub({
     const next = normalizePoolTableViewSettings(settings);
     setFilters(normalizePoolFilters(next));
     setSmartRules(next.smartRules);
+    setSmartTemplate(next.smartTemplate);
     if (!next.smartRules) setRulesPanelOpen(false);
     setSortField(next.sortField);
     setSortOrder(next.sortOrder);
@@ -619,8 +653,9 @@ export function CampaignPoolHub({
         columnOrder,
         columnLayoutVersion: POOL_COLUMN_LAYOUT_VERSION,
         smartRules,
+        smartTemplate,
       }),
-    [filters, smartRules, columnOrder, columnVisibility, grouping, sortField, sortOrder]
+    [filters, smartRules, smartTemplate, columnOrder, columnVisibility, grouping, sortField, sortOrder]
   );
 
   const tableViews = usePoolTableViews({
@@ -1994,7 +2029,7 @@ export function CampaignPoolHub({
   }
 
   /** A tab that fills itself from rules (job 301). Opens the rules straight away. */
-  async function createSmartList(name: string) {
+  async function createSmartList(name: string, rules?: PoolSmartRules, template?: string) {
     const trimmed = name.trim();
     if (!trimmed) return;
     setAddingList(false);
@@ -2005,7 +2040,8 @@ export function CampaignPoolHub({
       ...createDefaultPoolTableViewSettings(),
       columnVisibility,
       columnOrder,
-      smartRules: createEmptySmartRules(),
+      smartRules: rules ?? createEmptySmartRules(),
+      smartTemplate: template ?? null,
     });
     setRulesPanelOpen(true);
   }
@@ -3414,6 +3450,28 @@ export function CampaignPoolHub({
                   </span>
                 </button>
               ))}
+              {/* Ready-made smart lists (28 Nov): the rules fill in, and the coach can change them. */}
+              <p className="mt-1 border-t border-slate-100 px-3 pb-1 pt-2 text-xs font-semibold text-slate-700">Ready-made smart lists</p>
+              {SMART_LIST_TEMPLATES.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  role="menuitem"
+                  disabled={busy}
+                  onClick={() => {
+                    setNewListMenuPos(null);
+                    setRenamingImportListId(null);
+                    void createSmartList(t.name, t.rules(), t.key);
+                  }}
+                  className="flex w-full items-start gap-2.5 px-3 py-2 text-left hover:bg-slate-50 disabled:opacity-50"
+                >
+                  <ListFilter className="mt-0.5 h-4 w-4 shrink-0 text-sky-600" aria-hidden />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium text-slate-800">{t.name}</span>
+                    <span className="block text-xs text-slate-500">{t.hint}</span>
+                  </span>
+                </button>
+              ))}
             </div>,
             document.body
           )
@@ -3444,6 +3502,14 @@ export function CampaignPoolHub({
         </div>
       ) : null}
 
+      {activeSmartRules && (smartTemplate === "vip" || smartTemplate === "referral") && filtered.length > 0 ? (
+        <TagGauge
+          template={smartTemplate}
+          count={filtered.length}
+          referralOff={referralOff}
+          onReferralOff={(off) => void saveReferralOff(off)}
+        />
+      ) : null}
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
       <div className="absolute inset-0 overflow-auto overscroll-contain [container-type:inline-size]">
         <table
@@ -3605,9 +3671,24 @@ export function CampaignPoolHub({
                             }
                             return "This list is empty.";
                           }
-                          return activeSmartRules
-                            ? "Nobody matches this smart list's rules yet."
-                            : "No people match these filters.";
+                          return activeSmartRules ? (
+                            <SmartListEmptyState
+                              template={smartTemplate}
+                              linkedInConnected={linkedInConnected}
+                              hasConnections={people.some((row) =>
+                                ["connected", "replied", "interested", "booked"].includes(row.outreach_status ?? "none")
+                              )}
+                              onImportConnections={() => {
+                                setImportPreset({ mode: "search", salesNavSource: "first" });
+                                setImportOpen(true);
+                              }}
+                              onShowRules={() => setRulesPanelOpen(true)}
+                              referralOff={referralOff}
+                              onReferralOff={(off) => void saveReferralOff(off)}
+                            />
+                          ) : (
+                            "No people match these filters."
+                          );
                         })()}
                       </div>
                     </td>

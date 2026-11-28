@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { diagnose } from "./coachHealth";
+import { diagnose, isCurrentCoach } from "./coachHealth";
 
 const base = {
   coach_id: "c",
@@ -24,6 +24,8 @@ const base = {
   last_post_days: 2,
   issues_90d: 4,
   median_reply_hours: 0.5,
+  days_since_launch: 60,
+  interested_since_launch: 12,
 };
 
 describe("coach health: fix first", () => {
@@ -36,7 +38,22 @@ describe("coach health: fix first", () => {
     assert.equal(diagnose({ ...base, invites_7d: 0, campaigns_running: 0 }).stuck_at, "Not sending");
     assert.equal(diagnose({ ...base, invites_30d: 120 }).stuck_at, "Sending too little");
     assert.equal(diagnose({ ...base, accept_rate: 0.06 }).stuck_at, "Few people accept");
+    assert.equal(diagnose({ ...base, days_since_launch: 15, interested_since_launch: 0 }).stuck_at, "No interest 14 days after launch");
+    assert.equal(diagnose({ ...base, days_since_launch: 10, interested_since_launch: 0 }).level, "green");
     assert.equal(diagnose({ ...base, calls_30d: 0 }).stuck_at, "Interest isn't turning into calls");
     assert.equal(diagnose({ ...base, median_reply_hours: 9 }).stuck_at, "Slow replies");
+  });
+});
+
+describe("coach health: who counts as a current coach", () => {
+  const row = { membership_status: null, recurring_payment_status: null, access_tier: "premium", record_kind: "member" };
+  it("counts live Stripe members", () => {
+    assert.equal(isCurrentCoach({ ...row, membership_status: "active" }), true);
+    assert.equal(isCurrentCoach({ ...row, membership_status: "canceled" }), false);
+  });
+  it("counts new Programme coaches who paid their first 6 months outside Stripe", () => {
+    assert.equal(isCurrentCoach({ ...row, recurring_payment_status: "first_6_months", access_tier: "programme" }), true);
+    assert.equal(isCurrentCoach({ ...row, recurring_payment_status: "first_6_months", access_tier: "premium" }), false);
+    assert.equal(isCurrentCoach({ ...row, recurring_payment_status: "first_6_months", access_tier: "programme", record_kind: "historical" }), false);
   });
 });

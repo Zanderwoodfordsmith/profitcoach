@@ -835,7 +835,9 @@ export type CampaignPersonForPool = {
  */
 export async function addCampaignPeopleToPool(
   coachId: string,
-  people: CampaignPersonForPool[]
+  people: CampaignPersonForPool[],
+  /** Where they came from (28 Nov: LinkedIn connections imported at launch). */
+  from: { source: AudienceItemSource | "manual"; matchReason: string } = { source: "manual", matchReason: "From a campaign" }
 ): Promise<{ added: number; identityKeys: string[] }> {
   const byUrl = new Map<string, CampaignPersonForPool>();
   for (const person of people) {
@@ -877,7 +879,7 @@ export async function addCampaignPeopleToPool(
     rows.push({
       list_id: pool.id,
       coach_id: coachId,
-      source: "manual",
+      source: from.source,
       leadrocks_id: null,
       full_name: displayListPersonName(person),
       first_name: person.first_name,
@@ -887,7 +889,7 @@ export async function addCampaignPeopleToPool(
       linkedin_url: url,
       contact_id: person.contact_id,
       identity_key: key,
-      match_reason: "From a campaign",
+      match_reason: from.matchReason,
       raw: {},
     });
   }

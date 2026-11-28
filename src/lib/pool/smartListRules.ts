@@ -34,7 +34,8 @@ export type SmartRuleField =
   | "postcode"
   | "contact"
   | "linkedin"
-  | "source";
+  | "source"
+  | "title";
 
 /** Status "for more / less than N days". "any" = no time limit. */
 export type SmartWhen = "any" | "more" | "less";
@@ -145,6 +146,16 @@ export const SMART_RULE_FIELDS: Array<{
     ],
     value: "text",
     placeholder: "Plumber",
+  },
+  {
+    key: "title",
+    label: "Job title",
+    ops: [
+      { key: "contains", label: "contains" },
+      { key: "not_contains", label: "doesn't contain" },
+    ],
+    value: "text",
+    placeholder: "Owner",
   },
   {
     key: "place",
@@ -373,6 +384,12 @@ function testRule(row: PoolPerson, rule: SmartRule, now: number): boolean {
     case "linkedin":
       hit = Boolean(row.linkedin_url?.trim());
       break;
+    case "title": {
+      // Whole words, so "MD" matches "MD" but not "MDF", and "owner" matches "Co-owner".
+      const words = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      hit = Boolean(value) && new RegExp(`(^|[^a-z0-9])${words}([^a-z0-9]|$)`, "i").test(row.job_title ?? "");
+      break;
+    }
     case "source":
       hit = row.source === value;
       break;
@@ -406,3 +423,56 @@ export function poolRowMatchesSmartRules(
   }
   return combine(results, rules.match);
 }
+
+
+/** Everyone they're connected to: Connected, or further on (Replied, Interested, Booked). */
+const CONNECTED_STATUSES = ["connected", "replied", "interested", "booked"] as const;
+
+function statusRule(status: string): SmartRule {
+  return { kind: "rule", id: newSmartId(), field: "status", op: "is", value: status, when: "any", days: null };
+}
+
+function textRule(field: SmartRuleField, value: string, op = "contains"): SmartRule {
+  return { kind: "rule", id: newSmartId(), field, op, value, when: "any", days: null };
+}
+
+/** Job titles that mean they own or run the business. */
+export const OWNER_TITLES = ["owner", "founder", "managing director", "MD", "CEO", "chief executive", "managing partner", "proprietor"];
+
+/**
+ * Ready-made smart lists (28 Nov, the Prospects end state): every coach can
+ * start one from the + List menu. The rules fill in and can be changed.
+ */
+export const SMART_LIST_TEMPLATES: Array<{ key: string; name: string; hint: string; rules: () => PoolSmartRules }> = [
+  {
+    key: "connections",
+    name: "Connections",
+    hint: "Everyone you're connected to on LinkedIn",
+    rules: () => ({ match: "any", items: CONNECTED_STATUSES.map(statusRule) }),
+  },
+  {
+    key: "connected-owners",
+    name: "Connected owners",
+    hint: "Owners, founders, MDs and CEOs you're connected to. Where to look for VIPs",
+    rules: () => ({
+      match: "all",
+      items: [
+        { kind: "group", id: newSmartId(), match: "any", rules: CONNECTED_STATUSES.map(statusRule) },
+        { kind: "group", id: newSmartId(), match: "any", rules: OWNER_TITLES.map((t) => textRule("title", t)) },
+        { kind: "rule", id: newSmartId(), field: "fit", op: "is_not", value: "bad", when: "any", days: null },
+      ],
+    }),
+  },
+  {
+    key: "vip",
+    name: "VIP",
+    hint: "Everyone you tag VIP. For your personal messages",
+    rules: () => ({ match: "all", items: [textRule("tag", "VIP", "has")] }),
+  },
+  {
+    key: "referral",
+    name: "Referral",
+    hint: "Everyone you tag Referral: people who could introduce you",
+    rules: () => ({ match: "all", items: [textRule("tag", "Referral", "has")] }),
+  },
+];

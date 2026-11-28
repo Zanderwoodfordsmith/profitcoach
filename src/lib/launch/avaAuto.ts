@@ -17,6 +17,7 @@ import { listValue, textValue } from "@/lib/practiceKnowledge/sourced";
 import { ensurePracticeKnowledge } from "@/lib/practiceKnowledge/store";
 import type { BlueprintBlock, PracticeKnowledgeRow } from "@/lib/practiceKnowledge/types";
 import { PROSPECT_SEARCH_PLAYBOOK } from "@/lib/salesNavigator/prospectSearch/playbook";
+import { ensureProspectsSetup } from "@/lib/pool/prospectsSetup";
 import { SALES_NAV_INDUSTRIES, salesNavIndustry } from "@/lib/salesNavigator/industries";
 import { resolveSalesNavRegion } from "@/lib/salesNavigator/regions";
 import { keywordsOnlyExclude, parseSalesNavSearchUrl } from "@/lib/salesNavigator/parseSalesNavFilters";
@@ -911,7 +912,7 @@ export const LAUNCH_CHAIN: ChainStep[] = [
     sections: ["market:options", "market:avatar", "market:pains"],
   },
   { id: "linkedin", label: "LinkedIn profile", scope: LINKEDIN_SCOPE, kind: "draft" },
-  { id: "lists", label: "Lead lists", scope: LIST_SCOPE, kind: "searches" },
+  { id: "lists", label: "Prospect lists", scope: LIST_SCOPE, kind: "searches" },
   {
     id: "campaigns",
     label: "Connection campaigns",
@@ -1005,6 +1006,8 @@ async function advanceOnce(coachId: string, userId: string | null): Promise<stri
 export async function advanceCoach(coachId: string, userId: string | null): Promise<string[]> {
   const startedAt = Date.now();
   const done: string[] = [];
+  // Prospects set up at launch (job 320): the ready-made smart lists and their connections, once. Sends nothing.
+  await ensureProspectsSetup(coachId).catch((err) => console.error("prospects setup:", err instanceof Error ? err.message : "failed"));
   for (let pass = 0; pass < LAUNCH_CHAIN.length && Date.now() - startedAt < 150_000; pass++) {
     const started = await advanceOnce(coachId, userId);
     if (!started.length) break;

@@ -99,8 +99,9 @@ export async function GET(request: Request) {
   const enrichedFilters = await enrichConversationFilters(collapsed, coachId);
   const conversations = enrichedFilters.filter((row) => {
     if ((row.last_channel || "").toLowerCase() !== "whatsapp") return true;
-    if ((row.contact_type || "").toLowerCase() === "prospect") return true;
-    return Boolean(row.in_pool);
+    // Same rule as WhatsApp import: only the coach's prospects and clients.
+    const type = (row.contact_type || "").toLowerCase();
+    return type === "prospect" || type === "client";
   });
 
   return NextResponse.json({ conversations });

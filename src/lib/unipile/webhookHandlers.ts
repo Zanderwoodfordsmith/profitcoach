@@ -1,7 +1,7 @@
 import { after } from "next/server";
 import { conversationActivityPatch } from "@/lib/messaging/conversationActivity";
 import { unipileEmailBodyText } from "@/lib/messaging/emailBody";
-import { getUnipileEmail } from "@/lib/unipile/client";
+import { getUnipileEmail, unipileFetch } from "@/lib/unipile/client";
 import { linkedInPublicIdentifier } from "@/lib/unipile/linkedinUrl";
 import {
   extractReactionEmoji,
@@ -32,7 +32,10 @@ import {
   providerToAppChannel,
   type UnipileAppChannel,
 } from "@/lib/unipile/providers";
-import { whatsappPhoneDigits } from "@/lib/unipile/whatsappIdentity";
+import {
+  phoneDigitsFromWhatsAppJid,
+  whatsAppChatPhone,
+} from "@/lib/unipile/whatsappIdentity";
 import { markContactRepliedOnInbound } from "@/lib/prospects/markContactReplied";
 
 function previewOf(text: string | null | undefined) {
@@ -261,15 +264,24 @@ export async function handleUnipileMessageReceived(
     personNameFromDisplayName(identity.name) ||
     identity.name ||
     "Unknown contact";
-  const waPhone =
-    channel === "whatsapp"
-      ? whatsappPhoneDigits({
-          phoneNumber: identity.phone,
-          providerId: identity.providerId,
-          profileUrl: identity.profileUrl,
-          name: identity.name,
-        })
-      : null;
+  // WhatsApp: the other person's number comes from the chat, never from the
+  // message. A message's sender or attendees can be the coach (their own
+  // messages, groups), which once saved personal chats under the coach's
+  // own number. Groups have no number and stop here: nothing is stored.
+  let waPhone: string | null = null;
+  if (channel === "whatsapp") {
+    const chat = await unipileFetch<Record<string, unknown>>(
+      "GET",
+      `/api/v1/chats/${encodeURIComponent(chatId)}`
+    );
+    if (!chat.ok || !chat.data) {
+      if (chat.status === 404) return "chat_not_found";
+      // Throw so the webhook returns 500 and Unipile retries.
+      throw new Error(`whatsapp chat lookup failed (${chat.status})`);
+    }
+    waPhone = whatsAppChatPhone(chat.data);
+    if (!waPhone) return "not_one_to_one";
+  }
 
   let conversationId: string | null = null;
   const { data: existingConv } = await supabaseAdmin
@@ -287,8 +299,19 @@ export async function handleUnipileMessageReceived(
     email: identity.email,
     phone: waPhone,
     existingContactId: (existingConv?.contact_id as string | null) ?? null,
+    ownPhones: [
+      phoneDigitsFromWhatsAppJid(
+        String((body.account_info as Record<string, unknown> | undefined)?.user_id || "")
+      ),
+    ],
   });
   if (!gate.allowed) return "unknown_contact";
+  // WhatsApp threads take the prospect's name; the coach's own message
+  // must not put the coach's photo on the thread.
+  const nameForThread =
+    (channel === "whatsapp" ? gate.contact?.full_name : null) || prospectName;
+  const pictureForThread =
+    channel === "whatsapp" && isSender ? null : identity.pictureUrl;
 
   if (existingConv?.id) {
     conversationId = existingConv.id as string;
@@ -298,12 +321,12 @@ export async function handleUnipileMessageReceived(
       .insert({
         coach_id: coachId,
         contact_id: gate.contact?.id ?? null,
-        prospect_name: gate.contact?.full_name || prospectName,
+        prospect_name: gate.contact?.full_name || nameForThread,
         prospect_email: identity.email || gate.contact?.email || null,
         prospect_phone: waPhone
           ? `+${waPhone}`
           : gate.contact?.phone || null,
-        prospect_avatar_url: identity.pictureUrl,
+        prospect_avatar_url: pictureForThread,
         prospect_linkedin_url:
           channel === "whatsapp" ? null : identity.profileUrl,
         subject: identity.occupation || null,
@@ -413,10 +436,10 @@ export async function handleUnipileMessageReceived(
           channel
         ))
     ) {
-      identityUpdate.prospect_name = prospectName.slice(0, 200);
+      identityUpdate.prospect_name = nameForThread.slice(0, 200);
     }
-    if (identity.pictureUrl && !existingConv?.prospect_avatar_url) {
-      identityUpdate.prospect_avatar_url = identity.pictureUrl;
+    if (pictureForThread && !existingConv?.prospect_avatar_url) {
+      identityUpdate.prospect_avatar_url = pictureForThread;
     }
     await supabaseAdmin
       .from("messaging_conversations")
@@ -468,10 +491,10 @@ export async function handleUnipileMessageReceived(
         channel
       ))
   ) {
-    identityUpdate.prospect_name = prospectName.slice(0, 200);
+    identityUpdate.prospect_name = nameForThread.slice(0, 200);
   }
-  if (identity.pictureUrl && !existingConv?.prospect_avatar_url) {
-    identityUpdate.prospect_avatar_url = identity.pictureUrl;
+  if (pictureForThread && !existingConv?.prospect_avatar_url) {
+    identityUpdate.prospect_avatar_url = pictureForThread;
   }
   if (channel === "whatsapp") {
     if (waPhone) identityUpdate.prospect_phone = `+${waPhone}`;
@@ -536,12 +559,8 @@ export async function handleUnipileMessageReceived(
     }
 
     if (lead?.id) {
-      const { data: campaign } = await supabaseAdmin
-        .from("linkedin_campaigns")
-        .select("stop_on_reply")
-        .eq("id", lead.campaign_id)
-        .maybeSingle();
-      if (campaign?.stop_on_reply !== false) {
+      // Any reply stops that person's automatic follow-ups (28 Nov rule).
+      if (lead.campaign_id) {
         const { data: updated } = await supabaseAdmin
           .from("linkedin_campaign_leads")
           .update({ status: "replied", next_action_at: null })

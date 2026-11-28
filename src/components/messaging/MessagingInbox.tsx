@@ -1355,7 +1355,7 @@ export function MessagingInbox({
   const tourExamples = useTourExamples();
   const [inboxFilters, setInboxFilters] = useState<InboxFilters>(() =>
     campaignQuery
-      ? { ...EMPTY_INBOX_FILTERS, campaignId: campaignQuery }
+      ? { ...EMPTY_INBOX_FILTERS, campaignId: campaignQuery, replied: true }
       : EMPTY_INBOX_FILTERS
   );
   const [inboxSort, setInboxSort] = useState<InboxSort>("newest");
@@ -1575,6 +1575,8 @@ export function MessagingInbox({
       return {
         ...prev,
         campaignId: campaignQuery,
+        // "View replies" on a campaign: only people who have written back.
+        replied: campaignQuery ? true : prev.replied,
         otherEmail: campaignQuery ? false : prev.otherEmail,
       };
     });
@@ -1665,7 +1667,11 @@ export function MessagingInbox({
         searching: Boolean(searchQuery.trim()),
       })
     );
-    if (tab === "unread") list = list.filter((c) => (c.unread_count ?? 0) > 0);
+    // Opening a chat marks it read: keep the open one in Unread until the
+    // coach moves on, or it vanishes as they click it (SUP-0710).
+    if (tab === "unread") {
+      list = list.filter((c) => (c.unread_count ?? 0) > 0 || c.id === selectedId);
+    }
     if (tab === "starred") list = list.filter((c) => !!c.starred);
     if (searchQuery.trim()) {
       list = list.filter((c) => conversationMatchesSearch(c, searchQuery));
@@ -1684,7 +1690,7 @@ export function MessagingInbox({
     });
     if (tab === "recent") return list.slice(0, 20);
     return list;
-  }, [conversations, tab, inboxFilters, inboxSort, searchQuery]);
+  }, [conversations, tab, inboxFilters, inboxSort, searchQuery, selectedId]);
 
   useEffect(() => {
     if (!filterOpen && !sortOpen && !actionsOpen) return;
@@ -5056,7 +5062,7 @@ export function MessagingInbox({
                     type="button"
                     aria-label="Clear campaign filter"
                     onClick={() => {
-                      setInboxFilters((prev) => ({ ...prev, campaignId: null }));
+                      setInboxFilters((prev) => ({ ...prev, campaignId: null, replied: false }));
                       clearCampaignFilterFromUrl();
                     }}
                     className="rounded-full p-0.5 text-sky-600 hover:bg-sky-100 hover:text-sky-900"

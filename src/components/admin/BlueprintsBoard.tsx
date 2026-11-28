@@ -1,9 +1,11 @@
 "use client";
 
+import { useLaunchColumns } from "@/components/admin/LaunchColumnsSwitch";
+import type { CampaignKind } from "@/lib/practiceKnowledge/boardData";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUpDown, Check, ChevronDown, ChevronRight, FileCheck2, ListChecks, MessageSquare, Plus, Search, Send, Zap } from "lucide-react";
+import { ArrowUpDown, Check, ChevronDown, ChevronRight, FileCheck2, GripVertical, ListChecks, MessageSquare, Plus, Search, Send, Zap } from "lucide-react";
 
 import type { BoardCoach } from "@/app/api/admin/blueprints/route";
 import type { LaunchStepKey } from "@/lib/practiceKnowledge/boardData";
@@ -25,9 +27,10 @@ const GROUP_KEY = "admin-blueprints-grouped";
 const SORT_KEY = "admin-blueprints-sort";
 const EMBEDDED_SORT_KEY = "admin-coaches-launch-sort";
 
-export type LaunchSort = "check" | "newest" | "oldest" | "needs" | "least" | "name";
+export type LaunchSort = "order" | "check" | "newest" | "oldest" | "needs" | "least" | "name";
 type Sort = LaunchSort;
 export const LAUNCH_SORTS: { id: Sort; label: string }[] = [
+  { id: "order", label: "Your order" },
   { id: "check", label: "Most to check first" },
   { id: "newest", label: "Newest to join first" },
   { id: "oldest", label: "Longest ago first" },
@@ -74,6 +77,12 @@ function bcaLoad(coach: BoardCoach): [number, number, number] {
 function sortCoaches(list: BoardCoach[], sort: Sort, checkCounts?: Map<string, number>): BoardCoach[] {
   const joined = (c: BoardCoach) => c.joined_at ?? "";
   return [...list].sort((a, b) => {
+    if (sort === "order") {
+      // Zander's working order (28 Nov); coaches without a number follow, most to check first.
+      const o = (c: BoardCoach) => c.launch_order ?? 10_000;
+      const n = (c: BoardCoach) => checkCounts?.get(c.coach_id) ?? 0;
+      return o(a) - o(b) || n(b) - n(a) || a.name.localeCompare(b.name);
+    }
     if (sort === "check") {
       const n = (c: BoardCoach) => checkCounts?.get(c.coach_id) ?? 0;
       // Ties: longest since joining first, as they're furthest into their 4 months (21 Nov).
@@ -331,6 +340,58 @@ export function BlueprintsBoard({
     [load]
   );
 
+  /** Save BCA's next step and order for a coach, and show it straight away. */
+  const saveNote = useCallback(
+    async (coach_id: string, update: { note?: string | null; order?: number | null }) => {
+      const headers = await adminHeaders();
+      if (!headers) return false;
+      const res = await fetch("/api/admin/launch/note", {
+        method: "PATCH",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({ coach_id, ...update }),
+      }).catch(() => null);
+      if (!res?.ok) {
+        const body = (await res?.json().catch(() => null)) as { error?: string } | null;
+        setError(body?.error ?? "Could not save that.");
+        return false;
+      }
+      setData((cur) =>
+        cur
+          ? {
+              ...cur,
+              coaches: cur.coaches.map((c) =>
+                c.coach_id === coach_id
+                  ? {
+                      ...c,
+                      ...("note" in update ? { launch_note: update.note?.trim() || null } : {}),
+                      ...("order" in update ? { launch_order: update.order ?? null } : {}),
+                    }
+                  : c
+              ),
+            }
+          : cur
+      );
+      return true;
+    },
+    []
+  );
+
+  /** Drag and drop in Your order: number the coaches shown 1, 2, 3 in their new order and save them together. */
+  const saveOrder = useCallback(async (orderedIds: string[]) => {
+    const orderOf = new Map(orderedIds.map((id, i) => [id, i + 1]));
+    setData((cur) =>
+      cur ? { ...cur, coaches: cur.coaches.map((c) => (orderOf.has(c.coach_id) ? { ...c, launch_order: orderOf.get(c.coach_id)! } : c)) } : cur
+    );
+    const headers = await adminHeaders();
+    if (!headers) return;
+    const res = await fetch("/api/admin/launch/note", {
+      method: "PATCH",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ orders: orderedIds.map((coach_id, i) => ({ coach_id, order: i + 1 })) }),
+    }).catch(() => null);
+    if (!res?.ok) setError("Could not save the new order.");
+  }, []);
+
   const launchingCount = data?.coaches.filter((c) => c.launching).length ?? 0;
   /** What's waiting for BCA per coach, and the page to open first (the To check column). */
   const checkByCoach = useMemo(() => {
@@ -350,7 +411,9 @@ export function BlueprintsBoard({
     const map = new Map<string, Set<string>>();
     for (const item of toCheck ?? []) {
       const set = map.get(item.coach_id) ?? new Set<string>();
-      set.add(checkPage(item.job_key));
+      const page = checkPage(item.job_key);
+      // The Voice guide is filed under About You but is BCA's work: it shows on Ideal client (28 Nov).
+      set.add(page === "about" ? "market" : page);
       map.set(item.coach_id, set);
     }
     return map;
@@ -360,7 +423,7 @@ export function BlueprintsBoard({
     [checkByCoach]
   );
   const showEveryone = embedded ? Boolean(everyoneProp) : everyone;
-  const activeSort = embedded ? (sortProp ?? "check") : sort;
+  const activeSort = embedded ? (sortProp ?? "order") : sort;
   const query = search.trim().toLowerCase();
   const coaches = useMemo(() => {
     if (!data) return [];
@@ -523,6 +586,8 @@ export function BlueprintsBoard({
           coaches={coaches}
           pages={pages}
           onTick={(coach_id, step, on) => void saveLaunch({ coach_id, tick: { step, on } })}
+          onSaveNote={embedded ? saveNote : undefined}
+          onReorder={embedded && activeSort === "order" && !query ? (ids) => void saveOrder(ids) : undefined}
           checkByCoach={embedded ? checkByCoach : undefined}
           checkPagesByCoach={embedded ? checkPagesByCoach : undefined}
           bare={embedded}
@@ -687,7 +752,7 @@ function joinedLabel(iso: string | null): string {
 /** The About You pages: the coach fills these in. */
 const COACH_PAGES = new Set(BLUEPRINT_GROUPS.filter((g) => g.yours).flatMap((g) => g.pages.map((p) => p.slug)));
 
-type Card = { coach: BoardCoach; page: Page; column: BoardColumnId; tag: BoardTag | null; note: string; unread: number };
+type Card = { coach: BoardCoach; page: Page; column: BoardColumnId; tag: BoardTag | null; note: string; unread: number; check_on?: string };
 
 /** Ava done and To send wait on BCA's check. */
 const forCheck = (card: Pick<Card, "tag">) => card.tag === "ava_done" || card.tag === "to_send";
@@ -871,7 +936,7 @@ function Lanes({
 }
 
 function CardLink({ card, compact = false }: { card: Card; compact?: boolean }) {
-  const href = cardHref(card.coach, card.page.slug);
+  const href = cardHref(card.coach, card.check_on ?? card.page.slug);
   const unread = card.unread ? (
     <span className="inline-flex shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums text-rose-700" title={`${card.unread} new in the chat`}>
       <MessageSquare className="h-3 w-3" aria-hidden />
@@ -1017,10 +1082,267 @@ function LaunchCell({
   );
 }
 
+/**
+ * The Launch view's Outputs columns (28 Nov): the agreed outputs in launch
+ * order, instead of Blueprint pages. Pages keep their marks and links; the
+ * rest come from the coach's campaigns, newsletters, posts and booking pages.
+ */
+type OutputColumn =
+  | { key: string; label: string; hint: string; start?: boolean; kind: "page" | "lists"; page: string }
+  | { key: string; label: string; hint: string; start?: boolean; kind: "linkedin" | "salesnav" | "newsletters" | "posts" | "booking" | "connections" | "notbuilt" }
+  | { key: string; label: string; hint: string; start?: boolean; kind: "campaign"; campaign: CampaignKind; page?: string; appCant?: boolean };
+
+const OUTPUT_COLUMNS: OutputColumn[] = [
+  { key: "about", label: "About You", hint: "Coach: About You", kind: "page", page: "about", start: true },
+  { key: "li", label: "LinkedIn", hint: "Coach: LinkedIn connected", kind: "linkedin" },
+  { key: "sn", label: "Sales Nav", hint: "Coach: Sales Navigator on their LinkedIn", kind: "salesnav" },
+  { key: "market", label: "Ideal client", hint: "Build: ideal client, market and voice", kind: "page", page: "market", start: true },
+  { key: "profile", label: "Profile", hint: "Build: LinkedIn profile", kind: "page", page: "linkedin" },
+  { key: "lists", label: "Lists", hint: "Build: prospect lists. Hover for each list", kind: "lists", page: "lists" },
+  { key: "conns", label: "Connections", hint: "Build: their LinkedIn connections brought into Prospects, once at launch", kind: "connections" },
+  { key: "connect", label: "Connect", hint: "Campaign: Connect, to people they aren't connected to", kind: "campaign", campaign: "connect", page: "campaigns", start: true },
+  { key: "vip", label: "VIP", hint: "Campaign: VIP, personal messages to connected owners who fit", kind: "campaign", campaign: "vip", appCant: true },
+  { key: "referral", label: "Referral", hint: "Campaign: Referral, to people they know", kind: "campaign", campaign: "referral", page: "campaigns" },
+  { key: "interested", label: "Interested", hint: "Campaign: Interested, follow-up after a yes, a BOSS Score or a no-show", kind: "campaign", campaign: "interested", appCant: true },
+  { key: "news", label: "Newsletters", hint: "Content: newsletters published, out of 6", kind: "newsletters", start: true },
+  { key: "posts", label: "Posts", hint: "Content: LinkedIn posts in the last 30 days", kind: "posts" },
+  { key: "booking", label: "Booking", hint: "Pages: a booking page switched on", kind: "booking", start: true },
+];
+
+function OutputCampaignCell({ coach, column, waitingHere, href }: { coach: BoardCoach; column: Extract<OutputColumn, { kind: "campaign" }>; waitingHere: boolean; href: string | null }) {
+  const list = coach.outputs?.campaigns?.[column.campaign] ?? [];
+  const running = list.filter((c) => c.status === "running");
+  const names = list.map((c) => `${c.name} (${c.status})`).join(", ");
+  const matched = "Matched by its playbook and name.";
+  if (running.length) return <ConnectedMark connected what={`${column.label} running: ${names}. ${matched}`} />;
+  if (waitingHere && href) {
+    return (
+      <Link href={href} title={`${column.label}: Ava's draft is waiting for you. Click to check it`} className="flex h-full w-full items-center justify-center hover:bg-slate-200/70">
+        <AvaBolt />
+      </Link>
+    );
+  }
+  // VIP and Referral: how many they've tagged, against the starting aims (28 Nov).
+  if (column.campaign === "vip" || column.campaign === "referral") {
+    const kind = column.campaign;
+    if (kind === "referral" && coach.outputs?.referral_off) {
+      return (
+        <span className="text-xs font-medium text-slate-500" title="They chose not to use their network for referrals for now">
+          Off
+        </span>
+      );
+    }
+    const n = coach.outputs?.tagged?.[kind] ?? 0;
+    const aim = kind === "vip" ? 50 : 10;
+    const status = list.length ? ` ${column.label} campaign: ${names}.` : "";
+    return (
+      <span
+        className={`text-xs font-semibold tabular-nums ${n >= aim ? "text-emerald-700" : n > 0 ? "text-slate-700" : "text-slate-400"}`}
+        title={`${n} tagged ${column.label}. Aim for ${aim} to start, ${kind === "vip" ? 100 : 20}+ is great.${status}`}
+      >
+        {n}/{aim}
+      </span>
+    );
+  }
+  if (list.length) return <StepMark done={false} />;
+  if (column.appCant) return <NotBuiltMark label={`${column.label}: the app can't set this up yet`} />;
+  return <WaitingMark label={`No ${column.label} campaign yet`} />;
+}
+
+function NotBuiltMark({ label }: { label: string }) {
+  return (
+    <span className="text-sm text-slate-300" title={label} aria-label={label}>
+      –
+    </span>
+  );
+}
+
+/** A hover card in a floating layer, so the scrolling grid can't clip it. */
+function HoverCard({ children, card, className }: { children: React.ReactNode; card: React.ReactNode; className?: string }) {
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const show = (el: HTMLElement) => {
+    const r = el.getBoundingClientRect();
+    const width = 320;
+    setPos({ top: r.bottom + 6, left: Math.max(8, Math.min(r.left + r.width / 2 - width / 2, window.innerWidth - width - 8)) });
+  };
+  return (
+    <span
+      className={className}
+      onMouseEnter={(e) => show(e.currentTarget)}
+      onMouseLeave={() => setPos(null)}
+      onFocus={(e) => show(e.currentTarget)}
+      onBlur={() => setPos(null)}
+    >
+      {children}
+      {pos && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              role="tooltip"
+              className="pointer-events-none fixed z-[80] w-80 rounded-lg border border-slate-200 bg-white p-3 text-left text-sm text-slate-700 shadow-[0_12px_32px_-12px_rgba(5,30,54,0.35)]"
+              style={{ top: pos.top, left: pos.left }}
+            >
+              {card}
+            </div>,
+            document.body
+          )
+        : null}
+    </span>
+  );
+}
+
+/** Prospects for one coach: the total as the mark, each list on hover (28 Nov). */
+function ListsCell({ coach, waiting, href, className }: { coach: BoardCoach; waiting: boolean; href: string | null; className: string }) {
+  const facts = coach.outputs?.lists;
+  const pool = facts?.pool ?? 0;
+  const fmt = (n: number) => n.toLocaleString("en-GB");
+  const short = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}k` : String(n));
+  const plan = facts?.plan ?? null;
+  const card = (
+    <span className="flex flex-col gap-2">
+      <span className="block">
+        <span className="font-semibold text-slate-900">{fmt(pool)} people in Prospects</span>
+        <span className="block text-xs text-slate-500">Target: 1,000 to 2,500, as several lists</span>
+      </span>
+      {plan ? (
+        <span className="block">
+          <span className="block text-xs font-semibold text-slate-900">
+            Ava&apos;s plan · {plan.status === "open" ? "waiting for your check" : "released"}
+          </span>
+          {plan.planned.slice(0, 8).map((p) => (
+            <span key={p.label} className="flex justify-between gap-3 text-xs">
+              <span className="truncate">{p.label}</span>
+              <span className="shrink-0 tabular-nums text-slate-500">
+                {p.imported != null ? `${fmt(p.imported)} in` : p.size != null ? `about ${fmt(p.size)}, not in yet` : "not in yet"}
+              </span>
+            </span>
+          ))}
+          {plan.planned.length > 8 ? <span className="block text-xs text-slate-500">and {plan.planned.length - 8} more</span> : null}
+        </span>
+      ) : null}
+      {facts?.lists.length ? (
+        <span className="block">
+          <span className="block text-xs font-semibold text-slate-900">Their lists</span>
+          {facts.lists.slice(0, 6).map((l) => (
+            <span key={l.name} className="flex justify-between gap-3 text-xs">
+              <span className="truncate">{l.name}</span>
+              <span className="shrink-0 tabular-nums text-slate-500">{fmt(l.count)}</span>
+            </span>
+          ))}
+          {facts.lists.length > 6 ? <span className="block text-xs text-slate-500">and {facts.lists.length - 6} more</span> : null}
+        </span>
+      ) : null}
+      <span className="block text-xs">
+        <span className="block font-semibold text-slate-900">Connections</span>
+        {facts?.connections != null ? `${fmt(facts.connections)} imported. ` : "Not imported yet. "}
+        Owners who fit and People I know aren&apos;t built yet (job 320).
+      </span>
+    </span>
+  );
+  const mark = waiting ? (
+    <AvaBolt />
+  ) : pool >= 1000 ? (
+    <span className="text-xs font-semibold tabular-nums text-emerald-700">{short(pool)}</span>
+  ) : pool > 0 ? (
+    <span className="text-xs font-semibold tabular-nums text-slate-700">{short(pool)}</span>
+  ) : (
+    <StepMark done={false} />
+  );
+  return (
+    <HoverCard className={className} card={card}>
+      {href ? (
+        <Link href={href} aria-label={`Lists for ${coach.name}`} className="flex h-full w-full items-center justify-center hover:bg-slate-200/70">
+          {mark}
+        </Link>
+      ) : (
+        mark
+      )}
+    </HoverCard>
+  );
+}
+
+/** The coach's place in Zander's order and BCA's next step. Click to change either (28 Nov). */
+function NextStepCell({
+  coach,
+  onSave,
+}: {
+  coach: BoardCoach;
+  onSave: (coachId: string, update: { note?: string | null; order?: number | null }) => Promise<boolean>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [note, setNote] = useState(coach.launch_note ?? "");
+  const [order, setOrder] = useState(coach.launch_order == null ? "" : String(coach.launch_order));
+  const [saving, setSaving] = useState(false);
+  const open = () => {
+    setNote(coach.launch_note ?? "");
+    setOrder(coach.launch_order == null ? "" : String(coach.launch_order));
+    setEditing(true);
+  };
+  const save = async () => {
+    setSaving(true);
+    const n = order.trim() ? Number(order) : null;
+    const ok = await onSave(coach.coach_id, { note: note.trim() || null, order: Number.isFinite(n) ? n : null });
+    setSaving(false);
+    if (ok) setEditing(false);
+  };
+  if (editing) {
+    return (
+      <span className="flex flex-col gap-1.5 px-1.5 py-2">
+        <span className="flex items-center gap-2">
+          <label className="text-xs text-slate-600" htmlFor={`order-${coach.coach_id}`}>
+            Order
+          </label>
+          <input
+            id={`order-${coach.coach_id}`}
+            value={order}
+            onChange={(e) => setOrder(e.target.value.replace(/[^0-9]/g, ""))}
+            inputMode="numeric"
+            className="h-7 w-12 rounded-md border border-slate-300 px-1.5 text-sm tabular-nums focus:border-[#0C5290] focus:outline-none"
+          />
+        </span>
+        <textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void save();
+            if (e.key === "Escape") setEditing(false);
+          }}
+          rows={3}
+          autoFocus
+          aria-label={`Next step for ${coach.name}`}
+          className="w-full resize-y rounded-md border border-slate-300 px-2 py-1 text-sm leading-snug focus:border-[#0C5290] focus:outline-none"
+        />
+        <span className="flex items-center gap-3 text-xs">
+          <button type="button" onClick={() => void save()} disabled={saving} className="font-semibold text-[#0C5290] hover:underline disabled:opacity-60">
+            {saving ? "Saving" : "Save"}
+          </button>
+          <button type="button" onClick={() => setEditing(false)} className="text-slate-600 hover:underline">
+            Cancel
+          </button>
+        </span>
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={open}
+      title={coach.launch_note ?? "Add the next step"}
+      className="flex min-w-0 items-start gap-2 px-1.5 py-2 text-left hover:bg-slate-100"
+    >
+      <span className="mt-px w-5 shrink-0 text-right text-sm font-semibold tabular-nums text-slate-900">{coach.launch_order ?? ""}</span>
+      <span className={`line-clamp-3 text-sm leading-snug ${coach.launch_note ? "text-slate-700" : "text-slate-400"}`}>
+        {coach.launch_note ?? "Add the next step"}
+      </span>
+    </button>
+  );
+}
+
 function PageLanes({
   coaches,
   pages,
   onTick,
+  onSaveNote,
+  onReorder,
   checkByCoach,
   checkPagesByCoach,
   bare = false,
@@ -1028,6 +1350,10 @@ function PageLanes({
   coaches: BoardCoach[];
   pages: Page[];
   onTick: (coachId: string, step: LaunchStepKey, on: boolean) => void;
+  /** The Launch view on All coaches: BCA's next step and order per coach (28 Nov). */
+  onSaveNote?: (coachId: string, update: { note?: string | null; order?: number | null }) => Promise<boolean>;
+  /** Drag rows to reorder (Launch view, sorted by Your order, 28 Nov). */
+  onReorder?: (orderedIds: string[]) => void;
   /** The Launch view on All coaches: a To check column after Progress (21 Nov). */
   checkByCoach?: Map<string, { count: number; page: string }>;
   /** Pages with something waiting in To check, so they show the lightning even if the page's stage doesn't know. */
@@ -1036,19 +1362,44 @@ function PageLanes({
   bare?: boolean;
 }) {
   const lanes = laneRows(coaches, pages);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const drop = (targetId: string) => {
+    if (!onReorder || !dragId || dragId === targetId) return;
+    const ids = lanes.map((l) => l.coach.coach_id).filter((id) => id !== dragId);
+    const at = ids.indexOf(targetId);
+    const from = lanes.findIndex((l) => l.coach.coach_id === dragId);
+    const to = lanes.findIndex((l) => l.coach.coach_id === targetId);
+    // Dragging down drops after the target, dragging up drops before it.
+    ids.splice(from < to ? at + 1 : at, 0, dragId);
+    onReorder(ids);
+  };
   const withCheck = Boolean(checkByCoach);
+  const withNote = Boolean(onSaveNote);
+  const launchColumns = useLaunchColumns();
+  // Outputs columns only on the Launch view (where the note and To check columns are).
+  const outputsMode = withNote && launchColumns === "outputs";
   // LinkedIn connected leads the coach's grey band, then a column per page, then the launch steps.
   const style = {
-    gridTemplateColumns: `13rem 4.5rem 6rem ${withCheck ? "6.5rem " : ""}repeat(${pages.length + 3 + LAUNCH_COLUMNS.length}, minmax(0, 1fr))`,
+    gridTemplateColumns: `13rem ${withNote ? (outputsMode ? "16rem " : "19rem ") : ""}4.5rem 6rem ${withCheck ? "6.5rem " : ""}repeat(${
+      outputsMode ? OUTPUT_COLUMNS.length : pages.length + 3 + LAUNCH_COLUMNS.length
+    }, minmax(${outputsMode ? "4.75rem" : "0"}, 1fr))`,
   };
   // The coach's pages read as one grey band, top to bottom.
   const band = (slug: string) => (COACH_PAGES.has(slug) ? "bg-slate-100" : "");
   return (
     <div className={bare ? "overflow-x-auto" : "min-h-0 flex-1 overflow-auto px-4 pb-10 md:px-6"}>
-      <div className={bare ? "min-w-[68rem]" : "min-w-[68rem] rounded-xl bg-white ring-1 ring-inset ring-slate-200"}>
+      <div
+        className={`${outputsMode ? "min-w-[112rem]" : "min-w-[68rem]"} ${bare ? "" : "rounded-xl bg-white ring-1 ring-inset ring-slate-200"}`}
+      >
         <div className={`sticky top-0 z-10 grid border-b border-slate-200 bg-white px-2 ${bare ? "" : "rounded-t-xl"}`} style={style}>
           {/* Coach then Joined, the same as the All coaches table (21 Nov). */}
           <h2 className="flex h-10 items-center px-1.5 text-sm font-semibold text-slate-900">Coach</h2>
+          {withNote ? (
+            <h2 className="flex h-10 items-center px-1.5 text-sm font-semibold text-slate-900" title="Your working order and what happens next for this coach. Click to change.">
+              Next step
+            </h2>
+          ) : null}
           <h2 className="flex h-10 items-center px-1.5 text-sm font-semibold text-slate-900">Joined</h2>
           <h2 className="flex h-10 items-center px-1.5 text-sm font-semibold text-slate-900">Progress</h2>
           {withCheck ? (
@@ -1056,6 +1407,18 @@ function PageLanes({
               To check
             </h2>
           ) : null}
+          {outputsMode ? (
+            OUTPUT_COLUMNS.map((c) => (
+              <h2
+                key={c.key}
+                className={`flex h-10 items-center justify-center px-1 text-center text-xs font-semibold leading-tight text-slate-900 ${c.start ? "border-l border-slate-200" : ""}`}
+                title={c.hint}
+              >
+                {c.label}
+              </h2>
+            ))
+          ) : (
+            <>
           <h2 className="flex h-10 items-center justify-center px-2 text-xs font-semibold text-slate-900 bg-slate-100" title="Have they connected their LinkedIn?">
             <span className="truncate">LI connected</span>
           </h2>
@@ -1082,12 +1445,50 @@ function PageLanes({
               <span className="truncate">{c.label}</span>
             </h2>
           ))}
+            </>
+          )}
         </div>
         {lanes.length === 0 ? <p className="px-3.5 py-3 text-sm text-slate-500">No coaches here.</p> : null}
         <div className="divide-y divide-slate-200">
           {lanes.map((lane) => (
-            <section key={lane.coach.coach_id} aria-label={lane.coach.name} className="grid items-stretch px-2 hover:bg-slate-50" style={style}>
+            <section
+              key={lane.coach.coach_id}
+              aria-label={lane.coach.name}
+              draggable={Boolean(onReorder)}
+              onDragStart={(e) => {
+                if (!onReorder) return;
+                // Selecting text in a note being edited is not a row drag.
+                if ((e.target as HTMLElement).closest?.("textarea, input")) {
+                  e.preventDefault();
+                  return;
+                }
+                setDragId(lane.coach.coach_id);
+                e.dataTransfer.effectAllowed = "move";
+              }}
+              onDragOver={(e) => {
+                if (!onReorder || !dragId) return;
+                e.preventDefault();
+                if (overId !== lane.coach.coach_id) setOverId(lane.coach.coach_id);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                drop(lane.coach.coach_id);
+                setDragId(null);
+                setOverId(null);
+              }}
+              onDragEnd={() => {
+                setDragId(null);
+                setOverId(null);
+              }}
+              className={`grid items-stretch px-2 hover:bg-slate-50 ${dragId === lane.coach.coach_id ? "opacity-50" : ""} ${
+                overId === lane.coach.coach_id && dragId && dragId !== lane.coach.coach_id ? "bg-sky-50 ring-2 ring-inset ring-sky-400" : ""
+              }`}
+              style={style}
+            >
               <span className="flex min-w-0 items-center gap-2 px-1 py-2">
+                {onReorder ? (
+                  <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-slate-300 hover:text-slate-500" aria-label="Drag to reorder" />
+                ) : null}
                 <Face coach={lane.coach} />
                 {lane.coach.slug ? (
                   <Link
@@ -1103,6 +1504,7 @@ function PageLanes({
                   </span>
                 )}
               </span>
+              {onSaveNote ? <NextStepCell coach={lane.coach} onSave={onSaveNote} /> : null}
               <span className="flex items-center">
                 <JoinedCell iso={lane.coach.joined_at} />
               </span>
@@ -1126,6 +1528,102 @@ function PageLanes({
                   })()}
                 </span>
               ) : null}
+              {outputsMode ? (
+                OUTPUT_COLUMNS.map((c) => {
+                  const cell = `flex min-h-11 items-center justify-center gap-1.5 px-1.5 ${c.start ? "border-l border-slate-100" : ""}`;
+                  const o = lane.coach.outputs;
+                  if (c.kind === "lists") {
+                    const card = lane.cards.find((x) => x.page.slug === c.page);
+                    const waiting = Boolean(checkPagesByCoach?.get(lane.coach.coach_id)?.has(c.page)) || Boolean(card && forCheck(card));
+                    return <ListsCell key={c.key} coach={lane.coach} waiting={waiting} href={cardHref(lane.coach, c.page)} className={cell} />;
+                  }
+                  if (c.kind === "page" || (c.kind === "campaign" && c.page)) {
+                    const slug = c.kind === "page" ? c.page : c.page!;
+                    const card = lane.cards.find((x) => x.page.slug === slug);
+                    const waitingHere = Boolean(checkPagesByCoach?.get(lane.coach.coach_id)?.has(slug));
+                    const href = cardHref(lane.coach, card?.check_on ?? slug);
+                    if (c.kind === "campaign") {
+                      return (
+                        <span key={c.key} className={cell}>
+                          <OutputCampaignCell coach={lane.coach} column={c} waitingHere={waitingHere || Boolean(card && forCheck(card))} href={href} />
+                        </span>
+                      );
+                    }
+                    if (!card) return <span key={c.key} className={cell} />;
+                    const needsCheck = forCheck(card) || waitingHere;
+                    const column = BOARD_COLUMNS.find((x) => x.id === card.column)!;
+                    const label = needsCheck ? `${card.page.title}: waiting for your check. Click to check it` : `${card.page.title}: ${column.label}`;
+                    return (
+                      <Link key={c.key} href={href} title={label} aria-label={label} className={`${cell} hover:bg-slate-200/70`}>
+                        {needsCheck ? <AvaBolt /> : <StageCircle look={STAGE_LOOK[card.column]} />}
+                      </Link>
+                    );
+                  }
+                  if (c.kind === "campaign") {
+                    return (
+                      <span key={c.key} className={cell}>
+                        <OutputCampaignCell coach={lane.coach} column={c} waitingHere={false} href={null} />
+                      </span>
+                    );
+                  }
+                  if (c.kind === "linkedin") return <span key={c.key} className={cell}><ConnectedMark connected={lane.coach.linkedin_connected} /></span>;
+                  if (c.kind === "salesnav") {
+                    return (
+                      <span key={c.key} className={cell}>
+                        {lane.coach.sales_navigator == null ? (
+                          <WaitingMark label="Can't tell until their LinkedIn is connected" />
+                        ) : (
+                          <ConnectedMark connected={lane.coach.sales_navigator} what="Sales Navigator" />
+                        )}
+                      </span>
+                    );
+                  }
+                  if (c.kind === "newsletters") {
+                    const n = o?.newsletters_published ?? 0;
+                    return (
+                      <span key={c.key} className={cell} title={`${n} newsletter${n === 1 ? "" : "s"} published in the last 120 days (6 is the launch target)`}>
+                        {n ? <span className="text-xs font-semibold tabular-nums text-slate-700">{Math.min(n, 6)}/6</span> : <StepMark done={false} />}
+                      </span>
+                    );
+                  }
+                  if (c.kind === "posts") {
+                    const n = o?.posts_30d ?? 0;
+                    return (
+                      <span key={c.key} className={cell} title={`${n} LinkedIn post${n === 1 ? "" : "s"} in the last 30 days (from their imported history)`}>
+                        {n ? <span className="text-xs font-semibold tabular-nums text-slate-700">{n}</span> : <StepMark done={false} />}
+                      </span>
+                    );
+                  }
+                  if (c.kind === "connections") {
+                    const at = o?.connections_imported_at;
+                    return (
+                      <span key={c.key} className={cell}>
+                        {at ? (
+                          <ConnectedMark connected what={`Connections imported ${new Date(at).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`} />
+                        ) : (
+                          <span title="Not imported yet: happens the next time Ava's launch chain runs for them, once LinkedIn is connected">
+                            <StepMark done={false} />
+                          </span>
+                        )}
+                      </span>
+                    );
+                  }
+                  if (c.kind === "booking") {
+                    const n = o?.booking_pages ?? 0;
+                    return (
+                      <span key={c.key} className={cell}>
+                        {n ? <ConnectedMark connected what={`${n} booking page${n === 1 ? "" : "s"} switched on`} /> : <StepMark done={false} />}
+                      </span>
+                    );
+                  }
+                  return (
+                    <span key={c.key} className={cell}>
+                      <NotBuiltMark label={c.hint} />
+                    </span>
+                  );
+                })
+              ) : (
+                <>
               <span className="flex min-h-11 items-center justify-center bg-slate-100 px-2">
                 <ConnectedMark connected={lane.coach.linkedin_connected} />
               </span>
@@ -1157,7 +1655,7 @@ function PageLanes({
                 const label = forCheck(card) || waitingHere
                   ? `${p.title}: ${card.tag ? BOARD_TAGS[card.tag].label : "To check"}. Click to check it`
                   : `${p.title}: ${column.label}`;
-                const href = cardHref(lane.coach, p.slug);
+                const href = cardHref(lane.coach, card.check_on ?? p.slug);
                 // One mark a cell (21 Nov): an orange lightning when Ava's work is waiting for BCA's check, else the stage circle.
                 const needsCheck = forCheck(card) || waitingHere;
                 const body = (
@@ -1188,6 +1686,8 @@ function PageLanes({
               {LAUNCH_COLUMNS.map((c) => (
                 <LaunchCell key={c.key} coach={lane.coach} column={c} onTick={onTick} />
               ))}
+                </>
+              )}
             </section>
           ))}
         </div>

@@ -18,6 +18,7 @@ describe("Ava nudges", () => {
       "Blueprint not finished",
       "Sending too little",
       "Few people accept",
+      "No interest 14 days after launch",
       "Interest isn't turning into calls",
       "Slow replies",
     ];
@@ -100,6 +101,8 @@ function base() {
     days_to_first_call: 9,
     days_to_first_client: 40,
     median_reply_hours: 0.5,
+    days_since_launch: 60,
+    interested_since_launch: 12,
     posts_30d: null,
     last_post_days: null,
     issues_90d: null,

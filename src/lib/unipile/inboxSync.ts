@@ -1189,12 +1189,8 @@ async function syncMessagingAccount(input: {
     }
 
     if (inboundSeen && lead?.id) {
-      const { data: campaign } = await supabaseAdmin
-        .from("linkedin_campaigns")
-        .select("stop_on_reply")
-        .eq("id", lead.campaign_id)
-        .maybeSingle();
-      if (campaign?.stop_on_reply !== false) {
+      // Any reply stops that person's automatic follow-ups (28 Nov rule).
+      if (lead.campaign_id) {
         const { data: updated } = await supabaseAdmin
           .from("linkedin_campaign_leads")
           .update({ status: "replied", next_action_at: null })

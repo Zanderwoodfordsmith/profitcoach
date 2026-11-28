@@ -54,6 +54,8 @@ import {
   type LessonContentPresence,
 } from "@/lib/academy/curriculumPlan";
 import { LessonImportTabs } from "@/components/admin/LessonImportTabs";
+import { NewCurriculumPlan } from "@/components/academy/NewCurriculumPlan";
+import type { NewPlanDoc } from "@/lib/academy/newCurriculumPlan";
 import { StickyPageHeader } from "@/components/layout";
 import { Modal } from "@/components/ui/Modal";
 import { supabaseClient } from "@/lib/supabaseClient";
@@ -573,10 +575,17 @@ function GroupToggle({
   );
 }
 
-export function CurriculumPlanBoard({ board: initialBoard }: { board: CurriculumBoard }) {
+export function CurriculumPlanBoard({
+  board: initialBoard,
+  newPlan,
+}: {
+  board: CurriculumBoard;
+  newPlan: NewPlanDoc;
+}) {
   const router = useRouter();
   const [board, setBoard] = useState(initialBoard);
   const [scope, setScope] = useState<CurriculumScope>("classroom");
+  const [showPlan, setShowPlan] = useState(false);
   const [decisionFilter, setDecisionFilter] = useState<CurriculumDecision | "all">("all");
   const [missingFilter, setMissingFilter] = useState<keyof LessonContentPresence | "all">("all");
   const [query, setQuery] = useState("");
@@ -910,19 +919,36 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
                 key={s}
                 type="button"
                 role="tab"
-                aria-selected={scope === s}
+                aria-selected={!showPlan && scope === s}
                 onClick={() => {
                   setScope(s);
+                  setShowPlan(false);
                   setAdding(false);
                 }}
                 className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${
-                  scope === s ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"
+                  !showPlan && scope === s ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 {CURRICULUM_SCOPE_LABELS[s]}
               </button>
             ))}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={showPlan}
+              onClick={() => {
+                setShowPlan(true);
+                setAdding(false);
+              }}
+              className={`rounded-full px-3.5 py-1.5 text-sm font-medium ${
+                showPlan ? "bg-slate-900 text-white" : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              New plan
+            </button>
           </div>
+          {showPlan ? null : (
+          <>
           <label className="relative w-full sm:w-48">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -989,8 +1015,14 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
             {adding ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             New lesson
           </button>
+          </>
+          )}
         </div>
 
+        {showPlan ? <NewCurriculumPlan initialPlan={newPlan} /> : null}
+
+        {showPlan ? null : (
+        <>
         {adding ? (
           <AddLessonForm
             courses={scopeCourses}
@@ -1064,6 +1096,8 @@ export function CurriculumPlanBoard({ board: initialBoard }: { board: Curriculum
         )}
 
         {scope === "classroom" ? <DriveLeftovers leftovers={board.driveLeftovers} /> : null}
+        </>
+        )}
 
         <Modal
           open={rulesOpen}

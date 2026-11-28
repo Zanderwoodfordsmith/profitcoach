@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
   if (!listId) {
     return NextResponse.json(
-      { error: "No lead list selected. Save a starter list first." },
+      { error: "No list selected. Save a starter list first." },
       { status: 400 }
     );
   }
@@ -61,7 +61,7 @@ export async function GET(request: Request) {
     ]);
 
   if (!list) {
-    return NextResponse.json({ error: "Lead list not found." }, { status: 404 });
+    return NextResponse.json({ error: "List not found." }, { status: 404 });
   }
 
   const icpId = setup?.selected_icp_id as string | null;

@@ -1,64 +1,25 @@
 import {
+  coachOwnPhoneKey,
   phoneMatchKey,
   whatsAppThreadAllowed,
 } from "@/lib/messaging/knownContacts";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 type AllowContext = {
-  poolPhones: Set<string>;
-  contactTypes: Map<string, string>;
+  ownPhone: string | null;
   typeByPhone: Map<string, string>;
   blockedPhones: Set<string>;
   blockedContactIds: Set<string>;
 };
 
-async function loadPoolPhoneKeys(coachId: string): Promise<Set<string> | null> {
-  const phones = new Set<string>();
-  const { data: pool, error: poolError } = await supabaseAdmin
-    .from("coach_lead_lists")
-    .select("id")
-    .eq("coach_id", coachId)
-    .eq("kind", "pool")
-    .maybeSingle();
-  if (poolError) {
-    console.error("whatsapp import pool:", poolError.message);
-    return null;
-  }
-  const poolId = (pool?.id as string | undefined) ?? null;
-  if (!poolId) return phones;
-
-  for (let from = 0; ; from += 1000) {
-    const { data, error } = await supabaseAdmin
-      .from("coach_lead_list_items")
-      .select("phone")
-      .eq("list_id", poolId)
-      .not("phone", "is", null)
-      .range(from, from + 999);
-    if (error) {
-      console.error("whatsapp import pool phones:", error.message);
-      return null;
-    }
-    for (const row of data ?? []) {
-      const key = phoneMatchKey(typeof row.phone === "string" ? row.phone : null);
-      if (key) phones.add(key);
-    }
-    if (!data || data.length < 1000) break;
-  }
-  return phones;
-}
-
 async function loadTrackedContacts(
   coachId: string
-): Promise<{
-  contactTypes: Map<string, string>;
-  typeByPhone: Map<string, string>;
-} | null> {
-  const contactTypes = new Map<string, string>();
+): Promise<{ typeByPhone: Map<string, string> } | null> {
   const typeByPhone = new Map<string, string>();
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabaseAdmin
       .from("contacts")
-      .select("id, phone, type")
+      .select("phone, type")
       .eq("coach_id", coachId)
       .in("type", ["prospect", "client"])
       .range(from, from + 999);
@@ -69,8 +30,6 @@ async function loadTrackedContacts(
     for (const row of data ?? []) {
       const type = String(row.type || "").toLowerCase();
       if (type !== "prospect" && type !== "client") continue;
-      const id = row.id as string;
-      contactTypes.set(id, type);
       const phone = phoneMatchKey(
         typeof row.phone === "string" ? row.phone : null
       );
@@ -78,7 +37,7 @@ async function loadTrackedContacts(
     }
     if (!data || data.length < 1000) break;
   }
-  return { contactTypes, typeByPhone };
+  return { typeByPhone };
 }
 
 async function loadBlocks(
@@ -110,43 +69,41 @@ async function loadBlocks(
 }
 
 async function loadAllowContext(coachId: string): Promise<AllowContext | null> {
-  const [poolPhones, tracked, blocks] = await Promise.all([
-    loadPoolPhoneKeys(coachId),
+  const [ownPhone, tracked, blocks] = await Promise.all([
+    coachOwnPhoneKey(coachId),
     loadTrackedContacts(coachId),
     loadBlocks(coachId),
   ]);
-  if (!poolPhones || !tracked || !blocks) return null;
+  if (!tracked || !blocks) return null;
   return {
-    poolPhones,
-    contactTypes: tracked.contactTypes,
+    ownPhone,
     typeByPhone: tracked.typeByPhone,
     blockedPhones: blocks.phones,
     blockedContactIds: blocks.contactIds,
   };
 }
 
+/** Same rule as a new message: the thread's number is a prospect or client. */
 function conversationAllowed(
   ctx: AllowContext,
   row: { contact_id: string | null; prospect_phone: string | null }
 ): boolean {
   const phone = phoneMatchKey(row.prospect_phone);
+  if (!phone) return false;
   const contactId = row.contact_id;
   const blocked =
-    Boolean(phone && ctx.blockedPhones.has(phone)) ||
+    ctx.blockedPhones.has(phone) ||
     Boolean(contactId && ctx.blockedContactIds.has(contactId));
-  const contactType =
-    (contactId ? ctx.contactTypes.get(contactId) : null) ||
-    (phone ? ctx.typeByPhone.get(phone) : null) ||
-    null;
   return whatsAppThreadAllowed({
     blocked,
-    onPool: Boolean(phone && ctx.poolPhones.has(phone)),
-    contactType,
+    ownNumber: phone === ctx.ownPhone,
+    contactType: ctx.typeByPhone.get(phone) ?? null,
   });
 }
 
 /**
- * Remove WhatsApp threads that are not a pool number, prospect, or client.
+ * Remove WhatsApp threads whose number is not one of the coach's prospects
+ * or clients (or is the coach's own number).
  * Does not list or download chat history from the phone.
  */
 export async function dropDisallowedWhatsAppThreads(

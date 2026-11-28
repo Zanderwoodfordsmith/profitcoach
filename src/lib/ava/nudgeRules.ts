@@ -14,6 +14,7 @@ export const NUDGE_RULES: { reason: string; level: "red" | "amber"; when: string
   { reason: "Blueprint not finished", level: "amber", when: "Blueprint not started, still a draft, or the interview isn't done." },
   { reason: "Sending too little", level: "amber", when: "Sent some invites in the last 30 days, but fewer than 200 (not on Sales Robot)." },
   { reason: "Few people accept", level: "amber", when: "100 or more invites in the last 30 days, and fewer than 1 in 10 accept." },
+  { reason: "No interest 14 days after launch", level: "amber", when: "Two weeks or more since their first invite or campaign send, and nobody has ever been interested." },
   { reason: "Interest isn't turning into calls", level: "amber", when: "3 or more people interested in the last 30 days, and no calls booked." },
   { reason: "Slow replies", level: "amber", when: "Usually takes more than 4 hours to reply to people." },
 ];
@@ -36,6 +37,8 @@ export const NUDGE_TEMPLATES: Record<string, (v: NudgeVars) => string> = {
     `Hi ${v.first}, you sent ${v.invites_7d} invites this week. The coaches booking calls send 100 or more. Want me to check your daily limits and how many people are left in your list?`,
   "Few people accept": (v) =>
     `Hi ${v.first}, about ${v.accept} of the people you invite accept. Two quick wins: send to Open Profiles first and keep links out of the note. Want me to look over your list with you?`,
+  "No interest 14 days after launch": (v) =>
+    `Hi ${v.first}, your campaigns have been going for two weeks. The first weeks send fewer messages while LinkedIn gets used to your account, so a quiet start is normal. It's a good time to check the message. Want me to look at who's accepting and suggest a sharper note?`,
   "Interest isn't turning into calls": (v) =>
     `Hi ${v.first}, ${v.interested} people said they're interested this month. Offer two times in your reply and they book far more often. Want me to draft your next few replies?`,
   "Slow replies": (v) =>
@@ -51,6 +54,7 @@ export const NUDGE_SECTION: Record<string, string> = {
   "Not sending": "campaigns:messaging",
   "Sending too little": "campaigns:messaging",
   "Few people accept": "campaigns:messaging",
+  "No interest 14 days after launch": "campaigns:messaging",
   "Interest isn't turning into calls": "campaigns:conversation",
   "Slow replies": "campaigns:conversation",
 };

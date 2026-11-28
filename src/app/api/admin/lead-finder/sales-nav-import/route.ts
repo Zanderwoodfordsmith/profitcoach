@@ -60,7 +60,7 @@ async function saveLeadsAsList(opts: {
     .single();
 
   if (listError || !list) {
-    throw new Error(listError?.message ?? "Could not create lead list.");
+    throw new Error(listError?.message ?? "Could not create the list.");
   }
 
   const items = capped.map((lead) => ({

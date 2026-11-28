@@ -735,9 +735,9 @@ const GROUPS: BlueprintGroup[] = [
       {
         // Its own view, not sections (job 248, 21 Nov): Ava's list plan, how each list searches, and what came in.
         slug: "lists",
-        title: "Lead lists",
+        title: "Prospect lists",
         href: "/coach/blueprint/lists",
-        open: { href: "/coach/campaigns?tab=pool", label: "Open the Pool" },
+        open: { href: "/coach/campaigns?tab=pool", label: "Open Prospects" },
         heading: "Who we reach out to",
         summary: "The lists of owners your campaigns go to: who is on each one, how we found them on LinkedIn, and how many came in.",
         short: "Who your campaigns go to, and how we found them.",

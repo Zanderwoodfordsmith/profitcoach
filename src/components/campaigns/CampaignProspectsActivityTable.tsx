@@ -21,6 +21,7 @@ import {
   Play,
   Search,
   Trash2,
+  X,
 } from "lucide-react";
 import {
   ProspectTableAvatar,
@@ -96,6 +97,9 @@ type Props = {
   onResume: (leadIds: string[]) => void;
   onMove: (leadIds: string[], campaignId: string) => void;
   repliesHref?: string | null;
+  /** V2: a campaign number was clicked; show only these people, as a chip. */
+  focus?: { title: string; leadIds: string[] } | null;
+  onClearFocus?: () => void;
   onMarkInterest: (
     leadId: string,
     outcome: "positive" | "soft" | "negative" | null
@@ -255,6 +259,8 @@ export function CampaignProspectsActivityTable({
   onMove,
   onMarkInterest,
   repliesHref = null,
+  focus = null,
+  onClearFocus,
 }: Props) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<ActivityFilterId>("all");
@@ -304,7 +310,9 @@ export function CampaignProspectsActivityTable({
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const focusIds = focus ? new Set(focus.leadIds) : null;
     const filtered = leads.filter((lead) => {
+      if (focusIds && !focusIds.has(lead.id)) return false;
       const leadJobs = jobsByLead.get(lead.id) ?? [];
       if (!matchesActivityFilter(lead, leadJobs, filter)) return false;
       if (!q) return true;
@@ -368,11 +376,11 @@ export function CampaignProspectsActivityTable({
     });
 
     return decorated;
-  }, [leads, steps, jobsByLead, filter, query, sortField, sortDir, campaignStatus]);
+  }, [leads, steps, jobsByLead, filter, query, sortField, sortDir, campaignStatus, focus]);
 
   const totalPages = Math.max(1, Math.ceil(rows.length / pageSize));
   // Back to page 1 when the search, filter, sort or grouping changes.
-  const viewKey = `${query}|${filter}|${sortField}|${sortDir}|${groupField}`;
+  const viewKey = `${query}|${filter}|${sortField}|${sortDir}|${groupField}|${focus?.title ?? ""}`;
   const [pageViewKey, setPageViewKey] = useState(viewKey);
   if (pageViewKey !== viewKey) {
     setPageViewKey(viewKey);
@@ -631,6 +639,19 @@ export function CampaignProspectsActivityTable({
               ) : null}
             </div>
           </div>
+          {focus ? (
+            <span className="inline-flex min-w-0 items-center gap-1 rounded-full bg-sky-50 py-1 pl-2.5 pr-1 text-caption font-medium text-sky-800 ring-1 ring-sky-200/80">
+              <span className="truncate">{focus.title}</span>
+              <button
+                type="button"
+                aria-label={`Clear ${focus.title} filter`}
+                onClick={() => onClearFocus?.()}
+                className="rounded-full p-0.5 text-sky-600 hover:bg-sky-100 hover:text-sky-900"
+              >
+                <X className="h-3 w-3" strokeWidth={2} aria-hidden />
+              </button>
+            </span>
+          ) : null}
           <span className="text-sm tabular-nums text-slate-500">{countLabel}</span>
         </div>
         <div className="ml-auto flex flex-wrap items-center justify-end gap-1">

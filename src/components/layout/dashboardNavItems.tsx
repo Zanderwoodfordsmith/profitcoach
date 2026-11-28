@@ -402,7 +402,7 @@ export function getCallsTabItems(prefix: "/coach" | "/admin"): ToolsHubTabItem[]
   return [
     {
       href: `${prefix}/campaigns?tab=pool`,
-      label: "Lead Lists",
+      label: "Prospects",
       description: "The people your campaigns can reach",
     },
     {

@@ -83,7 +83,7 @@ export const LAUNCH_THREADS: LaunchThread[] = [
   },
   {
     key: "lead-list",
-    label: "Lead list",
+    label: "Prospect lists",
     phase: "get",
     hint: "The 1,000 people your campaign goes to.",
     type: "question",

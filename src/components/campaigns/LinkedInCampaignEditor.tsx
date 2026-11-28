@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { ChevronRight, Copy, Pencil, Save, SlidersHorizontal } from "lucide-react";
+import { Copy, Pencil, Save, SlidersHorizontal } from "lucide-react";
 import { prospectDetailHref } from "@/lib/prospects/prospectDetailHref";
 import type { CampaignLeadProfile } from "@/lib/unipile/campaignLeadProfile";
 import { getCoachAuthHeaders } from "@/lib/coachAuthHeaders";
@@ -59,9 +59,6 @@ import {
   leadIsHeldByWait,
   formatUpcomingWhen,
   leadStatusLabel as activityLeadStatusLabel,
-  groupLeadsForDrawer,
-  drawerTimingSummary,
-  drawerLeadRowTime,
   type CampaignActivityJob,
   type InviteFunnelSlice,
 } from "@/lib/unipile/campaignLeadActivity";
@@ -76,7 +73,6 @@ import { SaveCampaignTemplateModal } from "@/components/campaigns/SaveCampaignTe
 import { DuplicateCampaignModal, type DuplicateCopy } from "@/components/campaigns/DuplicateCampaignModal";
 import { TableToolbarButton } from "@/components/table/TableToolbarButton";
 import type { PoolImportMode } from "@/components/campaigns/poolImportOptions";
-import { buttonClass } from "@/components/ui/Button";
 import { cardClass } from "@/components/ui/Card";
 
 const CampaignSequenceBuilder = dynamic(() =>
@@ -333,6 +329,17 @@ export function LinkedInCampaignEditor() {
     () => seeded.activityBuckets
   );
   const [leadDrawer, setLeadDrawer] = useState<LeadDrawerFilter | null>(null);
+  const openLeads = useCallback(
+    (filter: LeadDrawerFilter) => {
+      setLeadDrawer(filter);
+      setTab("prospects");
+    },
+    []
+  );
+  // The filter belongs to the Prospects tab; leaving the tab drops it.
+  useEffect(() => {
+    if (tab !== "prospects") setLeadDrawer(null);
+  }, [tab]);
   const [addLeadsOpen, setAddLeadsOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importMode, setImportMode] = useState<PoolImportMode | "pick">("pick");
@@ -632,27 +639,6 @@ export function LinkedInCampaignEditor() {
         })
     );
   }, [leadDrawer, leads, stagingLeads, activeLeads, steps]);
-
-  const drawerSections = useMemo(
-    () =>
-      groupLeadsForDrawer({
-        leads: drawerLeads,
-        steps,
-        jobs,
-        campaignStatus: campaign?.status ?? "draft",
-      }),
-    [drawerLeads, steps, jobs, campaign?.status]
-  );
-
-  const drawerSummary = useMemo(() => {
-    if (!leadDrawer) return null;
-    if (leadDrawer.kind === "wait") return drawerTimingSummary(drawerSections);
-    if (leadDrawer.kind === "invite" && leadDrawer.slice === "remaining") {
-      return drawerTimingSummary(drawerSections);
-    }
-    if (leadDrawer.kind === "step") return drawerTimingSummary(drawerSections);
-    return null;
-  }, [leadDrawer, drawerSections]);
 
   // Settings in the campaign list's ⋯ menu lands here with ?settings=1.
   const campaignLoaded = campaign != null;
@@ -1330,7 +1316,7 @@ export function LinkedInCampaignEditor() {
                   statusCounts={statusCounts}
                   onAddProspects={() => openAddLeads()}
                   onOpenStatus={(status) =>
-                    setLeadDrawer({
+                    openLeads({
                       kind: "status",
                       status,
                       title: activityLeadStatusLabel(status),
@@ -1373,6 +1359,12 @@ export function LinkedInCampaignEditor() {
             onResume={(leadIds) => void resumeLeads(leadIds)}
             onMove={(leadIds, targetId) => void moveLeads(leadIds, targetId)}
             repliesHref={`${prefix}/conversations?campaign=${encodeURIComponent(campaign.id)}`}
+            focus={
+              leadDrawer
+                ? { title: leadDrawer.title, leadIds: drawerLeads.map((l) => l.id) }
+                : null
+            }
+            onClearFocus={() => setLeadDrawer(null)}
             onMarkInterest={(leadId, outcome) =>
               void markLeadInterest(leadId, outcome)
             }
@@ -1396,7 +1388,7 @@ export function LinkedInCampaignEditor() {
           onDeleteStep={deleteStep}
           onDuplicateStep={duplicateStep}
           onReorderSteps={reorderSteps}
-          onOpenLeads={setLeadDrawer}
+          onOpenLeads={openLeads}
           campaigns={otherCampaigns}
           queuePeople={{
             count: stagingLeads.length,
@@ -1505,120 +1497,6 @@ export function LinkedInCampaignEditor() {
         }}
       />
 
-      {/* Lead drawer */}
-      {leadDrawer ? (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-          <button
-            type="button"
-            className="absolute inset-0 bg-slate-900/30"
-            aria-label="Close"
-            onClick={() => setLeadDrawer(null)}
-          />
-          <aside
-            role="dialog"
-            aria-modal="true"
-            className="relative flex h-full w-full max-w-md flex-col bg-white shadow-xl"
-          >
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900">
-                  {leadDrawer.title}
-                </h2>
-                <p className="text-xs text-slate-500">
-                  {drawerLeads.length}{" "}
-                  {drawerLeads.length === 1 ? "person" : "people"}
-                </p>
-                {drawerSummary ? (
-                  <p className="mt-1 text-caption leading-snug text-slate-500">
-                    {drawerSummary}
-                  </p>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                onClick={() => setLeadDrawer(null)}
-                className={buttonClass("quiet", "small")}
-              >
-                Close
-              </button>
-            </div>
-            <ul className="flex-1 overflow-y-auto">
-              {drawerLeads.length === 0 ? (
-                <li className="px-5 py-12 text-center text-sm text-slate-500">
-                  Nobody here yet
-                </li>
-              ) : (
-                drawerSections.map((section) => (
-                  <li key={section.key}>
-                    <div className="sticky top-0 z-10 border-b border-slate-100 bg-slate-50/95 px-5 py-1.5 text-xs font-semibold text-slate-600 backdrop-blur-sm">
-                      {section.label}
-                      <span className="ml-1.5 font-normal tabular-nums text-slate-400">
-                        {section.leads.length}
-                      </span>
-                    </div>
-                    <ul className="divide-y divide-slate-100">
-                      {section.leads.map((lead) => {
-                        const href = prospectDetailHref(
-                          lead.contact_id,
-                          prefix === "/admin"
-                        );
-                        const name = leadName(lead);
-                        const rowTime = section.isDay
-                          ? drawerLeadRowTime(lead)
-                          : null;
-                        const subtitleParts = [
-                          activityLeadStatusLabel(lead.status),
-                          lead.company,
-                          rowTime,
-                        ].filter(Boolean);
-                        const body = (
-                          <>
-                            <div className="min-w-0 flex-1">
-                              <div
-                                className={`truncate text-sm font-medium ${
-                                  href ? "text-[#0c5290]" : "text-slate-900"
-                                }`}
-                              >
-                                {name}
-                              </div>
-                              <div className="truncate text-xs text-slate-500">
-                                {subtitleParts.join(" · ")}
-                              </div>
-                            </div>
-                            {href ? (
-                              <ChevronRight
-                                className="h-4 w-4 shrink-0 text-slate-400"
-                                aria-hidden
-                              />
-                            ) : null}
-                          </>
-                        );
-                        return (
-                          <li key={lead.id}>
-                            {href ? (
-                              <Link
-                                href={href}
-                                aria-label={`Open ${name}`}
-                                className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50"
-                              >
-                                {body}
-                              </Link>
-                            ) : (
-                              <div className="flex items-center gap-3 px-5 py-3">
-                                {body}
-                              </div>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </li>
-                ))
-              )}
-            </ul>
-          </aside>
-        </div>
-      ) : null}
 
       <ImportPoolModal
         open={importOpen}

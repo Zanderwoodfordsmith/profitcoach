@@ -130,15 +130,7 @@ export async function markMissedLeadReplies(
     }
   }
 
-  const campaignIds = [...new Set(candidates.map((l) => String(l.campaign_id)))];
-  const { data: campaigns } = await supabaseAdmin
-    .from("linkedin_campaigns")
-    .select("id, stop_on_reply")
-    .in("id", campaignIds);
-  const keepsGoing = new Set(
-    (campaigns ?? []).filter((c) => c.stop_on_reply === false).map((c) => String(c.id))
-  );
-
+  // Any reply stops that person's automatic follow-ups (28 Nov rule).
   const fixed: Array<{ leadId: string; name: string }> = [];
   for (const lead of candidates) {
     const convId = convByChat.get(String(lead.unipile_chat_id));
@@ -147,7 +139,6 @@ export async function markMissedLeadReplies(
     // reply to it (e.g. a VIP campaign to people the coach already knows).
     const repliedAt = lastReplyAt.get(convId) ?? 0;
     if (repliedAt < new Date(String(lead.created_at)).getTime()) continue;
-    if (keepsGoing.has(String(lead.campaign_id))) continue;
     const { data: updated } = await supabaseAdmin
       .from("linkedin_campaign_leads")
       .update({ status: "replied", next_action_at: null })

@@ -44,7 +44,7 @@ import {
   startUnipileChat,
   unipileFetch,
 } from "@/lib/unipile/client";
-import { phoneDigitsFromWhatsAppJid } from "@/lib/unipile/whatsappIdentity";
+import { whatsAppChatPhone } from "@/lib/unipile/whatsappIdentity";
 
 export const SUPPORT_WHATSAPP_NOTIFY_PREFIX = "support-whatsapp";
 
@@ -296,18 +296,7 @@ export function coachIdForChat(
   chat: Record<string, unknown>,
   index: CoachIndex
 ): string | null {
-  if (Number(chat.type) !== 0) return null; // 1 and 2 are groups
-  const candidates = [
-    chat.attendee_public_identifier,
-    chat.provider_id,
-    chat.attendee_provider_id,
-  ].map((v) => (typeof v === "string" ? v : ""));
-  if (candidates.some((v) => v.toLowerCase().includes("@g.us"))) return null;
-  let digits: string | null = null;
-  for (const c of candidates) {
-    digits = phoneDigitsFromWhatsAppJid(c);
-    if (digits) break;
-  }
+  const digits = whatsAppChatPhone(chat); // null for groups
   if (!digits || index.linePhones.has(digits)) return null;
   return index.byPhone.get(digits) ?? null;
 }

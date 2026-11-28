@@ -49,6 +49,8 @@ export type PoolTableViewSettings = PoolFilters & {
   columnLayoutVersion: number;
   /** Set on a smart list (job 301): who belongs, by rules. Null on other tabs. */
   smartRules: PoolSmartRules | null;
+  /** The ready-made smart list it started from (28 Nov), so an empty list can explain itself. */
+  smartTemplate: string | null;
 };
 
 export type PoolTableView = {
@@ -190,6 +192,7 @@ export function createDefaultPoolTableViewSettings(): PoolTableViewSettings {
     columnOrder: [...DEFAULT_POOL_COLUMN_ORDER],
     columnLayoutVersion: POOL_COLUMN_LAYOUT_VERSION,
     smartRules: null,
+    smartTemplate: null,
   };
 }
 
@@ -210,6 +213,8 @@ export function normalizePoolTableViewSettings(
     columnOrder: columns.columnOrder,
     columnLayoutVersion: columns.columnLayoutVersion,
     smartRules: normalizeSmartRules(source.smartRules),
+    smartTemplate:
+      typeof source.smartTemplate === "string" && /^[a-z-]{1,40}$/.test(source.smartTemplate) ? source.smartTemplate : null,
   };
 }
 

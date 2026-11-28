@@ -146,7 +146,7 @@ export async function POST(request: Request) {
 
   if (listError || !list) {
     return NextResponse.json(
-      { error: listError?.message ?? "Could not create lead list." },
+      { error: listError?.message ?? "Could not create the list." },
       { status: 500 }
     );
   }
@@ -292,7 +292,7 @@ export async function GET(request: Request) {
     ]);
 
     if (!list) {
-      return NextResponse.json({ error: "Lead list not found." }, { status: 404 });
+      return NextResponse.json({ error: "List not found." }, { status: 404 });
     }
 
     const enrolled = await loadEnrolledPeople(auth.userId);

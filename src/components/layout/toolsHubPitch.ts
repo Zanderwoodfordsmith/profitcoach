@@ -27,7 +27,7 @@ const PITCHES: Record<string, ToolsHubPitch> = {
 
 /** The longer "what it is and why it helps" for each tab, by tab label. */
 export const TOOLS_HUB_TAB_DETAIL: Record<string, string> = {
-  "Lead Lists":
+  Prospects:
     "The owners your campaigns can reach. Build a list from a Sales Navigator search or a file, check who fits, and drop anyone already in a campaign. A good list is half the work.",
   Campaigns:
     "LinkedIn campaigns that send your invite and follow-ups for you, at a safe pace. You set it up once and the conversations come to you.",

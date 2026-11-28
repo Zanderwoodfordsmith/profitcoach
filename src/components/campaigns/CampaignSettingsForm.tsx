@@ -152,7 +152,6 @@ export function CampaignSettingsModal({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const archived = campaign.status === "archived";
   const life: Exclude<CampaignLife, "delete"> = archived ? "archive" : "live";
-  const stopOnReply = campaign.stop_on_reply !== false;
   const priority = campaignPriorityLevelFromStored(
     campaign.outreach_priority,
     campaign.outreach_weight
@@ -260,49 +259,6 @@ export function CampaignSettingsModal({
                 );
               })}
             </div>
-          </div>
-
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-900">
-                Stop when they reply
-              </p>
-              <p className="mt-0.5 text-xs leading-snug text-slate-500">
-                Cancels remaining steps for that person. Everyone else keeps
-                going.
-              </p>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={stopOnReply}
-              aria-label="Stop when they reply"
-              disabled={busy}
-              onClick={() => {
-                const next = !stopOnReply;
-                onCampaignChange({ stop_on_reply: next });
-                onSave({ stop_on_reply: next });
-              }}
-              className={`relative mt-0.5 h-6 w-12 shrink-0 rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-40 ${
-                stopOnReply
-                  ? "bg-emerald-700 focus-visible:ring-emerald-700/40"
-                  : "bg-slate-200 focus-visible:ring-slate-300"
-              }`}
-            >
-              {stopOnReply ? (
-                <span
-                  className="pointer-events-none absolute top-1/2 left-[6px] -translate-y-1/2 text-caption font-bold tracking-wide text-white"
-                  aria-hidden
-                >
-                  On
-                </span>
-              ) : null}
-              <span
-                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition ${
-                  stopOnReply ? "translate-x-6" : ""
-                }`}
-              />
-            </button>
           </div>
 
           <div>

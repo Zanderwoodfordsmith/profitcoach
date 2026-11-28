@@ -203,7 +203,7 @@ export function LinkedInInterestQueue() {
       ) : leads.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
           No replies logged yet. When someone replies in Conversations, mark them
-          interested here (or from the campaign lead list).
+          interested here (or from the campaign prospect list).
         </p>
       ) : (
         <ul className={cardClass("plain", "divide-y divide-slate-100 overflow-hidden")}>
